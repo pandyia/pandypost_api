@@ -118,8 +118,8 @@ jobs:
             git pull origin main
 
             echo "Setting up SSL certificate..."
-            export CF_API_TOKEN=${CF_API_TOKEN}
-            export CF_HOSTNAMES=${CF_HOSTNAMES}
+            export CF_API_TOKEN="${CF_API_TOKEN}"
+            export CF_HOSTNAMES="${CF_HOSTNAMES}"
             ./docker/scripts/setup-origin-cert.sh
 
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin
