@@ -112,6 +112,7 @@ jobs:
             cd ${APP_PATH}
 
             echo "Pulling latest changes..."
+            git remote set-url origin https://${GHCR_USER}:${GHCR_TOKEN}@github.com/${GHCR_USER}/pandypost_api.git
             git pull origin main
 
             echo "Setting up SSL certificate..."
