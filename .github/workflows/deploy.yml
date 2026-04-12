@@ -112,8 +112,8 @@ jobs:
             cd ${APP_PATH}
 
             echo "Setting up SSL certificate..."
-            export CF_API_TOKEN=\$(grep -oP '^CF_API_TOKEN=\K.*' .env)
-            export CF_HOSTNAMES=\$(grep -oP '^CF_HOSTNAMES=\K.*' .env)
+            export CF_API_TOKEN=\$(grep -oP '^CF_API_TOKEN=\K.*' .env | tr -d '"'"'")
+            export CF_HOSTNAMES=\$(grep -oP '^CF_HOSTNAMES=\K.*' .env | tr -d '"'"'")
             ./docker/scripts/setup-origin-cert.sh
 
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin

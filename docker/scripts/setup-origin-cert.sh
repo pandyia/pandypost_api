@@ -27,7 +27,7 @@ openssl req -new -newkey rsa:2048 -nodes \
     -out /tmp/origin.csr \
     -subj "/CN=${FIRST_HOSTNAME}" 2>/dev/null
 
-CSR_CONTENT=$(cat /tmp/origin.csr | tr '\n' '|' | sed 's/|/\\n/g')
+CSR_CONTENT=$(awk '{printf "%s\\n", $0}' /tmp/origin.csr)
 rm -f /tmp/origin.csr
 
 HOSTNAMES_JSON=$(echo "$CF_HOSTNAMES" | awk -F',' '{
@@ -40,15 +40,7 @@ HOSTNAMES_JSON=$(echo "$CF_HOSTNAMES" | awk -F',' '{
     printf "]"
 }')
 
-PAYLOAD=$(cat <<EOF
-{
-    "hostnames": ${HOSTNAMES_JSON},
-    "requested_validity": 5475,
-    "request_type": "origin-rsa",
-    "csr": "${CSR_CONTENT}"
-}
-EOF
-)
+PAYLOAD="{\"hostnames\":${HOSTNAMES_JSON},\"requested_validity\":5475,\"request_type\":\"origin-rsa\",\"csr\":\"${CSR_CONTENT}\"}"
 
 echo "Requesting Origin Certificate from Cloudflare..."
 
