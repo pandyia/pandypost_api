@@ -27,6 +27,9 @@ Homestead.yaml
 Thumbs.db
 /FRONTEND
 
+# SSL certificates
+/ssl
+
 # AI tools
 .codex
 .cursor

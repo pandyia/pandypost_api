@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-SSL_DIR="/etc/ssl/cloudflare"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SSL_DIR="${SCRIPT_DIR}/../../ssl"
 CERT_FILE="${SSL_DIR}/origin.pem"
 KEY_FILE="${SSL_DIR}/origin-key.pem"
 
@@ -25,7 +26,7 @@ echo "Generating private key and CSR..."
 openssl req -new -newkey rsa:2048 -nodes \
     -keyout "$KEY_FILE" \
     -out /tmp/origin.csr \
-    -subj "/CN=${FIRST_HOSTNAME}" 2>/dev/null
+    -subj "/CN=${FIRST_HOSTNAME}"
 
 CSR_CONTENT=$(awk '{printf "%s\\n", $0}' /tmp/origin.csr)
 rm -f /tmp/origin.csr
