@@ -1,0 +1,72 @@
+services:
+    nginx:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-nginx:${IMAGE_TAG:-latest}
+        container_name: pandypost-nginx-prod
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - app_storage:/var/www/html/storage:ro
+            - app_public:/var/www/html/public:ro
+            - /etc/ssl/cloudflare:/etc/nginx/ssl:ro
+        depends_on:
+            - php
+        networks:
+            - pandypost-network-prod
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.15"
+                    memory: 128M
+                reservations:
+                    cpus: "0.05"
+                    memory: 32M
+
+    php:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
+        container_name: pandypost-php-prod
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - app_storage:/var/www/html/storage
+            - app_public:/var/www/html/public
+        depends_on:
+            - redis
+        networks:
+            - pandypost-network-prod
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.65"
+                    memory: 1280M
+                reservations:
+                    cpus: "0.30"
+                    memory: 512M
+
+    redis:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-redis:${IMAGE_TAG:-latest}
+        container_name: pandypost-redis-prod
+        restart: always
+        volumes:
+            - redis_data_prod:/data
+        networks:
+            - pandypost-network-prod
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.20"
+                    memory: 256M
+                reservations:
+                    cpus: "0.05"
+                    memory: 64M
+
+volumes:
+    redis_data_prod:
+    app_storage:
+    app_public:
+
+networks:
+    pandypost-network-prod:
+        driver: bridge

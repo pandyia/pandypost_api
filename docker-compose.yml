@@ -1,0 +1,68 @@
+services:
+    nginx:
+        image: nginx:stable-alpine
+        container_name: pandypost-nginx
+        ports:
+            - "9000:80"
+        volumes:
+            - ./:/var/www/html
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - php
+        networks:
+            - pandypost-network
+
+    php:
+        build:
+            context: ./docker/php/dev
+            dockerfile: Dockerfile
+        container_name: pandypost-php
+        environment:
+            - XDEBUG_MODE=debug
+            - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 idekey=docker
+            - PHP_IDE_CONFIG=serverName=pandypost.local
+        volumes:
+            - ./:/var/www/html
+            - ./docker/php/dev/php.ini:/usr/local/etc/php/conf.d/custom.ini
+            - ./docker/php/dev/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+        depends_on:
+            - redis
+            - mysql
+        networks:
+            - pandypost-network
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+
+    redis:
+        image: redis:alpine
+        container_name: pandypost-redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - pandypost-network
+
+    mysql:
+        image: mysql:8.0
+        container_name: pandypost-mysql
+        restart: unless-stopped
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: pandypost
+            MYSQL_USER: pandypost
+            MYSQL_PASSWORD: pandypost
+            MYSQL_ROOT_PASSWORD: root
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - pandypost-network
+
+volumes:
+    redis_data:
+    mysql_data:
+
+networks:
+    pandypost-network:
+        driver: bridge

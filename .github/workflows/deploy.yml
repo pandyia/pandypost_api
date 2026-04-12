@@ -1,0 +1,161 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Tag da imagem existente no GHCR (ex: v0.9.0)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract tag
+        id: tag
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build and push PHP image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/php/prod/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/pandypost-php:${{ steps.tag.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/pandypost-php:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Nginx image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/nginx
+          file: docker/nginx/Dockerfile.prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/pandypost-nginx:${{ steps.tag.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/pandypost-nginx:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Redis image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/redis
+          file: docker/redis/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/pandypost-redis:${{ steps.tag.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/pandypost-redis:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: always() && (needs.build-and-push.result == 'success' || github.event_name == 'workflow_dispatch')
+    environment: Production
+    steps:
+      - name: Set image tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "image_tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Deploy to production
+        env:
+          IMAGE_TAG: ${{ steps.vars.outputs.image_tag }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          APP_PATH: ${{ secrets.APP_PATH }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes ${SSH_USER}@${SSH_HOST} << DEPLOY_SCRIPT
+            set -e
+            cd ${APP_PATH}
+
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin
+
+            export IMAGE_TAG=${IMAGE_TAG}
+            export IMAGE_PREFIX=${IMAGE_PREFIX}
+
+            echo "Pulling images with tag: \${IMAGE_TAG}"
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "Starting services..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "Waiting for PHP container..."
+            sleep 5
+
+            echo "Running migrations..."
+            docker compose -f docker-compose.prod.yml exec -T php php artisan migrate --force
+
+            echo "Caching config, routes, views..."
+            docker compose -f docker-compose.prod.yml exec -T php php artisan optimize
+
+            echo "Restarting Horizon..."
+            docker compose -f docker-compose.prod.yml exec -T php php artisan horizon:terminate
+
+            echo "Checking health..."
+            for i in \$(seq 1 12); do
+              if docker compose -f docker-compose.prod.yml exec -T php php artisan about > /dev/null 2>&1; then
+                echo "PHP is healthy!"
+                break
+              fi
+              echo "Waiting for PHP... (\${i}/12)"
+              sleep 5
+            done
+
+            echo "Cleaning old images..."
+            docker image prune -f
+
+            docker compose -f docker-compose.prod.yml ps
+          DEPLOY_SCRIPT
+
+      - name: Test site connectivity
+        run: |
+          sleep 10
+          curl -f -k -m 10 https://${{ secrets.DOMAIN_NAME }} -o /dev/null && echo "HTTPS OK" || \
+          curl -f -m 10 http://${{ secrets.DOMAIN_NAME }} -o /dev/null && echo "HTTP OK" || \
+          echo "Site not responding"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa ~/.ssh/id_ed25519
