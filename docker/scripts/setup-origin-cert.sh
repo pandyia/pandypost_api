@@ -59,7 +59,7 @@ if [ "$SUCCESS" != "true" ]; then
     exit 1
 fi
 
-echo "$RESPONSE" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['result']['certificate'])" > "$CERT_FILE"
+echo "$RESPONSE" | python3 -c "import sys,json; print(json.loads(sys.stdin.read(), strict=False)['result']['certificate'])" > "$CERT_FILE"
 
 chmod 644 "$CERT_FILE"
 chmod 600 "$KEY_FILE"
