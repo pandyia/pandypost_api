@@ -106,6 +106,8 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
           GHCR_USER: ${{ secrets.GHCR_USER }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_HOSTNAMES: ${{ secrets.CF_HOSTNAMES }}
         run: |
           ssh -o StrictHostKeyChecking=yes ${SSH_USER}@${SSH_HOST} << DEPLOY_SCRIPT
             set -e
@@ -116,8 +118,8 @@ jobs:
             git pull origin main
 
             echo "Setting up SSL certificate..."
-            export CF_API_TOKEN=\$(grep -oP '^CF_API_TOKEN=\K.*' .env | tr -d '"'"'")
-            export CF_HOSTNAMES=\$(grep -oP '^CF_HOSTNAMES=\K.*' .env | tr -d '"'"'")
+            export CF_API_TOKEN=${CF_API_TOKEN}
+            export CF_HOSTNAMES=${CF_HOSTNAMES}
             ./docker/scripts/setup-origin-cert.sh
 
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin
