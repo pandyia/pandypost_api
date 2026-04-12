@@ -13,9 +13,22 @@ fi
 if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_HOSTNAMES" ]; then
     echo "Error: missing required env vars."
     echo "  CF_API_TOKEN   - Cloudflare API token with Origin CA scope"
-    echo "  CF_HOSTNAMES   - Comma-separated hostnames (e.g. pandypost.com,*.pandypost.com)"
+    echo "  CF_HOSTNAMES   - Comma-separated hostnames (e.g. pandy.pro,*.pandy.pro)"
     exit 1
 fi
+
+mkdir -p "$SSL_DIR"
+
+FIRST_HOSTNAME=$(echo "$CF_HOSTNAMES" | cut -d',' -f1 | tr -d ' ')
+
+echo "Generating private key and CSR..."
+openssl req -new -newkey rsa:2048 -nodes \
+    -keyout "$KEY_FILE" \
+    -out /tmp/origin.csr \
+    -subj "/CN=${FIRST_HOSTNAME}" 2>/dev/null
+
+CSR_CONTENT=$(cat /tmp/origin.csr | tr '\n' '|' | sed 's/|/\\n/g')
+rm -f /tmp/origin.csr
 
 HOSTNAMES_JSON=$(echo "$CF_HOSTNAMES" | awk -F',' '{
     printf "["
@@ -32,7 +45,7 @@ PAYLOAD=$(cat <<EOF
     "hostnames": ${HOSTNAMES_JSON},
     "requested_validity": 5475,
     "request_type": "origin-rsa",
-    "csr": ""
+    "csr": "${CSR_CONTENT}"
 }
 EOF
 )
@@ -50,13 +63,11 @@ SUCCESS=$(echo "$RESPONSE" | grep -o '"success":[a-z]*' | head -1 | grep -o 'tru
 if [ "$SUCCESS" != "true" ]; then
     echo "Cloudflare API error:"
     echo "$RESPONSE"
+    rm -f "$KEY_FILE"
     exit 1
 fi
 
-mkdir -p "$SSL_DIR"
-
 echo "$RESPONSE" | sed -n 's/.*"certificate":"\([^"]*\)".*/\1/p' | sed 's/\\n/\n/g' > "$CERT_FILE"
-echo "$RESPONSE" | sed -n 's/.*"private_key":"\([^"]*\)".*/\1/p' | sed 's/\\n/\n/g' > "$KEY_FILE"
 
 chmod 644 "$CERT_FILE"
 chmod 600 "$KEY_FILE"

@@ -110,6 +110,10 @@ jobs:
             set -e
             cd ${APP_PATH}
 
+            echo "Setting up SSL certificate..."
+            source .env
+            CF_API_TOKEN=\${CF_API_TOKEN} CF_HOSTNAMES=\${CF_HOSTNAMES} ./docker/scripts/setup-origin-cert.sh
+
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin
 
             export IMAGE_TAG=${IMAGE_TAG}
