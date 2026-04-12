@@ -111,6 +111,9 @@ jobs:
             set -e
             cd ${APP_PATH}
 
+            echo "Pulling latest changes..."
+            git pull origin main
+
             echo "Setting up SSL certificate..."
             export CF_API_TOKEN=\$(grep -oP '^CF_API_TOKEN=\K.*' .env | tr -d '"'"'")
             export CF_HOSTNAMES=\$(grep -oP '^CF_HOSTNAMES=\K.*' .env | tr -d '"'"'")
