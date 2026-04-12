@@ -1,8 +1,7 @@
 #!/bin/sh
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SSL_DIR="${SCRIPT_DIR}/../../ssl"
+SSL_DIR="$HOME/ssl"
 CERT_FILE="${SSL_DIR}/origin.pem"
 KEY_FILE="${SSL_DIR}/origin-key.pem"
 
@@ -60,7 +59,7 @@ if [ "$SUCCESS" != "true" ]; then
     exit 1
 fi
 
-echo "$RESPONSE" | sed -n 's/.*"certificate":"\([^"]*\)".*/\1/p' | sed 's/\\n/\n/g' > "$CERT_FILE"
+echo "$RESPONSE" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['result']['certificate'])" > "$CERT_FILE"
 
 chmod 644 "$CERT_FILE"
 chmod 600 "$KEY_FILE"
