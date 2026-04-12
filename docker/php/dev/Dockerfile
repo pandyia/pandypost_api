@@ -33,7 +33,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 
 # Instalar extensões PHP local (INCLUINDO XDEBUG)
 RUN (curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - || echo 'return 1') | sh -s \
-    gd xdebug oci8 bcmath bz2 pdo_mysql mysqli pdo_oci zip ftp redis exif mbstring pcntl dom
+    gd xdebug bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl dom
 
 # Copiar arquivos de configuração do PHP e Supervisor local
 COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini

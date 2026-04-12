@@ -27,7 +27,7 @@ services:
             - ./docker/php/dev/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
         depends_on:
             - redis
-            - mysql
+            - pgsql
         networks:
             - pandypost-network
         extra_hosts:
@@ -43,25 +43,24 @@ services:
         networks:
             - pandypost-network
 
-    mysql:
-        image: mysql:8.0
-        container_name: pandypost-mysql
+    pgsql:
+        image: postgres:17-alpine
+        container_name: pandypost-pgsql
         restart: unless-stopped
         ports:
-            - "3306:3306"
+            - "5432:5432"
         environment:
-            MYSQL_DATABASE: pandypost
-            MYSQL_USER: pandypost
-            MYSQL_PASSWORD: pandypost
-            MYSQL_ROOT_PASSWORD: root
+            POSTGRES_DB: pandypost
+            POSTGRES_USER: pandypost
+            POSTGRES_PASSWORD: pandypost
         volumes:
-            - mysql_data:/var/lib/mysql
+            - pgsql_data:/var/lib/postgresql/data
         networks:
             - pandypost-network
 
 volumes:
     redis_data:
-    mysql_data:
+    pgsql_data:
 
 networks:
     pandypost-network:
