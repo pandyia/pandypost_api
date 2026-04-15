@@ -18,6 +18,12 @@ class WorkspaceResolver implements Resolver
      */
     public static function resolve(Auditable $auditable): ?int
     {
+        // Se o model for um Workspace e estiver sendo deletado, não podemos associar
+        // o audit ao workspace_id pois o registro pai (workspace) já foi removido do banco.
+        if ($auditable instanceof Workspace && $auditable->getAuditEvent() === 'deleted') {
+            return null;
+        }
+
         // 1. Sessão autenticada
         $user = auth()->user() ?? auth()->guard('sanctum')->user();
 
