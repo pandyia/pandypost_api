@@ -38,6 +38,7 @@ class InviteService extends BaseService
         return $this->paginate(
             $data,
             query: Invite::forRecipient(auth()->user()->email),
+            with: ['roleSender', 'workspaceSender'],
         );
     }
 

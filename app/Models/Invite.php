@@ -79,6 +79,11 @@ class Invite extends Model implements Auditable
         return $this->belongsTo(Role::class);
     }
 
+    public function roleSender(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id')->withoutGlobalScope('workspace');
+    }
+
     public function recipient(): BelongsTo
     {
         return $this->belongsTo(User::class, 'email', 'email');

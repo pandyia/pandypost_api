@@ -9,7 +9,7 @@ trait BelongsToWorkspace
     public static function bootBelongsToWorkspace(): void
     {
         static::addGlobalScope('workspace', function (Builder $builder) {
-            if (auth()->hasUser() && !auth()->user()->isSuperAdmin()) {
+            if (auth()->hasUser()) {
                 $access = auth()->user()->currentAccess;
                 if ($access) {
                     $workspaceRelation = (new static)->workspaceRelation ?? null;
