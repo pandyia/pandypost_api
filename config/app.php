@@ -56,7 +56,7 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
-    'invite_expiration_days' => env('INVITE_EXPIRATION_DAYS', 3),
+    'invite_expiration_days' => (int) env('INVITE_EXPIRATION_DAYS', 3),
 
     /*
     |--------------------------------------------------------------------------

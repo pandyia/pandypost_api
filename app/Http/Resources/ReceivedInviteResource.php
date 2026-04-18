@@ -26,9 +26,9 @@ class ReceivedInviteResource extends JsonResource
                 'uuid' => $this->workspaceSender->uuid,
                 'name' => $this->workspaceSender->name,
             ]),
-            'role' => $this->when($this->relationLoaded('role') && $this->role, fn() => [
-                'uuid' => $this->role->uuid,
-                'name' => $this->role->name,
+            'role' => $this->when($this->relationLoaded('roleSender') && $this->roleSender, fn() => [
+                'uuid' => $this->roleSender->uuid,
+                'name' => $this->roleSender->name,
             ]),
             'status' => strtolower($this->status),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),

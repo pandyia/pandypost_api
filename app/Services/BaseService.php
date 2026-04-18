@@ -57,7 +57,7 @@ abstract class BaseService
 
     public function store(array $data): Model
     {
-        return $this->model->firstOrCreate($data);
+        return $this->model->create($data);
     }
 
     public function update(object $entity, array $data): void

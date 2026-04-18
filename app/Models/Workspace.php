@@ -39,7 +39,7 @@ class Workspace extends Model implements Auditable
     {
         // sempre que for buscar workspaces, buscar apenas os que o usuário tem acesso  
         static::addGlobalScope('member', function ($builder) {
-            if (auth()->hasUser() && !auth()->user()->isSuperAdmin()) {
+            if (auth()->hasUser()) {
                 $builder->whereHas('accesses', fn($q) => $q->where('user_id', auth()->id()));
             }
         });
