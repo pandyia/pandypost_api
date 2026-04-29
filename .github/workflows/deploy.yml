@@ -130,10 +130,6 @@ jobs:
             echo "Pulling images with tag: \${IMAGE_TAG}"
             docker compose -f docker-compose.prod.yml pull
 
-            echo "Ensuring host log directory exists with correct ownership..."
-            mkdir -p storage/logs
-            sudo chown -R 1000:1000 storage/logs
-
             echo "Starting services..."
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
