@@ -29,18 +29,18 @@ class ScheduledPostController extends BaseController
     {
         $formRequest = app(StoreScheduledPostRequest::class);
 
-        $post = $this->service->schedule(
+        $posts = $this->service->schedule(
             $formRequest->user(),
             $formRequest->validated(),
             $formRequest->file('video'),
             $formRequest->file('thumbnail')
         );
 
-        $post->load('socialAccount');
+        $posts->each->load('socialAccount');
 
         return response()->json([
-            'message' => 'Vídeo agendado com sucesso!',
-            'data' => new ScheduledPostResource($post)
+            'message' => 'Vídeo(s) agendado(s) com sucesso!',
+            'data'    => ScheduledPostResource::collection($posts),
         ], 201);
     }
 }

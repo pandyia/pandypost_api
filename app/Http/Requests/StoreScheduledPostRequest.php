@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\Platform;
 use App\Enums\YouTubePrivacyStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -23,10 +22,10 @@ class StoreScheduledPostRequest extends FormRequest
                 'mimetypes:video/mp4,video/quicktime',
                 'max:102400'
             ],
-            'platform' => ['required', Rule::enum(Platform::class)],
-            'social_account_uuid' => ['required', 'uuid', 'exists:social_accounts,uuid'],
+
+            'social_account_uuids' => ['required', 'array', 'min:1'],
+            'social_account_uuids.*' => ['required', 'uuid', 'exists:social_accounts,uuid'],
             'title' => [
-                'required_if:platform,youtube',
                 'nullable',
                 'string',
                 'max:100'
@@ -51,10 +50,13 @@ class StoreScheduledPostRequest extends FormRequest
             'video.max' => 'O vídeo é muito grande! O limite é de 100MB.',
             'video.mimetypes' => 'Formato inválido. Aceitamos apenas MP4 e MOV.',
             'title.required_if' => 'Para postar no YouTube, você precisa definir um título.',
-            'platform.in' => 'A plataforma selecionada não é suportada.',
-            'social_account_uuid.required' => 'A conta social selecionada é obrigatória.',
-            'social_account_uuid.uuid' => 'A conta social informada é inválida.',
-            'social_account_uuid.exists' => 'A conta social selecionada não foi encontrada.',
+
+            'social_account_uuids.required' => 'Selecione ao menos uma conta social.',
+            'social_account_uuids.array' => 'O campo de contas sociais deve ser uma lista.',
+            'social_account_uuids.min' => 'Selecione ao menos uma conta social.',
+            'social_account_uuids.*.required' => 'A conta social selecionada é obrigatória.',
+            'social_account_uuids.*.uuid' => 'A conta social informada é inválida.',
+            'social_account_uuids.*.exists' => 'A conta social selecionada não foi encontrada.',
             'scheduled_at.after' => 'O agendamento precisa ser de pelo menos 5 minutos no futuro.',
             'thumbnail.image' => 'A capa deve ser uma imagem válida.',
             'thumbnail.max' => 'A capa não pode ultrapassar 2MB (Limite Oficial do YouTube).',

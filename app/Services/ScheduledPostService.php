@@ -12,6 +12,7 @@ use App\Services\Factories\PayloadBuilderFactory;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\PublishPostJob;
 
@@ -27,33 +28,38 @@ class ScheduledPostService extends BaseService
         parent::__construct($scheduledPost);
     }
 
-    public function schedule(User $user, array $data, UploadedFile $video, ?UploadedFile $thumbnail = null): ScheduledPost
+    public function schedule(User $user, array $data, UploadedFile $video, ?UploadedFile $thumbnail = null): Collection
     {
         $this->ensureValidSubscription($user);
-        
-        $platform = Platform::from($data['platform'] ?? '');
-        $socialAccountUuid = $data['social_account_uuid'] ?? null;
-        $account = $this->ensureValidSocialAccount($user, $platform->value, $socialAccountUuid);
 
-        $videoPath = Storage::putFile('videos', $video);
-        $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data, $thumbnail);
-        $attributes = Arr::except($payloadBuild->attributes(), ['social_account_uuid']);
+        $accountUuids = $data['social_account_uuids'];
+        $videoPath    = Storage::putFile('videos', $video);
 
-        $user->subscription->increment('posts_used');
+        $user->subscription->increment('posts_used', count($accountUuids));
 
-        $postData = array_merge($attributes, [
-            'user_id' => $user->id,
-            'social_account_id' => $account->id,
-            'media_path' => $videoPath,
-            'payload' => $payloadBuild->payload(),
-            'status' => ScheduledPostStatus::PENDING->value,
-            'scheduled_at' => $attributes['scheduled_at'] ?? null,
-        ]);
+        $posts = collect($accountUuids)->map(function (string $uuid) use ($user, $videoPath, $data, $thumbnail) {
+            $account      = $this->ensureValidSocialAccount($user, $uuid);
+            $platform     = Platform::from($account->platform);
+            $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data, $thumbnail);
+            $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids']);
 
-        $post = $this->store($postData);
-        $this->dispatchPlatformJob($post);
+            $postData = array_merge($attributes, [
+                'user_id'           => $user->id,
+                'social_account_id' => $account->id,
+                'platform'          => $platform->value,
+                'media_path'        => $videoPath,
+                'payload'           => $payloadBuild->payload(),
+                'status'            => ScheduledPostStatus::PENDING->value,
+                'scheduled_at'      => $attributes['scheduled_at'] ?? null,
+            ]);
 
-        return $post;
+            $post = $this->store($postData);
+            $this->dispatchPlatformJob($post);
+
+            return $post;
+        });
+
+        return $posts;
     }
 
     private function ensureValidSubscription(User $user): void
@@ -69,18 +75,14 @@ class ScheduledPostService extends BaseService
         }
     }
 
-    private function ensureValidSocialAccount(User $user, string $platform, ?string $socialAccountUuid): SocialAccount
+    private function ensureValidSocialAccount(User $user, string $socialAccountUuid): SocialAccount
     {
         $account = SocialAccount::where('user_id', $user->id)
             ->where('uuid', $socialAccountUuid)
             ->first();
 
         if (!$account) {
-            throw ScheduledPostException::noAccountLinked($platform);
-        }
-
-        if ($account->platform !== $platform) {
-            throw ScheduledPostException::invalidAccountSelection($platform);
+            throw ScheduledPostException::noAccountLinked($socialAccountUuid);
         }
 
         return $account;
