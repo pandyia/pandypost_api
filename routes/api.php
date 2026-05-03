@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\YouTubeCategoryController;
 use App\Http\Controllers\Api\YouTubePrivacyStatusController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\SocialAccountController;
+use App\Http\Controllers\Api\AnalyticsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -83,6 +84,9 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     // Workspaces (CRUD)
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/switch', [WorkspaceController::class, 'switchWorkspace']);
+    
+    // Analytics
+    Route::get('workspaces/{workspace}/analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
 
     // Roles (CRUD)
     Route::apiResource('roles', RoleController::class);
