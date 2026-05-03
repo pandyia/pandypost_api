@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\SocialAccount;
 use Google\Client;
 use Google\Service\YouTubeAnalytics;
+use Google\Service\YouTube;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -16,7 +17,7 @@ class YouTubeAnalyticsService
      * Get dashboard data for a given social account and date range.
      * Caches the result to avoid quota limits.
      */
-    public function getDashboardData(SocialAccount $account, string $dateRange): array
+    public function getDashboardData(SocialAccount $account, string $dateRange, bool $forceRefresh = false): array
     {
         // 1. Determine date ranges
         $dates = $this->calculateDateRange($dateRange);
@@ -30,8 +31,12 @@ class YouTubeAnalyticsService
         $diffDays = $dates['current']['start']->diffInDays($dates['current']['end']);
         $dimension = $diffDays > 365 ? 'month' : 'day';
 
-        // Cache key based on account and dates (updated to v2 to bypass previous empty cache)
-        $cacheKey = "youtube_analytics_v2_{$account->id}_{$startDate}_{$endDate}_{$dimension}";
+        // Cache key based on account and dates (updated to v3 to bypass previous empty cache)
+        $cacheKey = "youtube_analytics_v3_{$account->id}_{$startDate}_{$endDate}_{$dimension}";
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
 
         return Cache::remember($cacheKey, now()->addHours(6), function () use ($account, $startDate, $endDate, $prevStartDate, $prevEndDate, $dimension) {
             $client = $this->getAuthenticatedClient($account);
@@ -46,7 +51,7 @@ class YouTubeAnalyticsService
             $previousSeries = $this->fetchTimeSeries($service, $prevStartDate, $prevEndDate, $dimension);
 
             // Fetch top videos
-            $topVideos = $this->fetchTopVideos($service, $startDate, $endDate);
+            $topVideos = $this->fetchTopVideos($service, $client, $startDate, $endDate);
 
             // Fetch traffic sources
             $trafficSources = $this->fetchTrafficSources($service, $startDate, $endDate);
@@ -172,7 +177,7 @@ class YouTubeAnalyticsService
                 'ids' => 'channel==MINE',
                 'startDate' => $startDate,
                 'endDate' => $endDate,
-                'metrics' => 'views',
+                'metrics' => 'views,estimatedMinutesWatched',
                 'dimensions' => $dimension,
                 'sort' => $dimension,
             ];
@@ -182,7 +187,10 @@ class YouTubeAnalyticsService
             $data = [];
             if ($response->getRows()) {
                 foreach ($response->getRows() as $row) {
-                    $data[$row[0]] = (int) $row[1];
+                    $data[$row[0]] = [
+                        'views' => (int) $row[1],
+                        'watchTime' => (int) $row[2],
+                    ];
                 }
             }
             return $data;
@@ -192,11 +200,9 @@ class YouTubeAnalyticsService
         }
     }
 
-    private function fetchTopVideos(YouTubeAnalytics $service, string $startDate, string $endDate): array
+    private function fetchTopVideos(YouTubeAnalytics $service, Client $client, string $startDate, string $endDate): array
     {
         try {
-            // Include annotationClickThroughRate as a proxy for CTR if impressions aren't available,
-            // though standard views and watch time are primary.
             $optParams = [
                 'ids' => 'channel==MINE',
                 'startDate' => $startDate,
@@ -209,33 +215,94 @@ class YouTubeAnalyticsService
 
             $response = $service->reports->query($optParams);
             
-            $videos = [];
+            $videosData = [];
+            $videoIds = [];
             if ($response->getRows()) {
                 foreach ($response->getRows() as $row) {
                     $videoId = $row[0];
+                    $videoIds[] = $videoId;
                     $views = (int) $row[1];
                     $watchTimeMinutes = (int) $row[2];
                     $avgViewDurationSeconds = (int) $row[3];
                     $subscribersGained = (int) $row[4];
-                    $ctr = (float) $row[5]; // Note: this is annotation CTR, standard impressions CTR isn't natively supported here usually
+                    $ctr = (float) $row[5]; 
 
-                    // Approximation of retention % (assuming we don't have exact video length easily here without Data API)
-                    // We will mock retention % for the MVP if we can't get it directly, or calculate based on averageViewDuration if we had length.
-                    $retention = min(100, ($avgViewDurationSeconds / max(1, $watchTimeMinutes * 60)) * 100); 
+                    // Placeholder de retenção até calcularmos com o ISO8601
+                    $retention = 0; 
+                    $ctrPercent = round($ctr * 100, 1);
 
-                    $videos[] = [
+                    $videosData[$videoId] = [
                         'id' => $videoId,
-                        'title' => "Vídeo ID: {$videoId}", // Ideally we'd join with YouTube Data API for titles
+                        'title' => "Vídeo ID: {$videoId}", 
                         'thumbnail' => "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg",
                         'views' => $views,
                         'watchTime' => $watchTimeMinutes,
-                        'ctr' => round($ctr * 100, 1), 
-                        'retention' => round($retention, 1),
-                        'winnerScore' => $this->calculateWinnerScore($views, $watchTimeMinutes, $retention, $subscribersGained, $ctr)
+                        'ctr' => $ctrPercent,
+                        'retention' => $retention,
+                        'winnerScore' => 0,
+                        'avgViewDurationSeconds' => $avgViewDurationSeconds,
+                        'subscribersGained' => $subscribersGained
                     ];
                 }
             }
-            return $videos;
+
+            // Integrar com YouTube Data API para pegar Títulos, Thumbnails e Duração real
+            if (!empty($videoIds)) {
+                try {
+                    $youtubeAPI = new YouTube($client);
+                    $snippetResponse = $youtubeAPI->videos->listVideos('snippet,contentDetails', [
+                        'id' => implode(',', $videoIds)
+                    ]);
+                    
+                    foreach ($snippetResponse->getItems() as $videoItem) {
+                        $id = $videoItem->getId();
+                        $snippet = $videoItem->getSnippet();
+                        $durationIso = $videoItem->getContentDetails()->getDuration();
+                        
+                        if (isset($videosData[$id])) {
+                            $videosData[$id]['title'] = $snippet->getTitle();
+                            $thumbnails = $snippet->getThumbnails();
+                            $url = $thumbnails->getHigh() ? $thumbnails->getHigh()->getUrl() : $thumbnails->getDefault()->getUrl();
+                            $videosData[$id]['thumbnail'] = $url;
+                            
+                            // Calcula retenção exata
+                            try {
+                                $interval = new \DateInterval($durationIso);
+                                $totalSeconds = ($interval->d * 86400) + ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+                                
+                                if ($totalSeconds > 0) {
+                                    $avgSeconds = $videosData[$id]['avgViewDurationSeconds'];
+                                    $realRetention = min(100, ($avgSeconds / $totalSeconds) * 100);
+                                    $videosData[$id]['retention'] = round($realRetention, 1);
+                                }
+                            } catch (Exception $ex) {
+                                // Retenção aproximada fallback
+                                $watchTimeMins = $videosData[$id]['watchTime'];
+                                $avgSeconds = $videosData[$id]['avgViewDurationSeconds'];
+                                $videosData[$id]['retention'] = round(min(100, ($avgSeconds / max(1, $watchTimeMins * 60)) * 100), 1);
+                            }
+
+                            // Calcula Winner Score final
+                            $videosData[$id]['winnerScore'] = $this->calculateWinnerScore(
+                                $videosData[$id]['views'], 
+                                $videosData[$id]['watchTime'], 
+                                $videosData[$id]['retention'], 
+                                $videosData[$id]['subscribersGained'], 
+                                $videosData[$id]['ctr'] / 100 // calculateWinnerScore espera a taxa e não o percentual
+                            );
+                        }
+                    }
+                } catch (Exception $e) {
+                    Log::warning('YouTube Data API Error (Snippets): ' . $e->getMessage());
+                }
+            }
+
+            // Cleanup
+            foreach ($videosData as &$vid) {
+                unset($vid['avgViewDurationSeconds'], $vid['subscribersGained']);
+            }
+            
+            return array_values($videosData);
         } catch (Exception $e) {
             Log::error('YouTube Analytics API Error (Top Videos): ' . $e->getMessage());
             return [];
@@ -335,8 +402,10 @@ class YouTubeAnalyticsService
     private function buildTimeSeriesData(array $currentSeries, array $previousSeries, string $startDate, string $endDate, string $dimension = 'day'): array
     {
         $categories = [];
-        $currentData = [];
-        $previousData = [];
+        $currentViews = [];
+        $previousViews = [];
+        $currentWatchTime = [];
+        $previousWatchTime = [];
 
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
@@ -359,21 +428,42 @@ class YouTubeAnalyticsService
         foreach ($period as $date) {
             $dateString = $date->format($format);
             $categories[] = $date->translatedFormat($displayFormat);
-            $currentData[] = $currentSeries[$dateString] ?? 0;
-            $previousData[] = $prevValues[$i] ?? 0;
+            
+            $currentData = $currentSeries[$dateString] ?? ['views' => 0, 'watchTime' => 0];
+            $prevData = $prevValues[$i] ?? ['views' => 0, 'watchTime' => 0];
+
+            $currentViews[] = $currentData['views'];
+            $previousViews[] = $prevData['views'];
+            
+            // Convertendo watch time para horas
+            $currentWatchTime[] = round($currentData['watchTime'] / 60, 2);
+            $previousWatchTime[] = round($prevData['watchTime'] / 60, 2);
+            
             $i++;
         }
 
         return [
             'categories' => $categories,
             'series' => [
-                [
-                    'name' => 'Views',
-                    'data' => $currentData
+                'views' => [
+                    [
+                        'name' => 'Views',
+                        'data' => $currentViews
+                    ],
+                    [
+                        'name' => 'Views (Período Anterior)',
+                        'data' => $previousViews
+                    ]
                 ],
-                [
-                    'name' => 'Views (Período Anterior)',
-                    'data' => $previousData
+                'watchTime' => [
+                    [
+                        'name' => 'Tempo de Exibição (h)',
+                        'data' => $currentWatchTime
+                    ],
+                    [
+                        'name' => 'Tempo de Exibição (Período Anterior)',
+                        'data' => $previousWatchTime
+                    ]
                 ]
             ]
         ];
@@ -409,34 +499,52 @@ class YouTubeAnalyticsService
     {
         $alerts = [];
 
-        // Alerta de queda de visualizações
+        // 1. Queda de CTR
+        foreach ($topVideos as $video) {
+            if ($video['views'] > 500 && $video['ctr'] < 5.0) {
+                $alerts[] = [
+                    'type' => 'warning',
+                    'title' => 'Queda de CTR',
+                    'message' => "O vídeo '{$video['title']}' tem altas impressões mas o CTR caiu para {$video['ctr']}% nas últimas 24h. Considere trocar a thumbnail.",
+                    'icon' => 'mdi-alert'
+                ];
+                break; 
+            }
+        }
+
+        // 2. Vídeo Vencedor Identificado
+        $bestVideo = null;
+        $highestScore = 0;
+        foreach ($topVideos as $video) {
+            if ($video['winnerScore'] > $highestScore) {
+                $highestScore = $video['winnerScore'];
+                $bestVideo = $video;
+            }
+        }
+        
+        if ($bestVideo && $highestScore > 75) {
+            $alerts[] = [
+                'type' => 'success',
+                'title' => 'Vídeo Vencedor Identificado',
+                'message' => "O vídeo '{$bestVideo['title']}' está com ótima performance e atingiu um Score de {$highestScore}. Faça mais conteúdo similar.",
+                'icon' => 'mdi-trophy'
+            ];
+        }
+
+        // 3. Alerta de Retenção / Visualizações
         $viewsTrend = $this->calculateTrend($currentOverview['views'], $previousOverview['views']);
         if ($viewsTrend <= -10) {
             $alerts[] = [
                 'type' => 'error',
-                'title' => 'Queda de Visualizações',
-                'message' => "Seu canal teve uma queda de " . abs($viewsTrend) . "% nas visualizações em relação ao período anterior.",
+                'title' => 'Alerta de Retenção',
+                'message' => "A média de visualização caiu consideravelmente (" . abs($viewsTrend) . "%) nos vídeos esta semana.",
                 'icon' => 'mdi-trending-down'
             ];
         }
 
-        // Alerta inteligente nos vídeos
-        foreach ($topVideos as $video) {
-            // Simulação de CTR baixo para vídeos com muitas views
-            if ($video['views'] > 1000 && $video['ctr'] < 3.0) {
-                $alerts[] = [
-                    'type' => 'warning',
-                    'title' => 'Queda de CTR Identificada',
-                    'message' => "O vídeo '{$video['title']}' está com bastante entrega, mas o CTR está baixo ({$video['ctr']}%). Considere trocar a thumbnail.",
-                    'icon' => 'mdi-alert'
-                ];
-                break; // Apenas um alerta deste tipo para não flodar
-            }
-        }
-
         if (empty($alerts)) {
              $alerts[] = [
-                'type' => 'success',
+                'type' => 'info',
                 'title' => 'Tudo em ordem!',
                 'message' => "As métricas do seu canal parecem saudáveis neste período.",
                 'icon' => 'mdi-check-circle'

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AnalyticsController extends Controller
 {
@@ -36,9 +37,25 @@ class AnalyticsController extends Controller
         }
 
         $dateRange = $request->query('date_range', 'last_7_days');
+        $forceRefresh = $request->boolean('refresh');
+
+        if ($forceRefresh) {
+            // Limitar a atualização manual a 1 vez a cada 10 minutos (600 segundos) por conta
+            $rateLimitKey = 'refresh_analytics_' . $socialAccount->id . '_' . $request->user()->id;
+            
+            if (RateLimiter::tooManyAttempts($rateLimitKey, 1)) {
+                $seconds = RateLimiter::availableIn($rateLimitKey);
+                $minutes = ceil($seconds / 60);
+                return response()->json([
+                    'message' => "Você já atualizou os dados recentemente. Tente novamente em {$minutes} minutos."
+                ], 429);
+            }
+            
+            RateLimiter::hit($rateLimitKey, 600);
+        }
 
         try {
-            $data = $this->analyticsService->getDashboardData($socialAccount, $dateRange);
+            $data = $this->analyticsService->getDashboardData($socialAccount, $dateRange, $forceRefresh);
             return response()->json($data);
         } catch (Exception $e) {
             Log::error("Failed to fetch analytics for SocialAccount {$socialAccount->id}: " . $e->getMessage());
