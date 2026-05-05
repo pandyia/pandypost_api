@@ -145,4 +145,58 @@ class SocialAccount extends Model implements Auditable
 
         throw new \Exception("Não foi possível renovar o token do Google: " . $response->body());
     }
+
+    /**
+     * Retorna a data da atividade mais recente (publicada ou agendada)
+     */
+    public function getLatestActivityDate(): ?\Carbon\Carbon
+    {
+        if ($this->relationLoaded('scheduledPosts')) {
+            return $this->scheduledPosts
+                ->whereNotNull('scheduled_at')
+                ->sortByDesc('scheduled_at')
+                ->first()?->scheduled_at;
+        }
+
+        $latestPost = $this->scheduledPosts()
+            ->whereNotNull('scheduled_at')
+            ->orderByDesc('scheduled_at')
+            ->first();
+
+        return $latestPost?->scheduled_at;
+    }
+
+    /**
+     * Calcula quantos dias se passaram desde a última postagem ou agendamento
+     */
+    public function daysSinceLastActivity(): ?int
+    {
+        $latest = $this->getLatestActivityDate();
+
+        if (!$latest) {
+            return null; // Nunca postou
+        }
+
+        // Se tem algo agendado pro futuro, não está parado (retorna 0 ou negativo, mas limitamos a 0)
+        if ($latest->isFuture()) {
+            return 0;
+        }
+
+        return $latest->diffInDays(now());
+    }
+
+    /**
+     * Verifica se a conta está "parada" (sem posts há mais de X dias)
+     * Default: 2 dias
+     */
+    public function isStale(int $daysThreshold = 2): bool
+    {
+        $days = $this->daysSinceLastActivity();
+
+        if ($days === null) {
+            return true; // Conta nova sem nenhum post é considerada "parada" (precisa de ação)
+        }
+
+        return $days >= $daysThreshold;
+    }
 }

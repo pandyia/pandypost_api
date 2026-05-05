@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\YouTubeCategoryController;
 use App\Http\Controllers\Api\YouTubePrivacyStatusController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\SocialAccountController;
+use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\ContentPipelineController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -83,6 +85,19 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     // Workspaces (CRUD)
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/switch', [WorkspaceController::class, 'switchWorkspace']);
+    
+    // Analytics
+    Route::get('analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
+    Route::get('analytics/{socialAccount}/best-times', [AnalyticsController::class, 'bestTimes']);
+
+    // Content Pipeline (Kanban)
+    Route::get('pipeline/board', [ContentPipelineController::class, 'board']);
+    Route::post('pipeline', [ContentPipelineController::class, 'store']);
+    Route::get('pipeline/{contentPipeline}', [ContentPipelineController::class, 'show']);
+    Route::patch('pipeline/{contentPipeline}', [ContentPipelineController::class, 'update']);
+    Route::delete('pipeline/{contentPipeline}', [ContentPipelineController::class, 'destroy']);
+    Route::patch('pipeline/{contentPipeline}/move', [ContentPipelineController::class, 'move']);
+    Route::patch('pipeline/{contentPipeline}/restore', [ContentPipelineController::class, 'restore']);
 
     // Roles (CRUD)
     Route::apiResource('roles', RoleController::class);

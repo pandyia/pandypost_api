@@ -17,6 +17,8 @@ class SocialAccountResource extends JsonResource
             'avatar' => $this->avatar,
             'expires_at' => $this->expires_at?->toIso8601String(),
             'connected_at' => $this->created_at?->toIso8601String(),
+            'is_stale' => $this->isStale(),
+            'days_since_last_activity' => $this->daysSinceLastActivity(),
             'scheduled_posts' => ScheduledPostResource::collection($this->whenLoaded('scheduledPosts')),
         ];
     }

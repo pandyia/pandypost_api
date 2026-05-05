@@ -21,6 +21,7 @@ class Workspace extends Model implements Auditable
         return $this->name;
     }
 
+    // tags para auditoria
     public function generateTags(): array
     {
         return ['workspace'];
