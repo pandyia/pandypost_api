@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Exceptions\ScheduledPostException;
+use App\Models\ContentPipeline;
 use App\Models\SocialAccount;
 use App\Exceptions\SubscriptionException;
 use App\Models\ScheduledPost;
@@ -23,8 +24,8 @@ class ScheduledPostService extends BaseService
     public function __construct(
         ScheduledPost $scheduledPost,
         private readonly PayloadBuilderFactory $payloadBuilderFactory,
-    )
-    {
+        private readonly ContentPipelineService $pipelineService,
+    ) {
         parent::__construct($scheduledPost);
     }
 
@@ -32,8 +33,9 @@ class ScheduledPostService extends BaseService
     {
         $this->ensureValidSubscription($user);
 
-        $accountUuids = $data['social_account_uuids'];
-        $videoPath    = Storage::putFile('videos', $video);
+        $accountUuids      = $data['social_account_uuids'];
+        $pipelineCardUuid  = Arr::pull($data, 'pipeline_card_uuid');
+        $videoPath         = Storage::putFile('videos', $video);
 
         $user->subscription->increment('posts_used', count($accountUuids));
 
@@ -58,6 +60,16 @@ class ScheduledPostService extends BaseService
 
             return $post;
         });
+
+        // If the request originated from a pipeline card, link it to the first created post
+        // and move it to the "scheduled" stage automatically.
+        if ($pipelineCardUuid && $posts->isNotEmpty()) {
+            $card = ContentPipeline::where('uuid', $pipelineCardUuid)->first();
+
+            if ($card) {
+                $this->pipelineService->markAsScheduled($card, $posts->first());
+            }
+        }
 
         return $posts;
     }

@@ -41,6 +41,9 @@ class StoreScheduledPostRequest extends FormRequest
             'youtube_tags' => ['nullable', 'array', 'max:50'],
             'youtube_tags.*' => ['string', 'max:50'],
             'youtube_made_for_kids' => ['nullable', 'boolean'],
+
+            // Optional: links this post to a pipeline card, moving it to "scheduled" automatically.
+            'pipeline_card_uuid'   => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
         ];
     }
 
