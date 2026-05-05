@@ -25,7 +25,8 @@ class GoogleOAuthProvider implements OAuthProviderInterface
 
         return Socialite::driver('google')->stateless()->scopes([
             'https://www.googleapis.com/auth/youtube.upload',
-            'https://www.googleapis.com/auth/youtube.readonly'
+            'https://www.googleapis.com/auth/youtube.readonly',
+            'https://www.googleapis.com/auth/yt-analytics.readonly'
         ])->with([
             'state' => $state,
             'access_type' => 'offline',

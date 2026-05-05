@@ -17,19 +17,26 @@ class YouTubeAnalyticsService
      * Get dashboard data for a given social account and date range.
      * Caches the result to avoid quota limits.
      */
-    public function getDashboardData(SocialAccount $account, string $dateRange, bool $forceRefresh = false): array
+    public function getDashboardData(SocialAccount $account, string $dateRange, ?string $customStart = null, ?string $customEnd = null, bool $forceRefresh = false): array
     {
         // 1. Determine date ranges
-        $dates = $this->calculateDateRange($dateRange);
+        $dates = $this->calculateDateRange($dateRange, $customStart, $customEnd);
+        // Determine dimension based on date range (use months if > 365 days to avoid too many points)
+        $diffDays = $dates['current']['start']->diffInDays($dates['current']['end']);
+        $dimension = $diffDays > 365 ? 'month' : 'day';
+
+        if ($dimension === 'month') {
+            $dates['current']['start'] = $dates['current']['start']->startOfMonth();
+            $dates['current']['end'] = $dates['current']['end']->endOfMonth();
+            $dates['previous']['start'] = $dates['previous']['start']->startOfMonth();
+            $dates['previous']['end'] = $dates['previous']['end']->endOfMonth();
+        }
+
         $startDate = $dates['current']['start']->format('Y-m-d');
         $endDate = $dates['current']['end']->format('Y-m-d');
         
         $prevStartDate = $dates['previous']['start']->format('Y-m-d');
         $prevEndDate = $dates['previous']['end']->format('Y-m-d');
-
-        // Determine dimension based on date range (use months if > 365 days to avoid too many points)
-        $diffDays = $dates['current']['start']->diffInDays($dates['current']['end']);
-        $dimension = $diffDays > 365 ? 'month' : 'day';
 
         // Cache key based on account and dates (updated to v3 to bypass previous empty cache)
         $cacheKey = "youtube_analytics_v3_{$account->id}_{$startDate}_{$endDate}_{$dimension}";
@@ -62,6 +69,7 @@ class YouTubeAnalyticsService
                 'trafficSources' => $this->buildTrafficSources($trafficSources),
                 'topVideos' => $topVideos,
                 'alerts' => $this->generateAlerts($topVideos, $currentOverview, $previousOverview),
+                'channelScore' => $this->calculateChannelScore($topVideos, $account),
             ];
         });
     }
@@ -79,9 +87,109 @@ class YouTubeAnalyticsService
         return $client;
     }
 
-    private function calculateDateRange(string $dateRange): array
+    /**
+     * Calcula os melhores horários para postar com base no histórico do canal.
+     * Analisa os últimos 50 vídeos e identifica quais horários geraram mais views em média.
+     */
+    public function getBestPublishHours(SocialAccount $account): array
+    {
+        $cacheKey = "youtube_best_hours_{$account->id}";
+        
+        return Cache::remember($cacheKey, now()->addDays(7), function () use ($account) {
+            try {
+                $client = $this->getAuthenticatedClient($account);
+                $youtubeAPI = new YouTube($client);
+
+                // 1. Pega a playlist de uploads do canal
+                $channelsResponse = $youtubeAPI->channels->listChannels('contentDetails', ['mine' => true]);
+                if (empty($channelsResponse->getItems())) {
+                    return [14, 18, 20]; // Fallback
+                }
+                
+                $uploadsPlaylistId = $channelsResponse->getItems()[0]->getContentDetails()->getRelatedPlaylists()->getUploads();
+
+                // 2. Pega os últimos 50 vídeos
+                $playlistResponse = $youtubeAPI->playlistItems->listPlaylistItems('snippet', [
+                    'playlistId' => $uploadsPlaylistId,
+                    'maxResults' => 50
+                ]);
+
+                $videoIds = [];
+                foreach ($playlistResponse->getItems() as $item) {
+                    $videoIds[] = $item->getSnippet()->getResourceId()->getVideoId();
+                }
+
+                if (empty($videoIds)) {
+                    return [14, 18, 20]; // Fallback
+                }
+
+                // 3. Pega as estatísticas (views) e snippet (publishedAt) desses vídeos
+                $videosResponse = $youtubeAPI->videos->listVideos('snippet,statistics', [
+                    'id' => implode(',', $videoIds)
+                ]);
+
+                $hourlyPerformance = [];
+
+                foreach ($videosResponse->getItems() as $video) {
+                    $publishedAt = $video->getSnippet()->getPublishedAt(); 
+                    $views = (int) $video->getStatistics()->getViewCount();
+                    
+                    //NOTE Converte para o fuso horário de Brasília para MVP (depois pode pegar timezone do User)
+                    $hour = Carbon::parse($publishedAt)->setTimezone('America/Sao_Paulo')->format('H');
+                    
+                    if (!isset($hourlyPerformance[$hour])) {
+                        $hourlyPerformance[$hour] = ['views' => 0, 'count' => 0];
+                    }
+                    
+                    $hourlyPerformance[$hour]['views'] += $views;
+                    $hourlyPerformance[$hour]['count']++;
+                }
+
+                $hourAverages = [];
+                foreach ($hourlyPerformance as $hour => $data) {
+                    $hourAverages[$hour] = $data['views'] / $data['count'];
+                }
+
+                // Ordena pelas horas com maior média de views
+                arsort($hourAverages);
+
+                $bestHours = array_keys(array_slice($hourAverages, 0, 3, true));
+                
+                $bestHours = array_map('intval', $bestHours);
+
+                // Se não tiver dados, fallback
+                if (empty($bestHours)) {
+                    return [14, 18, 20];
+                }
+
+                return $bestHours;
+
+            } catch (Exception $e) {
+                Log::error("Failed to get best publish hours: " . $e->getMessage());
+                return [14, 18, 20]; // Fallback padrão
+            }
+        });
+    }
+
+    private function calculateDateRange(string $dateRange, ?string $customStart = null, ?string $customEnd = null): array
     {
         $now = Carbon::now();
+
+        if ($customStart && $customEnd) {
+            $start = Carbon::parse($customStart)->startOfDay();
+            $end = Carbon::parse($customEnd)->endOfDay();
+            
+            $diffInDays = $start->diffInDays($end);
+            
+            // Período anterior do mesmo tamanho, terminando um dia antes do start atual
+            $prevEnd = $start->copy()->subDay()->endOfDay();
+            $prevStart = $prevEnd->copy()->subDays($diffInDays)->startOfDay();
+            
+            return [
+                'current' => ['start' => $start, 'end' => $end],
+                'previous' => ['start' => $prevStart, 'end' => $prevEnd],
+            ];
+        }
         
         switch ($dateRange) {
             case 'lifetime':
@@ -131,7 +239,7 @@ class YouTubeAnalyticsService
                 'ids' => 'channel==MINE',
                 'startDate' => $startDate,
                 'endDate' => $endDate,
-                'metrics' => 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,estimatedRevenue,averageViewDuration',
+                'metrics' => 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,averageViewDuration',
             ];
 
             $response = $service->reports->query($optParams);
@@ -145,14 +253,14 @@ class YouTubeAnalyticsService
                 'views' => (int) $row[0],
                 'estimatedMinutesWatched' => (int) $row[1],
                 'netSubscribers' => (int) $row[2] - (int) $row[3],
-                'estimatedRevenue' => (float) $row[4],
-                'averageViewDuration' => (int) $row[5],
+                'estimatedRevenue' => 0.0,
+                'averageViewDuration' => (int) $row[4],
             ];
         } catch (Exception $e) {
             Log::error('YouTube Analytics API Error (Overview): ' . $e->getMessage());
             // Se for erro de permissão ou API desativada, não podemos engolir o erro, 
             // senão ele salva "0 views" no cache por 6 horas.
-            if (str_contains($e->getMessage(), 'disabled') || str_contains($e->getMessage(), '403') || str_contains($e->getMessage(), 'Permission')) {
+            if (str_contains($e->getMessage(), 'disabled') || str_contains($e->getMessage(), '403') || stripos($e->getMessage(), 'permission') !== false || str_contains($e->getMessage(), '401')) {
                 throw $e;
             }
             return $this->emptyOverview();
@@ -196,6 +304,9 @@ class YouTubeAnalyticsService
             return $data;
         } catch (Exception $e) {
             Log::error('YouTube Analytics API Error (TimeSeries): ' . $e->getMessage());
+            if (str_contains($e->getMessage(), 'disabled') || str_contains($e->getMessage(), '403') || stripos($e->getMessage(), 'permission') !== false || str_contains($e->getMessage(), '401')) {
+                throw $e;
+            }
             return [];
         }
     }
@@ -241,7 +352,10 @@ class YouTubeAnalyticsService
                         'retention' => $retention,
                         'winnerScore' => 0,
                         'avgViewDurationSeconds' => $avgViewDurationSeconds,
-                        'subscribersGained' => $subscribersGained
+                        'subscribersGained' => $subscribersGained,
+                        'totalViews' => 0,
+                        'totalLikes' => 0,
+                        'totalComments' => 0
                     ];
                 }
             }
@@ -250,7 +364,7 @@ class YouTubeAnalyticsService
             if (!empty($videoIds)) {
                 try {
                     $youtubeAPI = new YouTube($client);
-                    $snippetResponse = $youtubeAPI->videos->listVideos('snippet,contentDetails', [
+                    $snippetResponse = $youtubeAPI->videos->listVideos('snippet,contentDetails,statistics', [
                         'id' => implode(',', $videoIds)
                     ]);
                     
@@ -264,6 +378,11 @@ class YouTubeAnalyticsService
                             $thumbnails = $snippet->getThumbnails();
                             $url = $thumbnails->getHigh() ? $thumbnails->getHigh()->getUrl() : $thumbnails->getDefault()->getUrl();
                             $videosData[$id]['thumbnail'] = $url;
+                            
+                            $stats = $videoItem->getStatistics();
+                            $videosData[$id]['totalViews'] = (int) $stats->getViewCount();
+                            $videosData[$id]['totalLikes'] = (int) $stats->getLikeCount();
+                            $videosData[$id]['totalComments'] = (int) $stats->getCommentCount();
                             
                             // Calcula retenção exata
                             try {
@@ -336,6 +455,9 @@ class YouTubeAnalyticsService
             return ['labels' => $labels, 'series' => $series];
         } catch (Exception $e) {
             Log::error('YouTube Analytics API Error (Traffic Sources): ' . $e->getMessage());
+            if (str_contains($e->getMessage(), 'disabled') || str_contains($e->getMessage(), '403') || stripos($e->getMessage(), 'permission') !== false || str_contains($e->getMessage(), '401')) {
+                throw $e;
+            }
             return ['labels' => [], 'series' => []];
         }
     }
@@ -366,6 +488,36 @@ class YouTubeAnalyticsService
         $total = $viewsScore + $watchTimeScore + $retentionScore + $ctrScore + $subscribersScore;
         
         return (int) min(100, max(0, $total));
+    }
+
+    private function calculateChannelScore(array $topVideos, SocialAccount $account): int
+    {
+        // A nota do canal tem duas partes:
+        // 1. Performance de conteúdo (80% da nota) - Média do winner score dos vídeos do período
+        // 2. Frequência/Consistência (20% da nota) - Baseado em há quantos dias foi a última atividade
+        
+        // 1. Performance (0 a 80 pts)
+        $avgVideoScore = empty($topVideos) ? 0 : collect($topVideos)->avg('winnerScore');
+        $contentScore = $avgVideoScore * 0.8;
+        
+        // 2. Frequência (0 a 20 pts)
+        $frequencyScore = 0;
+        $daysSince = $account->daysSinceLastActivity();
+        
+        if ($daysSince !== null) {
+            if ($daysSince <= 2) {
+                $frequencyScore = 20; // Ótima frequência (postou/agendou muito recente)
+            } elseif ($daysSince <= 7) {
+                $frequencyScore = 15; // Pelo menos 1 post na semana
+            } elseif ($daysSince <= 15) {
+                $frequencyScore = 5;  // Ritmo lento (quinzenal)
+            } else {
+                $frequencyScore = 0;  // Canal parado
+            }
+        }
+        
+        $finalScore = $contentScore + $frequencyScore;
+        return (int) min(100, max(0, $finalScore));
     }
 
     private function buildOverviewMetrics(array $current, array $previous): array

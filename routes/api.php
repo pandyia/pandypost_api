@@ -87,7 +87,8 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     Route::post('workspaces/{workspace}/switch', [WorkspaceController::class, 'switchWorkspace']);
     
     // Analytics
-    Route::get('workspaces/{workspace}/analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
+    Route::get('analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
+    Route::get('analytics/{socialAccount}/best-times', [AnalyticsController::class, 'bestTimes']);
 
     // Content Pipeline (Kanban)
     Route::get('pipeline/board', [ContentPipelineController::class, 'board']);

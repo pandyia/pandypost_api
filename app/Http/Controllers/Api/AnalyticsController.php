@@ -22,21 +22,18 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Get dashboard analytics for a given workspace and social account.
+     * Get dashboard analytics for a given social account.
      */
-    public function dashboard(Request $request, Workspace $workspace, SocialAccount $socialAccount): JsonResponse
+    public function dashboard(Request $request, SocialAccount $socialAccount): JsonResponse
     {
-        // Validação de autorização: garantir que a social account pertence ao workspace
-        if ($socialAccount->workspace_id !== $workspace->id) {
-            return response()->json(['message' => 'Social account does not belong to this workspace'], 403);
-        }
-
         // Validação do Platform
         if ($socialAccount->platform !== 'youtube') {
             return response()->json(['message' => 'Analytics only supported for YouTube accounts currently'], 400);
         }
 
         $dateRange = $request->query('date_range', 'last_7_days');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
         $forceRefresh = $request->boolean('refresh');
 
         if ($forceRefresh) {
@@ -55,23 +52,42 @@ class AnalyticsController extends Controller
         }
 
         try {
-            $data = $this->analyticsService->getDashboardData($socialAccount, $dateRange, $forceRefresh);
+            $data = $this->analyticsService->getDashboardData($socialAccount, $dateRange, $startDate, $endDate, $forceRefresh);
             return response()->json($data);
         } catch (Exception $e) {
             Log::error("Failed to fetch analytics for SocialAccount {$socialAccount->id}: " . $e->getMessage());
 
-            // Check if it's a 403 or Token/Scope issue from Google
-            if (str_contains($e->getMessage(), 'Insufficient Permission') || str_contains($e->getMessage(), '403')) {
+            // Check if it's a 401/403 or Token/Scope issue from Google
+            if (stripos($e->getMessage(), 'Insufficient permission') !== false || str_contains($e->getMessage(), '403') || str_contains($e->getMessage(), '401')) {
                 return response()->json([
                     'message' => 'Permissão insuficiente. Por favor, reautentique seu canal concedendo permissão de leitura do YouTube Analytics.',
                     'requires_reauth' => true
-                ], 403);
+                ], 401);
             }
 
             return response()->json([
                 'message' => 'Falha ao carregar métricas do YouTube. Tente novamente mais tarde.',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get the best times to post based on historical performance.
+     */
+    public function bestTimes(Request $request, SocialAccount $socialAccount): JsonResponse
+    {
+        // Validação do Platform
+        if ($socialAccount->platform !== 'youtube') {
+            return response()->json(['best_hours' => [14, 18, 20]]); // Fallback padrão
+        }
+
+        try {
+            $bestHours = $this->analyticsService->getBestPublishHours($socialAccount);
+            return response()->json(['best_hours' => $bestHours]);
+        } catch (Exception $e) {
+            Log::error("Failed to fetch best publish hours for SocialAccount {$socialAccount->id}: " . $e->getMessage());
+            return response()->json(['best_hours' => [14, 18, 20]]);
         }
     }
 }
