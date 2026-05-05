@@ -235,14 +235,27 @@ class YouTubeAnalyticsService
     private function fetchOverviewMetrics(YouTubeAnalytics $service, string $startDate, string $endDate): array
     {
         try {
-            $optParams = [
-                'ids' => 'channel==MINE',
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'metrics' => 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,averageViewDuration',
-            ];
+            $metricsWithRevenue = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,averageViewDuration,estimatedRevenue';
+            $metricsWithoutRevenue = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,averageViewDuration';
 
-            $response = $service->reports->query($optParams);
+            $hasRevenue = false;
+            try {
+                $response = $service->reports->query([
+                    'ids' => "channel==MINE",
+                    'startDate' => $startDate,
+                    'endDate' => $endDate,
+                    'metrics' => $metricsWithRevenue,
+                ]);
+                $hasRevenue = true;
+            } catch (Exception $e) {
+                // Fallback para canais não monetizados
+                $response = $service->reports->query([
+                    'ids' => "channel==MINE",
+                    'startDate' => $startDate,
+                    'endDate' => $endDate,
+                    'metrics' => $metricsWithoutRevenue,
+                ]);
+            }
             
             if (empty($response->getRows())) {
                 return $this->emptyOverview();
@@ -253,8 +266,8 @@ class YouTubeAnalyticsService
                 'views' => (int) $row[0],
                 'estimatedMinutesWatched' => (int) $row[1],
                 'netSubscribers' => (int) $row[2] - (int) $row[3],
-                'estimatedRevenue' => 0.0,
                 'averageViewDuration' => (int) $row[4],
+                'estimatedRevenue' => $hasRevenue ? (float) ($row[5] ?? 0.0) : 0.0,
             ];
         } catch (Exception $e) {
             Log::error('YouTube Analytics API Error (Overview): ' . $e->getMessage());
@@ -467,20 +480,13 @@ class YouTubeAnalyticsService
         // Ponderações (exemplo MVP): Retenção (30%), CTR (30%), Views (20%), WatchTime (10%), Inscritos (10%)
         // Como views e watchtime não tem limite máximo, normalizamos com logaritmo ou thresholds.
         
-        $viewsScore = min(20, log($views + 1, 10) * 4); // Ex: 100k views = 5 * 4 = 20 pts
-        $watchTimeScore = min(10, log($watchTime + 1, 10) * 2);
+        $viewsScore = min(20, log($views + 1, 1.5) * 2); // Mais sensível a poucas views
+        $watchTimeScore = min(10, log($watchTime + 1, 2) * 1.5);
         
-        // Retenção: máximo 30 pontos (se retenção for > 50%)
-        $retentionScore = min(30, ($retention / 50) * 30);
+        // Retenção: máximo 30 pontos (se retenção for > 40%)
+        $retentionScore = min(30, ($retention / 40) * 30);
         
-        // CTR (Click-Through Rate ou Taxa de Clique): 
-        // O que é: Mede a porcentagem de pessoas que viram a capa (thumbnail) do vídeo e decidiram clicar para assistir.
-        // Para que serve: É o termômetro principal para saber se o título e a capa estão atrativos. Um CTR alto significa que o vídeo chama muita atenção (chama o clique).
-        // Como funciona no código: O CTR compõe até 30% da nota final (Winner Score) do vídeo.
-        // Nós dividimos o CTR atual por 10 (considerando 10% como um "CTR excelente/ideal" no YouTube). 
-        // Depois multiplicamos por 30 (que é a pontuação máxima possível para esse critério). 
-        // A função `min(30, ...)` serve como um teto: se o vídeo for viral e tiver 15% de CTR, ele crava nos 30 pontos e não "quebra" a nota final passando de 100.
-        $ctrScore = min(30, ($ctr / 10) * 30);
+        $ctrScore = min(30, ($ctr / 8) * 30); // 8% é um CTR ótimo para canais dark
         
         // Inscritos: 1 pt por inscrito até 10 pts
         $subscribersScore = min(10, $subscribers);
@@ -496,23 +502,23 @@ class YouTubeAnalyticsService
         // 1. Performance de conteúdo (80% da nota) - Média do winner score dos vídeos do período
         // 2. Frequência/Consistência (20% da nota) - Baseado em há quantos dias foi a última atividade
         
-        // 1. Performance (0 a 80 pts)
+        // 1. Performance (0 a 70 pts)
         $avgVideoScore = empty($topVideos) ? 0 : collect($topVideos)->avg('winnerScore');
-        $contentScore = $avgVideoScore * 0.8;
+        $contentScore = ($avgVideoScore > 0) ? 20 + ($avgVideoScore * 0.5) : 0; // Bônus base de 20 se tiver conteúdo
         
         // 2. Frequência (0 a 20 pts)
         $frequencyScore = 0;
         $daysSince = $account->daysSinceLastActivity();
         
         if ($daysSince !== null) {
-            if ($daysSince <= 2) {
-                $frequencyScore = 20; // Ótima frequência (postou/agendou muito recente)
+            if ($daysSince <= 3) {
+                $frequencyScore = 30; // Ótima frequência
             } elseif ($daysSince <= 7) {
-                $frequencyScore = 15; // Pelo menos 1 post na semana
+                $frequencyScore = 20; 
             } elseif ($daysSince <= 15) {
-                $frequencyScore = 5;  // Ritmo lento (quinzenal)
+                $frequencyScore = 10;
             } else {
-                $frequencyScore = 0;  // Canal parado
+                $frequencyScore = 0;
             }
         }
         
