@@ -7,7 +7,6 @@ use App\Enums\ScheduledPostStatus;
 use App\Exceptions\ScheduledPostException;
 use App\Models\ContentPipeline;
 use App\Models\SocialAccount;
-use App\Exceptions\SubscriptionException;
 use App\Models\ScheduledPost;
 use App\Services\Factories\PayloadBuilderFactory;
 use App\Models\User;
@@ -16,6 +15,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\PublishPostJob;
+use Illuminate\Support\Facades\DB;
 
 class ScheduledPostService extends BaseService
 {
@@ -25,65 +25,76 @@ class ScheduledPostService extends BaseService
         ScheduledPost $scheduledPost,
         private readonly PayloadBuilderFactory $payloadBuilderFactory,
         private readonly ContentPipelineService $pipelineService,
+        private readonly SubscriptionService $subscriptionService,
     ) {
         parent::__construct($scheduledPost);
     }
 
     public function schedule(User $user, array $data, UploadedFile $video, ?UploadedFile $thumbnail = null): Collection
     {
-        $this->ensureValidSubscription($user);
+        $this->subscriptionService->ensureValidSubscription($user);
 
-        $accountUuids      = $data['social_account_uuids'];
-        $pipelineCardUuid  = Arr::pull($data, 'pipeline_card_uuid');
-        $videoPath         = Storage::putFile('videos', $video);
+        $accountUuids     = $data['social_account_uuids'];
+        $pipelineCardUuid = Arr::pull($data, 'pipeline_card_uuid');
 
-        $user->subscription->increment('posts_used', count($accountUuids));
+        return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $video, $thumbnail) {
+            $this->subscriptionService->consumeQuota($user, count($accountUuids));
 
-        $posts = collect($accountUuids)->map(function (string $uuid) use ($user, $videoPath, $data, $thumbnail) {
-            $account      = $this->ensureValidSocialAccount($user, $uuid);
-            $platform     = Platform::from($account->platform);
-            $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data, $thumbnail);
-            $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids']);
+            $videoPath = Storage::putFile('videos', $video);
 
-            $postData = array_merge($attributes, [
-                'user_id'           => $user->id,
-                'social_account_id' => $account->id,
-                'platform'          => $platform->value,
-                'media_path'        => $videoPath,
-                'payload'           => $payloadBuild->payload(),
-                'status'            => ScheduledPostStatus::PENDING->value,
-                'scheduled_at'      => $attributes['scheduled_at'] ?? null,
-            ]);
+            $posts = collect($accountUuids)->map(fn (string $uuid) =>
+                $this->createPostForAccount($user, $uuid, $videoPath, $data, $thumbnail)
+            );
 
-            $post = $this->store($postData);
-            $this->dispatchPlatformJob($post);
+            $this->handlePipelineCard($pipelineCardUuid, $posts); //TODO tem a ver com kanban, não implementado ainda no frontend.
 
-            return $post;
+            return $posts;
         });
+    }
 
-        // If the request originated from a pipeline card, link it to the first created post
-        // and move it to the "scheduled" stage automatically.
+    /**
+     * Cria e agenda o post para uma conta social específica.
+     */
+    private function createPostForAccount(
+        User $user,
+        string $uuid,
+        string $videoPath,
+        array $data,
+        ?UploadedFile $thumbnail
+    ): ScheduledPost {
+        $account      = $this->ensureValidSocialAccount($user, $uuid);
+        $platform     = Platform::from($account->platform);
+        $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data, $thumbnail);
+        $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids']);
+
+        $postData = array_merge($attributes, [
+            'user_id'           => $user->id,
+            'social_account_id' => $account->id,
+            'platform'          => $platform->value,
+            'media_path'        => $videoPath,
+            'payload'           => $payloadBuild->payload(),
+            'status'            => ScheduledPostStatus::PENDING->value,
+            'scheduled_at'      => $attributes['scheduled_at'] ?? null,
+        ]);
+
+        $post = $this->store($postData);
+        $this->dispatchPlatformJob($post);
+
+        return $post;
+    }
+
+    /**
+     * Vincula o primeiro post gerado ao cartão da pipeline correspondente
+     * e o move automaticamente para a etapa "agendado".
+     */
+    private function handlePipelineCard(?string $pipelineCardUuid, Collection $posts): void
+    {
         if ($pipelineCardUuid && $posts->isNotEmpty()) {
             $card = ContentPipeline::where('uuid', $pipelineCardUuid)->first();
 
             if ($card) {
                 $this->pipelineService->markAsScheduled($card, $posts->first());
             }
-        }
-
-        return $posts;
-    }
-
-    private function ensureValidSubscription(User $user): void
-    {
-        $subscription = $user->subscription;
-
-        if (!$subscription || !$subscription->isValid()) {
-            throw SubscriptionException::subscriptionInactive();
-        }
-
-        if (!$subscription->hasQuota()) {
-            throw SubscriptionException::quotaExceeded();
         }
     }
 
