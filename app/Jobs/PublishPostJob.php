@@ -4,13 +4,13 @@ namespace App\Jobs;
 
 use App\Models\ScheduledPost;
 use App\Services\Factories\SocialMediaFactory;
+use App\Services\Storage\StorageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class PublishPostJob implements ShouldQueue
@@ -54,14 +54,16 @@ class PublishPostJob implements ShouldQueue
             'error_message' => substr($exception->getMessage(), 0, 255),
         ]);
         
-        // Limpa a sujeira do S3/Local se o Post falhou de vez e caiu no Failed Jobs
-        if (Storage::exists($this->post->media_path)) {
-            Storage::delete($this->post->media_path);
+        // Limpa os arquivos do S3 se o post falhou de vez e caiu no Failed Jobs
+        $storageService = app(StorageService::class);
+
+        $paths = [$this->post->media_path];
+        
+        $payload = $this->post->payload ?? [];
+        if (!empty($payload['thumbnail_path'])) {
+            $paths[] = $payload['thumbnail_path'];
         }
 
-        $payload = $this->post->payload ?? [];
-        if (!empty($payload['thumbnail_path']) && Storage::exists($payload['thumbnail_path'])) {
-            Storage::delete($payload['thumbnail_path']);
-        }
+        $storageService->deleteMany($paths);
     }
 }

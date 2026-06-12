@@ -7,6 +7,7 @@ use App\Jobs\CheckInstagramContainerJob;
 use App\Jobs\PublishPostJob;
 use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
+use App\Services\Storage\StorageService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,10 @@ class InstagramService implements SocialMediaServiceInterface
 {
     private const GRAPH_API_VERSION = 'v24.0';
     private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
+
+    public function __construct(
+        private readonly StorageService $storageService,
+    ) {}
 
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
@@ -136,13 +141,14 @@ class InstagramService implements SocialMediaServiceInterface
 
         $post->user->subscription?->increment('posts_used');
 
-        Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo da nuvem/disco...");
+        Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo do S3...");
         $this->cleanupFiles($post);
     }
 
     private function createMediaContainer(SocialAccount $account, ScheduledPost $post, string $accessToken): string
     {
-        $mediaUrl = $this->getPublicMediaUrl($post->media_path);
+        // Gera uma presigned GET URL temporária do S3 para a Graph API do Instagram baixar.
+        $mediaUrl = $this->storageService->generateDownloadUrl($post->media_path);
 
         $payload = [
             'caption' => $post->caption,
@@ -172,11 +178,6 @@ class InstagramService implements SocialMediaServiceInterface
         return self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $endpoint;
     }
 
-    private function getPublicMediaUrl(string $mediaPath): string
-    {
-        return Storage::url($mediaPath);
-    }
-
     private function isVideo(string $path): bool
     {
         return in_array(
@@ -188,11 +189,13 @@ class InstagramService implements SocialMediaServiceInterface
 
     private function cleanupFiles(ScheduledPost $post): void
     {
-        Storage::delete($post->media_path);
+        $paths = [$post->media_path];
         
         $payload = $post->payload ?? [];
         if (!empty($payload['thumbnail_path'])) {
-            Storage::delete($payload['thumbnail_path']);
+            $paths[] = $payload['thumbnail_path'];
         }
+
+        $this->storageService->deleteMany($paths);
     }
 }

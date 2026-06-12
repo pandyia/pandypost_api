@@ -4,20 +4,21 @@ namespace App\Services\Payloads\Builders;
 
 use App\Contracts\PlatformPayloadBuilderInterface;
 use App\Services\Payloads\PayloadBuildResult;
-use Illuminate\Http\UploadedFile;
 
 abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderInterface
 {
-    public function build(array $input, ?UploadedFile $thumbnail = null): PayloadBuildResult
+    public function build(array $input): PayloadBuildResult
     {
         $attributes = $input;
         $payload = $this->extractPayload($attributes);
 
-        if ($thumbnail) {
-            $payload['thumbnail_path'] = $this->storeThumbnail($thumbnail);
+        // A thumbnail agora chega como um path do S3 no $input, não como UploadedFile.
+        $thumbnailPath = $this->pull($attributes, 'thumbnail_storage_path');
+        if ($thumbnailPath) {
+            $payload['thumbnail_path'] = $thumbnailPath;
         }
 
-        unset($attributes['video'], $attributes['thumbnail']);
+        unset($attributes['media_storage_path'], $attributes['thumbnail_storage_path']);
 
         return new PayloadBuildResult($attributes, $payload);
     }
@@ -25,11 +26,6 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
     protected function extractPayload(array &$attributes): array
     {
         return $attributes['payload'] ?? [];
-    }
-
-    protected function storeThumbnail(UploadedFile $thumbnail): string
-    {
-        return $thumbnail->store('thumbnails');
     }
 
     protected function normalizeBoolean(mixed $value, ?bool $default = null): ?bool

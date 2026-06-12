@@ -5,13 +5,13 @@ namespace App\Services;
 use App\Contracts\SocialMediaServiceInterface;
 use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
+use App\Services\Storage\StorageService;
 use Google\Client;
 use Google\Http\MediaFileUpload;
 use Google\Service\YouTube;
 use Google\Service\YouTube\Video;
 use Google\Service\YouTube\VideoSnippet;
 use Google\Service\YouTube\VideoStatus;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 use Exception;
@@ -19,6 +19,10 @@ use Exception;
 class YouTubeService implements SocialMediaServiceInterface
 {
     private const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB
+
+    public function __construct(
+        private readonly StorageService $storageService,
+    ) {}
 
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
@@ -50,7 +54,7 @@ class YouTubeService implements SocialMediaServiceInterface
                 'published_at' => now(),
             ]);
             
-            Log::info("Post {$post->id} enviado ao YouTube com sucesso! Removendo arquivo da nuvem/disco...");
+            Log::info("Post {$post->id} enviado ao YouTube com sucesso! Removendo arquivo do S3...");
             $this->cleanupFiles($post, $payload);
             
         } catch (Exception $e) {
@@ -117,16 +121,20 @@ class YouTubeService implements SocialMediaServiceInterface
         return $video;
     }
 
+    /**
+     * Faz stream do S3 direto para a YouTube API usando resumable upload.
+     * Os bytes passam pelo worker em stream (nunca materializa o arquivo em disco).
+     */
     private function streamVideoUpload(Client $client, YouTube $youtube, Video $video, ScheduledPost $post): string
     {
         $client->setDefer(true);
         $insertRequest = $youtube->videos->insert('snippet,status', $video);
-        $fileSize = Storage::size($post->media_path);
+        $fileSize = $this->storageService->size($post->media_path);
         
         $media = new MediaFileUpload($client, $insertRequest, 'video/*', null, true, self::CHUNK_SIZE);
         $media->setFileSize($fileSize);
 
-        $handle = Storage::readStream($post->media_path);
+        $handle = $this->storageService->readStream($post->media_path);
         $status = $this->processResumableStream($handle, $media);
         
         $client->setDefer(false);
@@ -141,9 +149,9 @@ class YouTubeService implements SocialMediaServiceInterface
     private function streamThumbnailUpload(Client $client, YouTube $youtube, string $videoId, string $thumbnailPath): void
     {
         try {
-            $thumbSize = Storage::size($thumbnailPath);
-            $thumbMime = Storage::mimeType($thumbnailPath) ?? 'application/octet-stream';
-            $thumbHandle = Storage::readStream($thumbnailPath);
+            $thumbSize = $this->storageService->size($thumbnailPath);
+            $thumbMime = $this->storageService->mimeType($thumbnailPath);
+            $thumbHandle = $this->storageService->readStream($thumbnailPath);
             
             $client->setDefer(true);
             $thumbRequest = $youtube->thumbnails->set($videoId);
@@ -160,15 +168,18 @@ class YouTubeService implements SocialMediaServiceInterface
 
     private function cleanupFiles(ScheduledPost $post, array $payload): void
     {
-        Storage::delete($post->media_path);
+        $paths = [$post->media_path];
+        
         $thumbnailPath = Arr::get($payload, 'thumbnail_path');
         if ($thumbnailPath) {
-            Storage::delete($thumbnailPath);
+            $paths[] = $thumbnailPath;
         }
+
+        $this->storageService->deleteMany($paths);
     }
 
     /**
-     * Processa a leitura do Stream do disco e envio em partes (Chunks) para a API.
+     * Processa a leitura do Stream do S3 e envio em partes (Chunks) para a API.
      * 
      * @param resource $handle
      * @param MediaFileUpload $media

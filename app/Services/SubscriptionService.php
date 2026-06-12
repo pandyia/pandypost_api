@@ -36,6 +36,8 @@ class SubscriptionService extends BaseService
     public function subscribe(User $user, int $planId): array
     {
         return DB::transaction(function () use ($user, $planId) {
+            $plan = Plan::findOrFail($planId);
+
             $subscription = Subscription::updateOrCreate(
                 ['user_id' => $user->id],
                 [

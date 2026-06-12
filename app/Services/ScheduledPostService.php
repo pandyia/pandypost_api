@@ -10,10 +10,8 @@ use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
 use App\Services\Factories\PayloadBuilderFactory;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use App\Jobs\PublishPostJob;
 use Illuminate\Support\Facades\DB;
 
@@ -30,20 +28,25 @@ class ScheduledPostService extends BaseService
         parent::__construct($scheduledPost);
     }
 
-    public function schedule(User $user, array $data, UploadedFile $video, ?UploadedFile $thumbnail = null): Collection
+    /**
+     * Agenda posts para uma ou mais contas sociais.
+     *
+     * O vídeo e a thumbnail já estão no S3 — recebemos apenas os paths
+     * validados pelo StoragePathRule no FormRequest.
+     */
+    public function schedule(User $user, array $data): Collection
     {
         $this->subscriptionService->ensureValidSubscription($user);
 
         $accountUuids     = $data['social_account_uuids'];
         $pipelineCardUuid = Arr::pull($data, 'pipeline_card_uuid');
+        $mediaStoragePath = $data['media_storage_path'];
 
-        return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $video, $thumbnail) {
+        return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $mediaStoragePath) {
             $this->subscriptionService->consumeQuota($user, count($accountUuids));
 
-            $videoPath = Storage::putFile('videos', $video);
-
             $posts = collect($accountUuids)->map(fn (string $uuid) =>
-                $this->createPostForAccount($user, $uuid, $videoPath, $data, $thumbnail)
+                $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
             );
 
             $this->handlePipelineCard($pipelineCardUuid, $posts); //TODO tem a ver com kanban, não implementado ainda no frontend.
@@ -58,20 +61,19 @@ class ScheduledPostService extends BaseService
     private function createPostForAccount(
         User $user,
         string $uuid,
-        string $videoPath,
+        string $mediaStoragePath,
         array $data,
-        ?UploadedFile $thumbnail
     ): ScheduledPost {
         $account      = $this->ensureValidSocialAccount($user, $uuid);
         $platform     = Platform::from($account->platform);
-        $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data, $thumbnail);
-        $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids']);
+        $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data);
+        $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
 
         $postData = array_merge($attributes, [
             'user_id'           => $user->id,
             'social_account_id' => $account->id,
             'platform'          => $platform->value,
-            'media_path'        => $videoPath,
+            'media_path'        => $mediaStoragePath,
             'payload'           => $payloadBuild->payload(),
             'status'            => ScheduledPostStatus::PENDING->value,
             'scheduled_at'      => $attributes['scheduled_at'] ?? null,

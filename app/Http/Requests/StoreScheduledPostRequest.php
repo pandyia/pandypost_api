@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\YouTubePrivacyStatus;
+use App\Rules\StoragePathRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,12 +16,21 @@ class StoreScheduledPostRequest extends FormRequest
 
     public function rules(): array
     {
+        $workspaceUuid = $this->user()?->currentAccess?->workspace?->uuid ?? '';
+
         return [
-            'video' => [
+            // O vídeo já foi uploaded direto no S3. O client envia apenas o path.
+            'media_storage_path' => [
                 'required',
-                'file',
-                'mimetypes:video/mp4,video/quicktime',
-                'max:102400'
+                'string',
+                new StoragePathRule($workspaceUuid, 'videos'),
+            ],
+
+            // Thumbnail também é um path no S3 (opcional).
+            'thumbnail_storage_path' => [
+                'nullable',
+                'string',
+                new StoragePathRule($workspaceUuid, 'thumbnails'),
             ],
 
             'social_account_uuids' => ['required', 'array', 'min:1'],
@@ -32,7 +42,6 @@ class StoreScheduledPostRequest extends FormRequest
             ],
             'caption' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date', 'after:+5 minutes'],
-            'thumbnail' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'is_short' => ['nullable', 'boolean'],
             
             // Campos dinâmicos do YouTube
@@ -50,8 +59,7 @@ class StoreScheduledPostRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'video.max' => 'O vídeo é muito grande! O limite é de 100MB.',
-            'video.mimetypes' => 'Formato inválido. Aceitamos apenas MP4 e MOV.',
+            'media_storage_path.required' => 'O vídeo é obrigatório. Faça o upload primeiro usando o endpoint upload-url.',
             'title.required_if' => 'Para postar no YouTube, você precisa definir um título.',
 
             'social_account_uuids.required' => 'Selecione ao menos uma conta social.',
@@ -61,8 +69,6 @@ class StoreScheduledPostRequest extends FormRequest
             'social_account_uuids.*.uuid' => 'A conta social informada é inválida.',
             'social_account_uuids.*.exists' => 'A conta social selecionada não foi encontrada.',
             'scheduled_at.after' => 'O agendamento precisa ser de pelo menos 5 minutos no futuro.',
-            'thumbnail.image' => 'A capa deve ser uma imagem válida.',
-            'thumbnail.max' => 'A capa não pode ultrapassar 2MB (Limite Oficial do YouTube).',
             'youtube_privacy_status.in' => 'A privacidade do YouTube deve ser public, private ou unlisted.',
         ];
     }
