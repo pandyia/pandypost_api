@@ -48,9 +48,9 @@ return [
     ],
 
     's3' => [
-        'presigned_put_ttl'  => (int) env('S3_PRESIGNED_PUT_TTL', 300),
+        'presigned_put_ttl'  => (int) env('S3_PRESIGNED_PUT_TTL', 86400),
         'presigned_get_ttl'  => (int) env('S3_PRESIGNED_GET_TTL', 1800),
-        'max_upload_size'    => (int) env('S3_MAX_UPLOAD_SIZE', 104857600), // 100MB
+        'max_upload_size'    => (int) env('S3_MAX_UPLOAD_SIZE', 32212254720), // 30GB
     ],
 
 ];

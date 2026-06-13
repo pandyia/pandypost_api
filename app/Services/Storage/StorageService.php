@@ -24,7 +24,7 @@ class StorageService
     ): array {
         $uuid = (string) Str::uuid();
         $path = "workspaces/{$workspaceUuid}/{$directory}/{$uuid}.{$extension}";
-        $ttl  = (int) config('services.s3.presigned_put_ttl', 300);
+        $ttl  = (int) config('services.s3.presigned_put_ttl', 86400);
 
         $url = Storage::disk('s3')->temporaryUploadUrl($path, now()->addSeconds($ttl), [
             'ContentType' => $contentType,
@@ -35,7 +35,7 @@ class StorageService
             'headers'      => $url['headers'] ?? [],
             'path'         => $path,
             'content_type' => $contentType,
-            'max_size'     => (int) config('services.s3.max_upload_size', 104857600),
+            'max_size'     => (int) config('services.s3.max_upload_size', 32212254720),
             'expires_in'   => $ttl,
         ];
     }
