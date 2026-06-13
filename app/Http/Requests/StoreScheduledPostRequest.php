@@ -16,14 +16,14 @@ class StoreScheduledPostRequest extends FormRequest
 
     public function rules(): array
     {
-        $workspaceUuid = $this->user()?->currentAccess?->workspace?->uuid ?? '';
+        $workspaceUuid = $this->user()?->resolveCurrentAccess()?->workspace?->uuid ?? '';
 
         return [
             // O vídeo já foi uploaded direto no S3. O client envia apenas o path.
             'media_storage_path' => [
                 'required',
                 'string',
-                new StoragePathRule($workspaceUuid, 'videos'),
+                new StoragePathRule($workspaceUuid, ['videos', 'images']),
             ],
 
             // Thumbnail também é um path no S3 (opcional).

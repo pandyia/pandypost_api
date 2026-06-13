@@ -34,7 +34,7 @@ class ScheduledPostController extends BaseController
     public function uploadUrl(GenerateUploadUrlRequest $request): JsonResponse
     {
         $user   = $request->user();
-        $access = $user->currentAccess;
+        $access = $user->resolveCurrentAccess();
 
         if (!$access || !$access->workspace) {
             return response()->json(['message' => 'Workspace não encontrado.'], 404);

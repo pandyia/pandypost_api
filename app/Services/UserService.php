@@ -19,7 +19,7 @@ class UserService extends BaseService
     public function removeFromWorkspace(string $userUuid): void
     {
         $authUser = auth()->user();
-        $currentWorkspaceId = $authUser->currentAccess->workspace_id;
+        $currentWorkspaceId = $authUser->resolveCurrentAccess()->workspace_id;
 
         $targetUser = $this->findByUuid($userUuid);
 
@@ -53,7 +53,7 @@ class UserService extends BaseService
     public function changeRole(string $userUuid, string $roleUuid): void
     {
         $authUser = auth()->user();
-        $currentWorkspaceId = $authUser->currentAccess->workspace_id;
+        $currentWorkspaceId = $authUser->resolveCurrentAccess()->workspace_id;
 
         $targetUser = $this->findByUuid($userUuid);
 

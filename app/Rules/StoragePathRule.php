@@ -8,9 +8,13 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class StoragePathRule implements ValidationRule
 {
+    /**
+     * @param string $workspaceUuid
+     * @param string|array $expectedDirectory Um diretório ou lista de diretórios permitidos (ex: 'videos', ['videos', 'images'])
+     */
     public function __construct(
         private readonly string $workspaceUuid,
-        private readonly string $expectedDirectory,
+        private readonly string|array $expectedDirectory,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -28,9 +32,19 @@ class StoragePathRule implements ValidationRule
             return;
         }
 
-        // 2. Diretório esperado: o path deve estar no diretório correto (ex: videos, thumbnails).
-        $expectedPrefix = "workspaces/{$this->workspaceUuid}/{$this->expectedDirectory}/";
-        if (!str_starts_with($value, $expectedPrefix)) {
+        // 2. Diretório esperado: o path deve estar no diretório correto.
+        $directories = (array) $this->expectedDirectory;
+        $isValidDirectory = false;
+
+        foreach ($directories as $dir) {
+            $expectedPrefix = "workspaces/{$this->workspaceUuid}/{$dir}/";
+            if (str_starts_with($value, $expectedPrefix)) {
+                $isValidDirectory = true;
+                break;
+            }
+        }
+
+        if (!$isValidDirectory) {
             $fail('O caminho informado não está no diretório esperado.');
             return;
         }

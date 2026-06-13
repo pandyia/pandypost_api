@@ -45,7 +45,7 @@ class ContentPipelineController extends BaseController
     public function store(Request $request): JsonResponse
     {
         $formRequest = app(StoreContentPipelineRequest::class);
-        $workspaceId = $request->user()->currentAccess->workspace_id;
+        $workspaceId = $request->user()->resolveCurrentAccess()->workspace_id;
 
         $card = $this->service->createCard(
             $request->user(),

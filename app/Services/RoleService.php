@@ -19,7 +19,7 @@ class RoleService extends BaseService
 
     public function createRole(array $data): Role
     {
-        $workspaceId = auth()->user()->currentAccess->workspace_id;
+        $workspaceId = auth()->user()->resolveCurrentAccess()->workspace_id;
 
         $exists = Role::isRoleNameAlreadyExists($data['name'], $workspaceId);
 
@@ -44,7 +44,7 @@ class RoleService extends BaseService
             $role = $this->findByUuid($uuid);
 
             if (isset($data['name']) && $data['name'] !== $role->name) {
-                $workspaceId = auth()->user()->currentAccess->workspace_id;
+                $workspaceId = auth()->user()->resolveCurrentAccess()->workspace_id;
 
                 if (Role::isRoleNameAlreadyExists($data['name'], $workspaceId)) {
                     throw RoleException::nameAlreadyExists();

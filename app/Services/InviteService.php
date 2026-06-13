@@ -38,14 +38,14 @@ class InviteService extends BaseService
         return $this->paginate(
             $data,
             query: Invite::forRecipient(auth()->user()->email),
-            with: ['roleSender', 'workspaceSender'],
+            with: ['roleSender', 'workspaceSender', 'invitedBy'],
         );
     }
 
     public function sendInvite(array $data): void
     {
         $user = auth()->user();
-        $access = $user->currentAccess;
+        $access = $user->resolveCurrentAccess();
         $workspaceId = $access->workspace_id;
 
         $alreadyInvited = Invite::pending()

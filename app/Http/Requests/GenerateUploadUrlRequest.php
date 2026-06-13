@@ -15,7 +15,7 @@ class GenerateUploadUrlRequest extends FormRequest
     {
         return [
             'content_type' => ['required', 'string', 'in:video/mp4,video/quicktime,image/jpeg,image/png,image/jpg'],
-            'directory'    => ['required', 'string', 'in:videos,thumbnails'],
+            'directory'    => ['required', 'string', 'in:videos,thumbnails,images'],
         ];
     }
 
@@ -23,7 +23,7 @@ class GenerateUploadUrlRequest extends FormRequest
     {
         return [
             'content_type.in' => 'Tipo de arquivo não suportado. Aceitos: video/mp4, video/quicktime, image/jpeg, image/png.',
-            'directory.in'    => 'Diretório inválido. Use: videos ou thumbnails.',
+            'directory.in'    => 'Diretório inválido. Use: videos, thumbnails ou imagens.',
         ];
     }
 
