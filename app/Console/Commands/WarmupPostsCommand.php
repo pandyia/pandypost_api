@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\Platform;
 use App\Models\ScheduledPost;
 use App\Services\Factories\SocialMediaFactory;
+use App\Services\InstagramService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +20,7 @@ class WarmupPostsCommand extends Command
             ->where('platform', 'instagram')
             ->where('status', 'pending')
             ->whereBetween('scheduled_at', [now(), now()->addMinutes(60)])
-            ->with(['user.socialAccounts'])
+            ->with(['socialAccount'])
             ->get();
 
         if ($posts->isEmpty()) {
@@ -32,16 +34,15 @@ class WarmupPostsCommand extends Command
                 continue;
             }
 
-            $account = $post->user->socialAccounts()
-                ->where('platform', 'instagram')
-                ->first();
+            $account = $post->socialAccount;
 
             if (!$account) {
                 continue;
             }
 
             try {
-                $service = $factory->make('instagram');
+                /** @var InstagramService $service */
+                $service = $factory->make(Platform::INSTAGRAM);
                 $service->prepare($account, $post);
                 $this->info("Warmup iniciado para post {$post->id}");
             } catch (\Exception $e) {
@@ -50,3 +51,4 @@ class WarmupPostsCommand extends Command
         }
     }
 }
+

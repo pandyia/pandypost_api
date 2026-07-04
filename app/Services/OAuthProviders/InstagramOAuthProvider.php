@@ -13,16 +13,21 @@ class InstagramOAuthProvider implements OAuthProviderInterface
 {
     public function getRedirectUrl(?User $user = null): string
     {
+        $workspace = $user?->currentAccess?->workspace;
+
+        if (!$workspace) {
+            throw SocialAccountException::oauthInitializationFailed();
+        }
+
+        $state = encrypt($workspace->uuid);
+
         $params = [
             'client_id' => config('services.meta.app_id'),
             'redirect_uri' => config('services.meta.redirect'),
             'response_type' => 'code',
             'scope' => 'instagram_business_basic,instagram_business_content_publish',
+            'state' => $state,
         ];
-
-        if ($user) {
-            $params['state'] = encrypt($user->id);
-        }
 
         $query = http_build_query($params);
 
@@ -32,13 +37,15 @@ class InstagramOAuthProvider implements OAuthProviderInterface
     public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
     {
         if ($context instanceof Workspace) {
-            throw SocialAccountException::platformNotSupported('instagram');
+            $workspaceId = $context->id;
+            $userId = $context->accesses()->first()?->user_id;
+        } else {
+            $workspaceId = $context->currentAccess->workspace_id;
+            $userId = $context->id;
         }
 
-        $user = $context;
-
         if (!$code) {
-            throw SocialAccountException::authFailed('Instagram'); // You might need to update this exception
+            throw SocialAccountException::authFailed('Instagram');
         }
 
         $tokenResponse = $this->exchangeInstagramCode($code);
@@ -50,30 +57,29 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             throw SocialAccountException::authFailed('Instagram');
         }
 
-        $roleResponse = Http::get("https://graph.instagram.com/v24.0/me", [
+        $profileResponse = Http::get("https://graph.instagram.com/v24.0/me", [
             'fields' => 'id,username',
             'access_token' => $accessToken,
         ])->json();
 
-        $username = $roleResponse['username'] ?? 'Instagram User';
+        $username = $profileResponse['username'] ?? 'Instagram User';
 
         $longLivedToken = $this->exchangeForLongLivedToken($accessToken);
 
-        $data = [
-            'access_token' => $longLivedToken['token'],
-            'refresh_token' => null, // Instagram long-lived tokens don't use refresh tokens directly in the same way
-            'expires_at' => $longLivedToken['expires_at'],
-            'nickname' => $username,
-            'avatar' => null,
-        ];
-
         return SocialAccount::updateOrCreate(
             [
-                'user_id' => $user->id, 
+                'workspace_id' => $workspaceId,
                 'platform' => 'instagram',
                 'platform_id' => $instagramId,
             ],
-            $data
+            [
+                'user_id' => $userId,
+                'access_token' => $longLivedToken['token'],
+                'refresh_token' => null,
+                'expires_at' => $longLivedToken['expires_at'],
+                'nickname' => $username,
+                'avatar' => null,
+            ]
         );
     }
 
@@ -109,3 +115,4 @@ class InstagramOAuthProvider implements OAuthProviderInterface
         ];
     }
 }
+
