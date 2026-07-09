@@ -3,6 +3,7 @@
 use App\Exceptions\GeneralException;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureSubscriptionAccess;
 use App\Http\Middleware\ForceJsonResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => CheckPermission::class,
             'verified' => EnsureEmailIsVerified::class,
+            'subscribed' => EnsureSubscriptionAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

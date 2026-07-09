@@ -2,52 +2,33 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Cashier\Subscription as CashierSubscription;
 
-class Subscription extends Model
+/**
+ * Subclasse do model de assinatura do Cashier (apontada em
+ * Cashier::useSubscriptionModel), keyed pelo Workspace.
+ *
+ * Não há colunas custom de dunning (`access_level`/`past_due_since`): o estado
+ * de acesso é DERIVADO do `stripe_status`. Esta subclasse apenas expõe um
+ * `billing_status` simples para o front, sem persistir nada.
+ */
+class Subscription extends CashierSubscription
 {
-    protected $fillable = [
-        'user_id',
-        'plan_id',
-        'starts_at',
-        'ends_at',
-        'status',
-        'posts_limit',
-        'posts_used'
-    ];
-
-    protected $casts = [
-        'ends_at' => 'datetime',
-        'trial_ends_at' => 'datetime',
-    ];
-
-    // Relationships
-
-    public function user(): BelongsTo
+    /**
+     * Estado de faturamento derivado, para exibição/decisão no front.
+     *
+     * - trialing: em período de teste
+     * - past_due: pagamento pendente (janela de retentativas do Stripe) — acesso mantido
+     * - active:   em dia
+     * - blocked:  retentativas esgotadas / cancelada — sem acesso
+     */
+    public function getBillingStatusAttribute(): string
     {
-        return $this->belongsTo(User::class);
-    }
-
-    // Business Methods
-
-    public function isValid(): bool
-    {
-        return $this->hasValidStatus() && $this->isNotExpired();
-    }
-
-    private function hasValidStatus(): bool
-    {
-        return in_array($this->status, ['active', 'trialing'], true);
-    }
-
-    private function isNotExpired(): bool
-    {
-        return !$this->ends_at || !$this->ends_at->isPast();
-    }
-
-    public function hasQuota(): bool
-    {
-        return $this->posts_used < $this->posts_limit;
+        return match (true) {
+            $this->onTrial() => 'trialing',
+            $this->pastDue() => 'past_due',
+            $this->valid() => 'active',
+            default => 'blocked',
+        };
     }
 }
