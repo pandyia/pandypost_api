@@ -13,7 +13,6 @@ return new class extends Migration {
         Schema::create('plans', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // 'Starter', 'Pro', 'Agency'
-            $table->string('slug')->unique(); // 'starter', 'pro', 'agency'
             $table->string('description')->nullable();
 
             // Configurações de Limites (O "recheio" do SaaS)
