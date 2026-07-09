@@ -2,8 +2,6 @@
 
 namespace App\Observers;
 
-use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\WorkspaceService;
@@ -26,20 +24,9 @@ class UserObserver
             ];
             $this->workspaceService->createAllAccess($user, $data);
 
-            // Criar assinatura padrão (plano gratuito) para o usuário agendar posts
-            $freePlan = Plan::where('slug', 'free')->first();
-            if ($freePlan) {
-                Subscription::firstOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'plan_id' => $freePlan->id,
-                        'starts_at' => now(),
-                        'status' => 'active',
-                        'posts_limit' => $freePlan->monthly_posts_limit,
-                        'posts_used' => 0,
-                    ]
-                );
-            }
+            // FASE 2: a assinatura de "plano gratuito" foi removida do onboarding.
+            // A assinatura passa a ser criada via Stripe Checkout (fase Cliente);
+            // limites de plano estão deferidos.
         }
     }
 }
