@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\Api\AccessController;
+use App\Http\Controllers\Api\Billing\Admin\PlanController as AdminPlanController;
+use App\Http\Controllers\Api\Billing\Admin\PriceController as AdminPriceController;
+use App\Http\Controllers\Api\Billing\Tenant\PaymentController as BillingPaymentController;
+use App\Http\Controllers\Api\Billing\Tenant\PaymentMethodController as BillingPaymentMethodController;
+use App\Http\Controllers\Api\Billing\Tenant\SubscriptionController as BillingSubscriptionController;
 use App\Http\Controllers\Api\InviteController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PermissionController;
-use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\Billing\Public\PlanController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
-use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Controllers\Api\YouTubeCategoryController;
@@ -42,6 +46,25 @@ Route::get('social-accounts/{platform}/callback', [SocialAccountController::clas
 
 /*
 |--------------------------------------------------------------------------
+| Planos (PÚBLICO)
+|--------------------------------------------------------------------------
+| A landing page consome os planos ativos sem autenticação.
+*/
+Route::get('plans', [PlanController::class, 'index'])->middleware('throttle:45,1');
+
+/*
+|--------------------------------------------------------------------------
+| Webhook do Stripe (PÚBLICO)
+|--------------------------------------------------------------------------
+| Verificação de assinatura embutida no WebhookController do Cashier
+| (usa STRIPE_WEBHOOK_SECRET). URL no dashboard do Stripe: /api/stripe/webhook.
+| A lógica custom (tabela Payment) roda via listener de WebhookReceived.
+*/
+Route::post('stripe/webhook', [\Laravel\Cashier\Http\Controllers\WebhookController::class, 'handleWebhook'])
+    ->name('cashier.webhook');
+
+/*
+|--------------------------------------------------------------------------
 | Rotas Autenticadas (Email NÃO verificado pode acessar)
 |--------------------------------------------------------------------------
 */
@@ -57,9 +80,41 @@ Route::middleware(['auth:sanctum'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function () {
-    // Billing
-    Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
-    Route::get('plans', [PlanController::class, 'index']);
+    Route::prefix('admin')->group(function () {
+        Route::get('plans', [AdminPlanController::class, 'index']);
+        Route::post('plans', [AdminPlanController::class, 'store']);
+        Route::get('plans/{plan}', [AdminPlanController::class, 'show']);
+        Route::patch('plans/{plan}', [AdminPlanController::class, 'update']);
+        Route::delete('plans/{plan}', [AdminPlanController::class, 'destroy']);
+        Route::get('plans/{plan}/prices', [AdminPriceController::class, 'index']);
+        Route::post('plans/{plan}/prices', [AdminPriceController::class, 'store']);
+        Route::get('plans/{plan}/prices/{price}/versions', [AdminPriceController::class, 'versions']);
+        Route::patch('plans/{plan}/prices/{price}', [AdminPriceController::class, 'update']);
+        Route::delete('plans/{plan}/prices/{price}', [AdminPriceController::class, 'destroy']);
+    });
+
+    Route::prefix('billing')->group(function () {
+        Route::get('subscription', [BillingSubscriptionController::class, 'current'])
+            ->middleware('permission:billing.view');
+        Route::post('subscription/checkout', [BillingSubscriptionController::class, 'checkout'])
+            ->middleware('permission:billing.manage');
+
+        Route::get('setup-intent', [BillingPaymentMethodController::class, 'setupIntent'])
+            ->middleware('permission:billing.view');
+        Route::get('cards', [BillingPaymentMethodController::class, 'index'])
+            ->middleware('permission:billing.view');
+        Route::post('cards', [BillingPaymentMethodController::class, 'store'])
+            ->middleware('permission:billing.manage');
+        Route::patch('cards/{paymentMethod}', [BillingPaymentMethodController::class, 'update'])
+            ->middleware('permission:billing.manage');
+        Route::delete('cards/{paymentMethod}', [BillingPaymentMethodController::class, 'destroy'])
+            ->middleware('permission:billing.manage');
+
+        Route::get('payments', [BillingPaymentController::class, 'index'])
+            ->middleware('permission:billing.view');
+        Route::get('payments/{payment}', [BillingPaymentController::class, 'show'])
+            ->middleware('permission:billing.view');
+    });
 
     // Scheduled Posts
     Route::get('scheduled-posts', [ScheduledPostController::class, 'index']);
@@ -86,7 +141,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     // Workspaces (CRUD)
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/switch', [WorkspaceController::class, 'switchWorkspace']);
-    
+
     // Analytics
     Route::get('analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
     Route::get('analytics/{socialAccount}/best-times', [AnalyticsController::class, 'bestTimes']);

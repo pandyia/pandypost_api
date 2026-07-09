@@ -111,7 +111,7 @@ class CheckInstagramContainerJob implements ShouldQueue
             'published_at' => now(),
         ]);
 
-        $this->post->user->subscription?->increment('posts_used');
+        // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
 
         Log::info("Post {$this->post->id} publicado com sucesso no Instagram!");
     }

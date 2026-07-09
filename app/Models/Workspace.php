@@ -6,13 +6,14 @@ use App\Observers\WorkspaceObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 #[ObservedBy(WorkspaceObserver::class)]
 class Workspace extends Model implements Auditable
 {
-    use AuditableTrait;
+    use AuditableTrait, Billable;
 
     protected $fillable = ['name', 'is_personal_team', 'uuid'];
 

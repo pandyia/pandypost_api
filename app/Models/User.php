@@ -110,11 +110,6 @@ class User extends Authenticatable implements Auditable
 
     // Relationships
 
-    public function subscription(): HasOne
-    {
-        return $this->hasOne(Subscription::class);
-    }
-
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
@@ -143,9 +138,16 @@ class User extends Authenticatable implements Auditable
         return $this->is_super_admin;
     }
 
+    /**
+     * Gate de publicação por assinatura.
+     *
+     * FASE 2: liberado (limites deferidos; assinatura passa a vir do checkout na
+     * fase Cliente). Será reativado via workspace->subscription('default')->valid()
+     * quando o checkout existir (ver App\Http\Middleware\EnsureSubscriptionAccess).
+     */
     public function hasValidSubscriptionForPublishing(): bool
     {
-        return $this->subscription && $this->subscription->isValid();
+        return true;
     }
 
     public function resolveCurrentAccess(): ?Access

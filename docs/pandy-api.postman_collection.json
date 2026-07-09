@@ -1,0 +1,915 @@
+{
+  "info": {
+    "name": "Pandy Post API",
+    "description": "Collection completa da API do Pandy Post.\n\n## Como usar\n1. Defina a variável `base_url` (padrão: http://localhost:9000/api).\n2. Rode **Auth > Público > Login** — o token é salvo automaticamente na variável `token` (script na aba *Tests*).\n3. Todas as rotas autenticadas herdam o Bearer Token da collection.\n\n## Variáveis\n- `base_url`: base da API\n- `token`: Bearer token (preenchido pelo login)\n- `user_uuid`, `workspace_uuid`, `role_uuid`, `access_uuid`, `plan_uuid`, `price_uuid`, `payment_uuid`, `payment_method_id`, `social_account_uuid`, `pipeline_uuid`, `invite_uuid`, `permission_uuid`, `platform`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:9000/api" },
+    { "key": "token", "value": "" },
+    { "key": "user_uuid", "value": "" },
+    { "key": "workspace_uuid", "value": "" },
+    { "key": "role_uuid", "value": "" },
+    { "key": "access_uuid", "value": "" },
+    { "key": "plan_uuid", "value": "" },
+    { "key": "price_uuid", "value": "" },
+    { "key": "payment_uuid", "value": "" },
+    { "key": "payment_method_id", "value": "pm_card_visa" },
+    { "key": "social_account_uuid", "value": "" },
+    { "key": "pipeline_uuid", "value": "" },
+    { "key": "invite_uuid", "value": "" },
+    { "key": "permission_uuid", "value": "" },
+    { "key": "platform", "value": "youtube" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Público",
+          "item": [
+            {
+              "name": "Signup",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"senha12345\",\n  \"password_confirmation\": \"senha12345\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/auth/signup", "host": ["{{base_url}}"], "path": ["auth", "signup"] },
+                "description": "Cria uma nova conta. throttle:3,1. Campos: name, email (único), password (min:8, confirmed)."
+              }
+            },
+            {
+              "name": "Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const res = pm.response.json();",
+                      "const token = res.token || res.access_token || (res.data && res.data.token);",
+                      "if (token) { pm.collectionVariables.set('token', token); console.log('Token salvo.'); }"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"joao@example.com\",\n  \"password\": \"senha12345\",\n  \"remember_me\": true\n}"
+                },
+                "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+                "description": "Autentica e retorna o token. throttle:55,1. O token é salvo automaticamente na variável `token`."
+              }
+            },
+            {
+              "name": "Forgot Password",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"joao@example.com\"\n}" },
+                "url": { "raw": "{{base_url}}/auth/forgot-password", "host": ["{{base_url}}"], "path": ["auth", "forgot-password"] },
+                "description": "Envia e-mail de redefinição de senha. throttle:3,1."
+              }
+            },
+            {
+              "name": "Password Reset",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"TOKEN_RECEBIDO_POR_EMAIL\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"novaSenha123\",\n  \"password_confirmation\": \"novaSenha123\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/auth/password-reset", "host": ["{{base_url}}"], "path": ["auth", "password-reset"] },
+                "description": "Redefine a senha usando o token recebido por e-mail. throttle:3,1."
+              }
+            },
+            {
+              "name": "Confirm Email",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"token\": \"TOKEN_DE_VERIFICACAO\"\n}" },
+                "url": { "raw": "{{base_url}}/auth/confirm-email", "host": ["{{base_url}}"], "path": ["auth", "confirm-email"] },
+                "description": "Confirma o e-mail via token. throttle:10,1."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autenticado",
+          "item": [
+            {
+              "name": "Me",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/me", "host": ["{{base_url}}"], "path": ["me"] },
+                "description": "Retorna o usuário autenticado."
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] },
+                "description": "Revoga o token atual."
+              }
+            },
+            {
+              "name": "Resend Email Verification",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{base_url}}/auth/resend-email-verification", "host": ["{{base_url}}"], "path": ["auth", "resend-email-verification"] },
+                "description": "Reenvia o e-mail de verificação. throttle:3,1."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "List Plans (público autenticado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/plans", "host": ["{{base_url}}"], "path": ["plans"] },
+            "description": "Lista os planos visíveis. Requer e-mail verificado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Plans",
+          "item": [
+            {
+              "name": "List Plans",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans", "host": ["{{base_url}}"], "path": ["admin", "plans"] }
+              }
+            },
+            {
+              "name": "Create Plan",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Pro\",\n  \"slug\": \"pro\",\n  \"description\": \"Plano profissional com recursos avançados.\",\n  \"is_visible\": true,\n  \"is_active\": true\n}"
+                },
+                "url": { "raw": "{{base_url}}/admin/plans", "host": ["{{base_url}}"], "path": ["admin", "plans"] }
+              }
+            },
+            {
+              "name": "Show Plan",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}"] }
+              }
+            },
+            {
+              "name": "Update Plan",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Pro Plus\",\n  \"description\": \"Descrição atualizada.\",\n  \"is_visible\": true,\n  \"is_active\": true\n}"
+                },
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}"] }
+              }
+            },
+            {
+              "name": "Delete Plan",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prices",
+          "item": [
+            {
+              "name": "List Prices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}/prices", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}", "prices"] }
+              }
+            },
+            {
+              "name": "Create Price",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 2990,\n  \"currency\": \"brl\",\n  \"frequency\": \"monthly\",\n  \"trial_period_days\": 7\n}"
+                },
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}/prices", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}", "prices"] },
+                "description": "amount em centavos. currency: brl|usd|eur|gbp. frequency: monthly|yearly."
+              }
+            },
+            {
+              "name": "Price Versions (histórico)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}/prices/{{price_uuid}}/versions", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}", "prices", "{{price_uuid}}", "versions"] }
+              }
+            },
+            {
+              "name": "Update Price",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 3490,\n  \"currency\": \"brl\",\n  \"frequency\": \"monthly\",\n  \"trial_period_days\": 14,\n  \"reason\": \"Reajuste anual\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}/prices/{{price_uuid}}", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}", "prices", "{{price_uuid}}"] }
+              }
+            },
+            {
+              "name": "Delete Price",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_url}}/admin/plans/{{plan_uuid}}/prices/{{price_uuid}}", "host": ["{{base_url}}"], "path": ["admin", "plans", "{{plan_uuid}}", "prices", "{{price_uuid}}"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Billing",
+      "item": [
+        {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "Current Subscription",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/subscription", "host": ["{{base_url}}"], "path": ["billing", "subscription"] },
+                "description": "Requer permissão billing.view."
+              }
+            },
+            {
+              "name": "Checkout",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"price\": \"{{price_uuid}}\"\n}" },
+                "url": { "raw": "{{base_url}}/billing/subscription/checkout", "host": ["{{base_url}}"], "path": ["billing", "subscription", "checkout"] },
+                "description": "Cria/atualiza assinatura. Requer permissão billing.manage. price = uuid de um price ativo."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Methods",
+          "item": [
+            {
+              "name": "Setup Intent",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/setup-intent", "host": ["{{base_url}}"], "path": ["billing", "setup-intent"] },
+                "description": "Retorna o client_secret do SetupIntent do Stripe. Requer billing.view."
+              }
+            },
+            {
+              "name": "List Cards",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/cards", "host": ["{{base_url}}"], "path": ["billing", "cards"] }
+              }
+            },
+            {
+              "name": "Add Card",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"payment_method\": \"pm_card_visa\",\n  \"is_default\": true\n}" },
+                "url": { "raw": "{{base_url}}/billing/cards", "host": ["{{base_url}}"], "path": ["billing", "cards"] },
+                "description": "payment_method = id do PaymentMethod do Stripe. Requer billing.manage."
+              }
+            },
+            {
+              "name": "Update Card (default)",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"is_default\": true\n}" },
+                "url": { "raw": "{{base_url}}/billing/cards/{{payment_method_id}}", "host": ["{{base_url}}"], "path": ["billing", "cards", "{{payment_method_id}}"] }
+              }
+            },
+            {
+              "name": "Delete Card",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/cards/{{payment_method_id}}", "host": ["{{base_url}}"], "path": ["billing", "cards", "{{payment_method_id}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payments",
+          "item": [
+            {
+              "name": "List Payments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/payments", "host": ["{{base_url}}"], "path": ["billing", "payments"] },
+                "description": "Histórico de pagamentos. Requer billing.view."
+              }
+            },
+            {
+              "name": "Show Payment",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/billing/payments/{{payment_uuid}}", "host": ["{{base_url}}"], "path": ["billing", "payments", "{{payment_uuid}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Webhook",
+          "item": [
+            {
+              "name": "Stripe Webhook",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Stripe-Signature", "value": "t=...,v1=..." }],
+                "body": { "mode": "raw", "raw": "{\n  \"id\": \"evt_123\",\n  \"type\": \"invoice.payment_succeeded\",\n  \"data\": { \"object\": {} }\n}" },
+                "url": { "raw": "{{base_url}}/stripe/webhook", "host": ["{{base_url}}"], "path": ["stripe", "webhook"] },
+                "description": "Endpoint público chamado pelo Stripe. A assinatura é validada via STRIPE_WEBHOOK_SECRET."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Scheduled Posts",
+      "item": [
+        {
+          "name": "List Scheduled Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/scheduled-posts", "host": ["{{base_url}}"], "path": ["scheduled-posts"] }
+          }
+        },
+        {
+          "name": "Generate Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content_type\": \"video/mp4\",\n  \"directory\": \"videos\"\n}" },
+            "url": { "raw": "{{base_url}}/scheduled-posts/upload-url", "host": ["{{base_url}}"], "path": ["scheduled-posts", "upload-url"] },
+            "description": "Gera URL pré-assinada do S3 para upload direto.\ncontent_type: video/mp4, video/quicktime, image/jpeg, image/png, image/jpg.\ndirectory: videos, thumbnails, images."
+          }
+        },
+        {
+          "name": "Create Scheduled Post",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"media_storage_path\": \"workspaces/{{workspace_uuid}}/videos/abc123.mp4\",\n  \"thumbnail_storage_path\": \"workspaces/{{workspace_uuid}}/thumbnails/thumb.jpg\",\n  \"social_account_uuids\": [\"{{social_account_uuid}}\"],\n  \"title\": \"Meu vídeo incrível\",\n  \"caption\": \"Confira esse conteúdo novo! #pandy\",\n  \"scheduled_at\": \"2026-07-15T14:00:00Z\",\n  \"is_short\": false,\n  \"youtube_privacy_status\": \"public\",\n  \"youtube_category_id\": \"22\",\n  \"youtube_tags\": [\"tutorial\", \"pandy\"],\n  \"youtube_made_for_kids\": false,\n  \"pipeline_card_uuid\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/scheduled-posts", "host": ["{{base_url}}"], "path": ["scheduled-posts"] },
+            "description": "Cria um post agendado. O vídeo já deve ter sido enviado ao S3 via upload-url.\nscheduled_at deve ser pelo menos 5 min no futuro (opcional; se nulo, publica imediatamente)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "YouTube",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/youtube-categories", "host": ["{{base_url}}"], "path": ["youtube-categories"] }
+          }
+        },
+        {
+          "name": "List Privacy Statuses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/youtube-privacy-statuses", "host": ["{{base_url}}"], "path": ["youtube-privacy-statuses"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?page=1&search=",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Maria Souza\",\n  \"email\": \"maria@example.com\",\n  \"password\": \"senha12345\",\n  \"role_uuid\": \"{{role_uuid}}\"\n}" },
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "Show User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/users/{{user_uuid}}", "host": ["{{base_url}}"], "path": ["users", "{{user_uuid}}"] }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Maria S. Souza\",\n  \"email\": \"maria.souza@example.com\"\n}" },
+            "url": { "raw": "{{base_url}}/users/{{user_uuid}}", "host": ["{{base_url}}"], "path": ["users", "{{user_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete User (remove do workspace)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/users/{{user_uuid}}", "host": ["{{base_url}}"], "path": ["users", "{{user_uuid}}"] }
+          }
+        },
+        {
+          "name": "Change User Role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role_uuid\": \"{{role_uuid}}\"\n}" },
+            "url": { "raw": "{{base_url}}/users/{{user_uuid}}/role", "host": ["{{base_url}}"], "path": ["users", "{{user_uuid}}", "role"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workspaces",
+      "item": [
+        {
+          "name": "List Workspaces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/workspaces", "host": ["{{base_url}}"], "path": ["workspaces"] }
+          }
+        },
+        {
+          "name": "Create Workspace",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Meu Time\"\n}" },
+            "url": { "raw": "{{base_url}}/workspaces", "host": ["{{base_url}}"], "path": ["workspaces"] }
+          }
+        },
+        {
+          "name": "Show Workspace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/workspaces/{{workspace_uuid}}", "host": ["{{base_url}}"], "path": ["workspaces", "{{workspace_uuid}}"] }
+          }
+        },
+        {
+          "name": "Update Workspace",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Meu Time Renomeado\"\n}" },
+            "url": { "raw": "{{base_url}}/workspaces/{{workspace_uuid}}", "host": ["{{base_url}}"], "path": ["workspaces", "{{workspace_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete Workspace",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/workspaces/{{workspace_uuid}}", "host": ["{{base_url}}"], "path": ["workspaces", "{{workspace_uuid}}"] }
+          }
+        },
+        {
+          "name": "Switch Workspace",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/workspaces/{{workspace_uuid}}/switch", "host": ["{{base_url}}"], "path": ["workspaces", "{{workspace_uuid}}", "switch"] },
+            "description": "Alterna o workspace ativo do usuário."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Accounts",
+      "item": [
+        {
+          "name": "List Social Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/social-accounts", "host": ["{{base_url}}"], "path": ["social-accounts"] }
+          }
+        },
+        {
+          "name": "Schedules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/social-accounts/schedules", "host": ["{{base_url}}"], "path": ["social-accounts", "schedules"] }
+          }
+        },
+        {
+          "name": "OAuth Redirect (connect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/social-accounts/{{platform}}/auth", "host": ["{{base_url}}"], "path": ["social-accounts", "{{platform}}", "auth"] },
+            "description": "Retorna a URL de autorização OAuth. platform: youtube | instagram | tiktok."
+          }
+        },
+        {
+          "name": "OAuth Callback (público)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/social-accounts/{{platform}}/callback?code=AUTH_CODE&state=JWT_STATE",
+              "host": ["{{base_url}}"],
+              "path": ["social-accounts", "{{platform}}", "callback"],
+              "query": [
+                { "key": "code", "value": "AUTH_CODE" },
+                { "key": "state", "value": "JWT_STATE" }
+              ]
+            },
+            "description": "Callback público do Google/Meta. O usuário é validado pelo JWT no parâmetro `state`."
+          }
+        },
+        {
+          "name": "Delete Social Account (disconnect)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/social-accounts/{{social_account_uuid}}", "host": ["{{base_url}}"], "path": ["social-accounts", "{{social_account_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/{{social_account_uuid}}/dashboard?date_range=last_7_days&refresh=false",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "{{social_account_uuid}}", "dashboard"],
+              "query": [
+                { "key": "date_range", "value": "last_7_days", "description": "ex: last_7_days, last_30_days, custom" },
+                { "key": "start_date", "value": "2026-07-01", "disabled": true, "description": "usado quando date_range=custom" },
+                { "key": "end_date", "value": "2026-07-08", "disabled": true },
+                { "key": "refresh", "value": "false", "description": "força atualização (rate-limited)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Best Times",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/analytics/{{social_account_uuid}}/best-times", "host": ["{{base_url}}"], "path": ["analytics", "{{social_account_uuid}}", "best-times"], "query": [] },
+            "description": "Retorna os melhores horários para postar."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Pipeline (Kanban)",
+      "item": [
+        {
+          "name": "Board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/pipeline/board", "host": ["{{base_url}}"], "path": ["pipeline", "board"] },
+            "description": "Retorna o board completo agrupado por estágio."
+          }
+        },
+        {
+          "name": "Create Card",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Ideia de vídeo sobre IA\",\n  \"description\": \"Roteiro inicial explicando agentes.\",\n  \"platform\": \"youtube\",\n  \"due_date\": \"2026-07-20\"\n}" },
+            "url": { "raw": "{{base_url}}/pipeline", "host": ["{{base_url}}"], "path": ["pipeline"] },
+            "description": "platform: youtube | instagram | tiktok (opcional). due_date >= hoje."
+          }
+        },
+        {
+          "name": "Show Card",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/pipeline/{{pipeline_uuid}}", "host": ["{{base_url}}"], "path": ["pipeline", "{{pipeline_uuid}}"] }
+          }
+        },
+        {
+          "name": "Update Card",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Título atualizado\",\n  \"description\": \"Nova descrição\",\n  \"platform\": \"instagram\",\n  \"due_date\": \"2026-07-25\"\n}" },
+            "url": { "raw": "{{base_url}}/pipeline/{{pipeline_uuid}}", "host": ["{{base_url}}"], "path": ["pipeline", "{{pipeline_uuid}}"] }
+          }
+        },
+        {
+          "name": "Move Card (mudar estágio)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"stage\": \"script\"\n}" },
+            "url": { "raw": "{{base_url}}/pipeline/{{pipeline_uuid}}/move", "host": ["{{base_url}}"], "path": ["pipeline", "{{pipeline_uuid}}", "move"] },
+            "description": "stage: idea | script | recorded | editing | ready. ('scheduled' é definido apenas pelo sistema.)"
+          }
+        },
+        {
+          "name": "Restore Card",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/pipeline/{{pipeline_uuid}}/restore", "host": ["{{base_url}}"], "path": ["pipeline", "{{pipeline_uuid}}", "restore"] },
+            "description": "Restaura um card removido (soft delete)."
+          }
+        },
+        {
+          "name": "Delete Card",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/pipeline/{{pipeline_uuid}}", "host": ["{{base_url}}"], "path": ["pipeline", "{{pipeline_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/roles", "host": ["{{base_url}}"], "path": ["roles"] }
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Editor\",\n  \"permissions\": [\"users.view\", \"scheduled_posts.view\", \"pipeline.view\"]\n}" },
+            "url": { "raw": "{{base_url}}/roles", "host": ["{{base_url}}"], "path": ["roles"] },
+            "description": "permissions = lista de nomes de permissões (ver endpoint Permissions)."
+          }
+        },
+        {
+          "name": "Show Role",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/roles/{{role_uuid}}", "host": ["{{base_url}}"], "path": ["roles", "{{role_uuid}}"] }
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Editor Sênior\",\n  \"permissions\": [\"users.view\", \"users.update\", \"pipeline.view\"]\n}" },
+            "url": { "raw": "{{base_url}}/roles/{{role_uuid}}", "host": ["{{base_url}}"], "path": ["roles", "{{role_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/roles/{{role_uuid}}", "host": ["{{base_url}}"], "path": ["roles", "{{role_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accesses",
+      "item": [
+        {
+          "name": "List Accesses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/accesses", "host": ["{{base_url}}"], "path": ["accesses"] }
+          }
+        },
+        {
+          "name": "Create Access",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_uuid\": \"{{user_uuid}}\",\n  \"role_uuid\": \"{{role_uuid}}\",\n  \"workspace_uuid\": \"{{workspace_uuid}}\"\n}" },
+            "url": { "raw": "{{base_url}}/accesses", "host": ["{{base_url}}"], "path": ["accesses"] }
+          }
+        },
+        {
+          "name": "Show Access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/accesses/{{access_uuid}}", "host": ["{{base_url}}"], "path": ["accesses", "{{access_uuid}}"] }
+          }
+        },
+        {
+          "name": "Update Access",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role_uuid\": \"{{role_uuid}}\"\n}" },
+            "url": { "raw": "{{base_url}}/accesses/{{access_uuid}}", "host": ["{{base_url}}"], "path": ["accesses", "{{access_uuid}}"] }
+          }
+        },
+        {
+          "name": "Delete Access",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/accesses/{{access_uuid}}", "host": ["{{base_url}}"], "path": ["accesses", "{{access_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/permissions", "host": ["{{base_url}}"], "path": ["permissions"] }
+          }
+        },
+        {
+          "name": "Show Permission",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/permissions/{{permission_uuid}}", "host": ["{{base_url}}"], "path": ["permissions", "{{permission_uuid}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invites",
+      "item": [
+        {
+          "name": "Recebidos (Me)",
+          "item": [
+            {
+              "name": "List Received Invites",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/me/invites", "host": ["{{base_url}}"], "path": ["me", "invites"] }
+              }
+            },
+            {
+              "name": "Accept Invite",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": { "raw": "{{base_url}}/me/invites/{{invite_uuid}}/accept", "host": ["{{base_url}}"], "path": ["me", "invites", "{{invite_uuid}}", "accept"] }
+              }
+            },
+            {
+              "name": "Decline Invite",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": { "raw": "{{base_url}}/me/invites/{{invite_uuid}}/decline", "host": ["{{base_url}}"], "path": ["me", "invites", "{{invite_uuid}}", "decline"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gerenciamento (Workspace)",
+          "item": [
+            {
+              "name": "List Invites",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_url}}/invites", "host": ["{{base_url}}"], "path": ["invites"] }
+              }
+            },
+            {
+              "name": "Send Invite",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"convidado@example.com\",\n  \"role_uuid\": \"{{role_uuid}}\"\n}" },
+                "url": { "raw": "{{base_url}}/invites", "host": ["{{base_url}}"], "path": ["invites"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs",
+      "item": [
+        {
+          "name": "List Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/logs?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["logs"],
+              "query": [{ "key": "page", "value": "1" }]
+            },
+            "description": "Lista os logs de auditoria do workspace. Requer permissão logs.view."
+          }
+        }
+      ]
+    }
+  ]
+}

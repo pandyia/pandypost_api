@@ -139,7 +139,7 @@ class InstagramService implements SocialMediaServiceInterface
             'published_at' => now(),
         ]);
 
-        $post->user->subscription?->increment('posts_used');
+        // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
 
         Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo do S3...");
         $this->cleanupFiles($post);

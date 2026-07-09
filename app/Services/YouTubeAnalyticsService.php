@@ -334,7 +334,7 @@ class YouTubeAnalyticsService
                 'metrics' => 'views,estimatedMinutesWatched,averageViewDuration,subscribersGained,annotationClickThroughRate',
                 'dimensions' => 'video',
                 'sort' => '-views',
-                'maxResults' => 10,
+                'maxResults' => 50,
             ];
 
             $response = $service->reports->query($optParams);
@@ -364,6 +364,7 @@ class YouTubeAnalyticsService
                         'ctr' => $ctrPercent,
                         'retention' => $retention,
                         'winnerScore' => 0,
+                        'is_short' => false,
                         'avgViewDurationSeconds' => $avgViewDurationSeconds,
                         'subscribersGained' => $subscribersGained,
                         'totalViews' => 0,
@@ -397,7 +398,7 @@ class YouTubeAnalyticsService
                             $videosData[$id]['totalLikes'] = (int) $stats->getLikeCount();
                             $videosData[$id]['totalComments'] = (int) $stats->getCommentCount();
                             
-                            // Calcula retenção exata
+                            // Calcula retenção exata e detecta se é Short
                             try {
                                 $interval = new \DateInterval($durationIso);
                                 $totalSeconds = ($interval->d * 86400) + ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
@@ -406,12 +407,20 @@ class YouTubeAnalyticsService
                                     $avgSeconds = $videosData[$id]['avgViewDurationSeconds'];
                                     $realRetention = min(100, ($avgSeconds / $totalSeconds) * 100);
                                     $videosData[$id]['retention'] = round($realRetention, 1);
+                                    
+                                    if ($totalSeconds <= 60) {
+                                        $videosData[$id]['is_short'] = true;
+                                    }
                                 }
                             } catch (Exception $ex) {
                                 // Retenção aproximada fallback
                                 $watchTimeMins = $videosData[$id]['watchTime'];
                                 $avgSeconds = $videosData[$id]['avgViewDurationSeconds'];
                                 $videosData[$id]['retention'] = round(min(100, ($avgSeconds / max(1, $watchTimeMins * 60)) * 100), 1);
+                                
+                                if ($avgSeconds <= 60) {
+                                    $videosData[$id]['is_short'] = true;
+                                }
                             }
 
                             // Calcula Winner Score final

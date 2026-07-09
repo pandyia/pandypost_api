@@ -108,20 +108,9 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            // Create a default subscription so the user can schedule posts
-            $plan = \App\Models\Plan::where('slug', 'pro')->first();
-            if ($plan) {
-                \App\Models\Subscription::firstOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'plan_id' => $plan->id,
-                        'starts_at' => now(),
-                        'status' => 'active',
-                        'posts_limit' => $plan->monthly_posts_limit,
-                        'posts_used' => 0,
-                    ]
-                );
-            }
+            // Nota: assinaturas agora são do Cashier (keyed pelo Workspace, exigem
+            // stripe_id) e são criadas pelo fluxo de checkout do Stripe — não pelo
+            // seed. A tabela legada `subscriptions` (user_id/posts_used) foi removida.
         }
     }
 }

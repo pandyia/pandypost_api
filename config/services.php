@@ -53,4 +53,15 @@ return [
         'max_upload_size'    => (int) env('S3_MAX_UPLOAD_SIZE', 32212254720), // 30GB
     ],
 
+    'stripe' => [
+        // Quando false, o StripeCatalogService não chama o Stripe e gera ids
+        // locais (dev_...), permitindo rodar admin/testes sem gateway.
+        'enabled' => (bool) env('STRIPE_ENABLED', false),
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'checkout_success_url' => env('STRIPE_CHECKOUT_SUCCESS_URL', env('FRONTEND_URL') . '/billing/success'),
+        'checkout_cancel_url' => env('STRIPE_CHECKOUT_CANCEL_URL', env('FRONTEND_URL') . '/billing/cancel'),
+    ],
+
 ];
