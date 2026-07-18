@@ -10,6 +10,7 @@ use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
 use App\Services\Factories\PayloadBuilderFactory;
 use App\Models\User;
+use App\Services\Storage\StorageService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use App\Jobs\PublishPostJob;
@@ -24,6 +25,7 @@ class ScheduledPostService extends BaseService
         private readonly PayloadBuilderFactory $payloadBuilderFactory,
         private readonly ContentPipelineService $pipelineService,
         private readonly SubscriptionService $subscriptionService,
+        private readonly StorageService $storageService,
     ) {
         parent::__construct($scheduledPost);
     }
@@ -53,6 +55,31 @@ class ScheduledPostService extends BaseService
 
             return $posts;
         });
+    }
+
+    /**
+     * Cancela um post agendado.
+     * Só é possível cancelar posts com status "pending".
+     */
+    public function cancel(User $user, string $uuid): void
+    {
+        $post = ScheduledPost::where('uuid', $uuid)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if ($post->status !== ScheduledPostStatus::PENDING->value) {
+            throw ScheduledPostException::cannotCancel();
+        }
+
+        $post->update(['status' => ScheduledPostStatus::CANCELLED->value]);
+
+        $paths = [$post->media_path];
+        $payload = $post->payload ?? [];
+        if (!empty($payload['thumbnail_path'])) {
+            $paths[] = $payload['thumbnail_path'];
+        }
+
+        $this->storageService->deleteMany(array_filter($paths));
     }
 
     /**

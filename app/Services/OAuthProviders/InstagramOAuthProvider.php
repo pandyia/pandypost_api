@@ -25,7 +25,7 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             'client_id' => config('services.meta.app_id'),
             'redirect_uri' => config('services.meta.redirect'),
             'response_type' => 'code',
-            'scope' => 'instagram_business_basic,instagram_business_content_publish',
+            'scope' => 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages',
             'state' => $state,
         ];
 
@@ -57,7 +57,7 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             throw SocialAccountException::authFailed('Instagram');
         }
 
-        $profileResponse = Http::get("https://graph.instagram.com/v24.0/me", [
+        $profileResponse = Http::get("https://graph.instagram.com/v25.0/me", [
             'fields' => 'id,username',
             'access_token' => $accessToken,
         ])->json();

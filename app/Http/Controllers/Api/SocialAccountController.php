@@ -64,7 +64,7 @@ class SocialAccountController extends BaseController
         }
 
         try {
-            $this->socialAccountService->syncAccount($workspace, $platform);
+            $this->socialAccountService->syncAccount($workspace, $platform, $request->input('code'));
             return redirect($frontendCallbackUrl . '?success=1');
         } catch (\Exception $e) {
             return redirect($frontendCallbackUrl . '?error=' . urlencode($e->getMessage()));

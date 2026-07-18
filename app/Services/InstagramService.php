@@ -15,7 +15,7 @@ use Exception;
 
 class InstagramService implements SocialMediaServiceInterface
 {
-    private const GRAPH_API_VERSION = 'v24.0';
+    private const GRAPH_API_VERSION = 'v25.0';
     private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
 
     public function __construct(

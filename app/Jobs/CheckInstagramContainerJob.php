@@ -17,7 +17,7 @@ class CheckInstagramContainerJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private const GRAPH_API_VERSION = 'v24.0';
+    private const GRAPH_API_VERSION = 'v25.0';
     private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
 
     public int $tries = 15;

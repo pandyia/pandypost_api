@@ -65,6 +65,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     Route::get('scheduled-posts', [ScheduledPostController::class, 'index']);
     Route::post('scheduled-posts/upload-url', [ScheduledPostController::class, 'uploadUrl']);
     Route::post('scheduled-posts', [ScheduledPostController::class, 'store']);
+    Route::delete('scheduled-posts/{scheduledPost}', [ScheduledPostController::class, 'destroy']);
 
     // YouTube
     Route::get('youtube-categories', [YouTubeCategoryController::class, 'index']);
