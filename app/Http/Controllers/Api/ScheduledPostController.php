@@ -19,6 +19,7 @@ class ScheduledPostController extends BaseController
     protected static array $permissionMethods = [
         'view'   => ['index'],
         'create' => ['store', 'uploadUrl'],
+        'delete' => ['destroy'],
     ];
 
     public function __construct(
@@ -65,5 +66,20 @@ class ScheduledPostController extends BaseController
             'message' => 'Vídeo(s) agendado(s) com sucesso!',
             'data'    => ScheduledPostResource::collection($posts),
         ], 201);
+    }
+
+    /**
+     * Cancela um post agendado (somente se estiver pendente).
+     */
+    public function destroy(int|string $uuid): JsonResponse
+    {
+        $this->service->cancel(
+            request()->user(),
+            $uuid,
+        );
+
+        return response()->json([
+            'message' => 'Agendamento cancelado com sucesso.',
+        ]);
     }
 }

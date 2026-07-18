@@ -23,4 +23,10 @@ class ScheduledPostException extends BaseException
         $error = ScheduledPostError::INVALID_ACCOUNT_SELECTION;
         return new self($error->message($platform), $error, $error->httpCode());
     }
+
+    public static function cannotCancel(): self
+    {
+        $error = ScheduledPostError::CANCEL_NOT_ALLOWED;
+        return new self($error->message(), $error, $error->httpCode());
+    }
 }
