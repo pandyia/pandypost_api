@@ -12,4 +12,11 @@ enum GeneralError: string
             self::TOO_MANY_ATTEMPTS => 'Muitas tentativas. Por favor, tente novamente mais tarde.',
         };
     }
+
+    public function httpCode(): int
+    {
+        return match ($this) {
+            self::TOO_MANY_ATTEMPTS => 429,
+        };
+    }
 }

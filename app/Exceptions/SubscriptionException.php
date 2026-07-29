@@ -8,21 +8,16 @@ class SubscriptionException extends BaseException
 {
     public static function planNotFound(): self
     {
-        $error = SubscriptionError::PLAN_NOT_FOUND;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(SubscriptionError::PLAN_NOT_FOUND);
     }
 
     public static function subscriptionInactive(): self
     {
-        $error = SubscriptionError::SUBSCRIPTION_INACTIVE;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(SubscriptionError::SUBSCRIPTION_INACTIVE);
     }
 
     public static function quotaExceeded(): self
     {
-        $error = SubscriptionError::QUOTA_EXCEEDED;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(SubscriptionError::QUOTA_EXCEEDED);
     }
-
-
 }

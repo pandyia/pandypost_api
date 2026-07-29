@@ -8,19 +8,16 @@ class TokenException extends BaseException
 {
     public static function invalidToken(): self
     {
-        $error = EmailVerificationError::INVALID_TOKEN;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(EmailVerificationError::INVALID_TOKEN);
     }
 
     public static function expiredToken(): self
     {
-        $error = EmailVerificationError::EXPIRED_TOKEN;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(EmailVerificationError::EXPIRED_TOKEN);
     }
 
     public static function alreadyVerified(): self
     {
-        $error = EmailVerificationError::ALREADY_VERIFIED;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(EmailVerificationError::ALREADY_VERIFIED);
     }
 }

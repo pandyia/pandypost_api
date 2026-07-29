@@ -8,10 +8,6 @@ class GeneralException extends BaseException
 {
     public static function tooManyAttempts(): self
     {
-        return new self(
-            GeneralError::TOO_MANY_ATTEMPTS->message(),
-            GeneralError::TOO_MANY_ATTEMPTS,
-            429
-        );
+        return static::make(GeneralError::TOO_MANY_ATTEMPTS);
     }
 }
