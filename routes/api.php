@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Route;
 | Autenticação Pública
 |--------------------------------------------------------------------------
 */
+
+
 Route::controller(AuthController::class)->group(function () {
     Route::post('auth/signup', 'signup')->middleware('throttle:3,1');
     Route::post('auth/forgot-password', 'forgotPassword')->middleware('throttle:3,1');

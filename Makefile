@@ -74,6 +74,24 @@ horizon-terminate:
 horizon-status:
 	$(exec) php artisan horizon:status
 
+logs-octane:
+	docker compose logs -f php
+
+logs-reverb:
+	docker compose logs -f reverb
+
+logs-horizon:
+	docker compose logs -f horizon
+
+restart-reverb:
+	docker compose restart reverb
+
+restart-octane:
+	docker compose restart php
+
+restart-horizon:
+	docker compose restart horizon
+
 ngrok:
 	sudo ngrok http 9000
 

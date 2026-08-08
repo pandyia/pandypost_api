@@ -26,7 +26,7 @@ RUN curl -sSLf https://github.com/mlocati/docker-php-extension-installer/release
     -o /usr/local/bin/install-php-extensions \
     && chmod +x /usr/local/bin/install-php-extensions \
     && install-php-extensions \
-        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl dom opcache \
+        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl posix swoole dom opcache \
     && rm /usr/local/bin/install-php-extensions
 
 COPY docker/php/prod/php.ini /usr/local/etc/php/conf.d/custom.ini

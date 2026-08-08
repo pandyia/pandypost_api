@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     supervisor \
+    procps \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
@@ -29,11 +30,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && node -v \
     && npm -v \
-    && npx -v
+    && npx -v \
+    && npm install -g chokidar
 
 # Instalar extensões PHP local (INCLUINDO XDEBUG)
 RUN (curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - || echo 'return 1') | sh -s \
-    gd xdebug bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl dom
+    gd xdebug bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl posix swoole dom
 
 # Copiar arquivos de configuração do PHP e Supervisor local
 COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
@@ -54,5 +56,6 @@ USER ${user}
 WORKDIR /var/www/html
 
 EXPOSE 9000
+# CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8001", "--workers=auto", "--max-requests=500"]
