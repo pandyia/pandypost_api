@@ -209,4 +209,11 @@ class User extends Authenticatable implements Auditable
             'current_workspace' => $access?->workspace,
         ];
     }
+
+    public function hasAccessToWorkspace(string $uuid): bool
+    {
+        return $this->accesses()
+            ->whereHas('workspace', fn($q) => $q->where('uuid', $uuid))
+            ->exists();
+    }
 }

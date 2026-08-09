@@ -92,6 +92,9 @@ restart-octane:
 restart-horizon:
 	docker compose restart horizon
 
+recreate:
+	docker-compose up -d --force-recreate
+	
 ngrok:
 	sudo ngrok http 9000
 
