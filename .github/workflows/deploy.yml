@@ -54,7 +54,8 @@ jobs:
       - name: Build and push Nginx image
         uses: docker/build-push-action@v6
         with:
-          context: docker/nginx
+          # Contexto = raiz: o Dockerfile assa public/ na imagem do nginx.
+          context: .
           file: docker/nginx/Dockerfile.prod
           push: true
           tags: |
@@ -112,10 +113,17 @@ jobs:
           ssh -o StrictHostKeyChecking=yes ${SSH_USER}@${SSH_HOST} << DEPLOY_SCRIPT
             set -e
             cd ${APP_PATH}
+            COMPOSE="docker compose -f docker-compose.prod.yml"
 
-            echo "Pulling latest changes..."
+            # Faz checkout da MESMA tag que gerou as imagens. Antes o servidor
+            # dava 'git pull origin main', então o docker-compose.prod.yml no
+            # disco podia ser mais novo (ou mais velho) que as imagens do GHCR.
+            echo "Checking out ${IMAGE_TAG}..."
             git remote set-url origin https://${GHCR_USER}:${GHCR_TOKEN}@github.com/${GHCR_USER}/pandypost_api.git
-            git pull origin main
+            git fetch --force --tags origin
+            git checkout --force "${IMAGE_TAG}"
+            # Não deixa o token gravado no .git/config do servidor.
+            git remote set-url origin https://github.com/${GHCR_USER}/pandypost_api.git
 
             echo "Setting up SSL certificate..."
             export CF_API_TOKEN="${CF_API_TOKEN}"
@@ -128,45 +136,49 @@ jobs:
             export IMAGE_PREFIX=${IMAGE_PREFIX}
 
             echo "Pulling images with tag: \${IMAGE_TAG}"
-            docker compose -f docker-compose.prod.yml pull
+            \${COMPOSE} pull
 
-            echo "Starting services..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Subida em etapas para migrar com o código novo antes de os
+            # workers começarem a consumir a fila. --wait usa os healthchecks
+            # do compose, o que substitui o antigo 'sleep 5' + laço de retry.
+            echo "Starting datastores..."
+            \${COMPOSE} up -d --wait redis redis-cache
 
-            echo "Waiting for PHP container..."
-            sleep 5
+            echo "Starting PHP-FPM..."
+            \${COMPOSE} up -d --no-deps --wait php
 
             echo "Running migrations..."
-            docker compose -f docker-compose.prod.yml exec -T php php artisan migrate --force
+            \${COMPOSE} exec -T php php artisan migrate --force
 
-            echo "Caching config, routes, views..."
-            docker compose -f docker-compose.prod.yml exec -T php php artisan optimize
-
-            echo "Restarting Horizon..."
-            docker compose -f docker-compose.prod.yml exec -T php php artisan horizon:terminate
-
-            echo "Checking health..."
-            for i in \$(seq 1 12); do
-              if docker compose -f docker-compose.prod.yml exec -T php php artisan about > /dev/null 2>&1; then
-                echo "PHP is healthy!"
-                break
-              fi
-              echo "Waiting for PHP... (\${i}/12)"
-              sleep 5
-            done
+            # config/route/event cache é feito pelo entrypoint de cada
+            # container, então não há mais 'artisan optimize' aqui.
+            # Horizon também não precisa de 'horizon:terminate': o container
+            # é recriado pelo up e o stop_grace_period drena os jobs.
+            echo "Starting nginx, horizon and scheduler..."
+            \${COMPOSE} up -d --wait --remove-orphans
 
             echo "Cleaning old images..."
             docker image prune -f
+            docker logout ghcr.io
 
-            docker compose -f docker-compose.prod.yml ps
+            \${COMPOSE} ps
           DEPLOY_SCRIPT
 
       - name: Test site connectivity
         run: |
           sleep 10
-          curl -f -k -m 10 https://${{ secrets.DOMAIN_NAME }} -o /dev/null && echo "HTTPS OK" || \
-          curl -f -m 10 http://${{ secrets.DOMAIN_NAME }} -o /dev/null && echo "HTTP OK" || \
-          echo "Site not responding"
+          # Encadeado com || o passo nunca falhava, porque o echo final sempre
+          # retorna 0. Agora um site fora do ar quebra o workflow.
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS -k -m 10 "https://${{ secrets.DOMAIN_NAME }}/up" -o /dev/null; then
+              echo "HTTPS OK"
+              exit 0
+            fi
+            echo "Tentativa $i falhou, aguardando..."
+            sleep 10
+          done
+          echo "::error::Site não respondeu em https://${{ secrets.DOMAIN_NAME }}/up"
+          exit 1
 
       - name: Cleanup SSH key
         if: always()

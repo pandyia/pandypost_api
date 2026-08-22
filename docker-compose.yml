@@ -27,6 +27,7 @@ services:
             - ./docker/php/dev/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
         depends_on:
             - redis
+            - redis-cache
             - pgsql
         networks:
             - pandypost-network
@@ -40,6 +41,17 @@ services:
             - "6379:6379"
         volumes:
             - redis_data:/data
+        networks:
+            - pandypost-network
+
+    # Espelha a separação de produção (filas x cache) para que
+    # REDIS_CACHE_HOST=redis-cache do .env.example funcione igual em dev.
+    redis-cache:
+        image: redis:alpine
+        container_name: pandypost-redis-cache
+        command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+        ports:
+            - "6380:6379"
         networks:
             - pandypost-network
 
