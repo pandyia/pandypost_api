@@ -95,7 +95,23 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+
+            // Supabase exige TLS: use DB_SSLMODE=require em produção. Fica
+            // 'prefer' por padrão para o Postgres local do docker-compose.yml,
+            // que não tem certificado.
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * O pooler do Supabase em transaction mode (porta 6543) não suporta
+             * prepared statements no servidor. Se for preciso migrar da porta
+             * 5432 (session mode) para a 6543 por causa do limite de conexões,
+             * basta DB_EMULATE_PREPARES=true — o PDO passa a interpolar os
+             * valores no cliente (ainda com escape do libpq).
+             * Em session mode deixe false: prepares no servidor são mais rápidos.
+             */
+            'options' => env('DB_EMULATE_PREPARES', false)
+                ? [PDO::ATTR_EMULATE_PREPARES => true]
+                : [],
         ],
 
         'sqlsrv' => [
