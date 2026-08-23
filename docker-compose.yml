@@ -38,7 +38,7 @@ services:
         image: redis:alpine
         container_name: pandypost-redis
         ports:
-            - "6379:6379"
+            - "127.0.0.1:6379:6379"
         volumes:
             - redis_data:/data
         networks:
@@ -51,7 +51,7 @@ services:
         container_name: pandypost-redis-cache
         command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
         ports:
-            - "6380:6379"
+            - "127.0.0.1:6380:6379"
         networks:
             - pandypost-network
 
@@ -60,7 +60,7 @@ services:
         container_name: pandypost-pgsql
         restart: unless-stopped
         ports:
-            - "5432:5432"
+            - "127.0.0.1:5432:5432"
         environment:
             POSTGRES_DB: pandypost
             POSTGRES_USER: pandypost

@@ -32,6 +32,40 @@ class Workspace extends Model implements Auditable
         'id',
     ];
 
+    /**
+     * Memoiza a moeda resolvida: ManagesInvoices chama preferredCurrency() uma
+     * vez por item da fatura, e cada chamada faria uma query no Price.
+     */
+    protected ?string $resolvedCurrency = null;
+
+    /**
+     * Moeda usada pelos fluxos do Cashier que NÃO passam por um Price:
+     * charge(), refund(), invoiceFor(), tab() e applyBalance().
+     *
+     * O Checkout de assinatura não usa isto — lá a moeda vem do Price
+     * cadastrado no Stripe (ver CheckoutService). Como o Stripe trava a moeda
+     * do Customer na primeira cobrança, a fonte de verdade é o Price da
+     * assinatura existente, inclusive de uma já cancelada. Sem assinatura
+     * nenhuma, cai no default de config/cashier.php.
+     */
+    public function preferredCurrency(): string
+    {
+        if ($this->resolvedCurrency !== null) {
+            return $this->resolvedCurrency;
+        }
+
+        $gatewayPriceId = $this->subscriptions->first()?->stripe_price;
+
+        // withTrashed: um Price arquivado (editar preço faz soft delete e cria
+        // outro) continua sendo o vigente para quem já assinou naquele id.
+        $price = $gatewayPriceId
+            ? Price::withTrashed()->where('gateway_price_id', $gatewayPriceId)->first()
+            : null;
+
+        return $this->resolvedCurrency = $price?->currency->value
+            ?? config('cashier.currency');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

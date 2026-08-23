@@ -130,6 +130,18 @@ jobs:
             export CF_HOSTNAMES="${CF_HOSTNAMES}"
             ./docker/scripts/setup-origin-cert.sh
 
+            # O Compose falha sozinho se REDIS_PASSWORD estiver ausente, mas
+            # não se estiver com o literal "null" do .env.example: o Redis
+            # subiria com requirepass "null" enquanto o Laravel converte a
+            # string em null e não manda AUTH — senha dos dois lados, sem
+            # bater. Barra aqui antes de derrubar a stack.
+            REDIS_PW=\$(grep -E '^REDIS_PASSWORD=' .env | head -1 | cut -d= -f2-)
+            REDIS_PW=\$(printf '%s' "\${REDIS_PW}" | tr -d ' ' | tr -d '"' | tr -d "'")
+            if [ -z "\${REDIS_PW}" ] || [ "\${REDIS_PW}" = "null" ]; then
+              echo "ERRO: defina REDIS_PASSWORD com um valor real no .env do servidor."
+              exit 1
+            fi
+
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GHCR_USER} --password-stdin
 
             export IMAGE_TAG=${IMAGE_TAG}

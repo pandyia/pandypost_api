@@ -95,7 +95,23 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+
+            // Supabase exige TLS: use DB_SSLMODE=require em produção. Fica
+            // 'prefer' por padrão para o Postgres local do docker-compose.yml,
+            // que não tem certificado.
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * O pooler do Supabase em transaction mode (porta 6543) não suporta
+             * prepared statements no servidor. Se for preciso migrar da porta
+             * 5432 (session mode) para a 6543 por causa do limite de conexões,
+             * basta DB_EMULATE_PREPARES=true — o PDO passa a interpolar os
+             * valores no cliente (ainda com escape do libpq).
+             * Em session mode deixe false: prepares no servidor são mais rápidos.
+             */
+            'options' => env('DB_EMULATE_PREPARES', false)
+                ? [PDO::ATTR_EMULATE_PREPARES => true]
+                : [],
         ],
 
         'sqlsrv' => [
@@ -174,11 +190,16 @@ return [
          * e o comportamento continua o de instância única (dev).
          */
         'cache' => [
-            'url' => env('REDIS_CACHE_URL'),
-            'host' => env('REDIS_CACHE_HOST', env('REDIS_HOST', '127.0.0.1')),
-            'username' => env('REDIS_CACHE_USERNAME', env('REDIS_USERNAME')),
-            'password' => env('REDIS_CACHE_PASSWORD', env('REDIS_PASSWORD')),
-            'port' => env('REDIS_CACHE_PORT', env('REDIS_PORT', '6379')),
+            // ?: em vez do 2º argumento de env(): uma variável presente porém
+            // vazia no .env devolve '', e o default do env() não entra. O
+            // Compose usa ${VAR:-fallback}, que TRATA vazio como ausente — sem
+            // o ?: aqui, deixar REDIS_CACHE_PASSWORD= em branco faria o Redis
+            // subir com a senha de REDIS_PASSWORD e o app autenticar com ''.
+            'url' => env('REDIS_CACHE_URL') ?: env('REDIS_URL'),
+            'host' => env('REDIS_CACHE_HOST') ?: env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_CACHE_USERNAME') ?: env('REDIS_USERNAME'),
+            'password' => env('REDIS_CACHE_PASSWORD') ?: env('REDIS_PASSWORD'),
+            'port' => env('REDIS_CACHE_PORT') ?: env('REDIS_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
             'max_retries' => env('REDIS_MAX_RETRIES', 3),
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
