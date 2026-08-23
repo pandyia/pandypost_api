@@ -7,21 +7,25 @@ services:
             - "80:80"
             - "443:443"
         volumes:
-            - app_storage:/var/www/html/storage:ro
-            - app_public:/var/www/html/public:ro
             - ~/ssl:/etc/nginx/ssl:ro
         depends_on:
-            - php
+            php:
+                condition: service_healthy
         networks:
             - pandypost-network-prod
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q -O /dev/null --no-check-certificate https://127.0.0.1/up || exit 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 20s
         deploy:
             resources:
                 limits:
-                    cpus: "0.15"
-                    memory: 128M
+                    cpus: "0.50"
+                    memory: 256M
                 reservations:
-                    cpus: "0.05"
-                    memory: 32M
+                    memory: 64M
 
     php:
         image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
@@ -31,21 +35,95 @@ services:
             - .env
         volumes:
             - app_storage:/var/www/html/storage
-            - app_public:/var/www/html/public
             - ./storage/logs:/var/www/html/storage/logs
         depends_on:
-            - redis
+            redis:
+                condition: service_healthy
+            redis-cache:
+                condition: service_healthy
+        networks:
+            - pandypost-network-prod
+        healthcheck:
+            test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+            interval: 15s
+            timeout: 5s
+            retries: 5
+            start_period: 40s
+        deploy:
+            resources:
+                limits:
+                    cpus: "1.00"
+                    memory: 1536M
+                reservations:
+                    memory: 512M
+
+    horizon:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
+        container_name: pandypost-horizon-prod
+        restart: always
+        env_file:
+            - .env
+        command: ["php", "artisan", "horizon"]
+        stop_signal: SIGTERM
+        stop_grace_period: 60s
+        volumes:
+            - app_storage:/var/www/html/storage
+            - ./storage/logs:/var/www/html/storage/logs
+        depends_on:
+            redis:
+                condition: service_healthy
+            redis-cache:
+                condition: service_healthy
+        networks:
+            - pandypost-network-prod
+        healthcheck:
+            test: ["CMD-SHELL", "php artisan horizon:status | grep -q running"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+        deploy:
+            resources:
+                limits:
+                    # Teto dos workers (1792M, ver config/horizon.php) + a
+                    # memória compartilhada de opcache/JIT/interned strings
+                    # (~320M), que também é cobrada do cgroup do container.
+                    cpus: "1.00"
+                    memory: 2304M
+                reservations:
+                    memory: 512M
+
+    scheduler:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
+        container_name: pandypost-scheduler-prod
+        restart: always
+        env_file:
+            - .env
+        command: ["php", "artisan", "schedule:work"]
+        stop_signal: SIGTERM
+        stop_grace_period: 30s
+        volumes:
+            - app_storage:/var/www/html/storage
+            - ./storage/logs:/var/www/html/storage/logs
+        depends_on:
+            redis:
+                condition: service_healthy
+            redis-cache:
+                condition: service_healthy
         networks:
             - pandypost-network-prod
         deploy:
             resources:
                 limits:
-                    cpus: "0.65"
-                    memory: 1280M
+                    # schedule:work forka um `php artisan` por comando devido,
+                    # com o memory_limit do CLI (384M), em cima do opcache
+                    # compartilhado.
+                    cpus: "0.25"
+                    memory: 768M
                 reservations:
-                    cpus: "0.30"
-                    memory: 512M
+                    memory: 128M
 
+    # Instância de filas / Horizon: nunca despeja chaves, persiste em AOF.
     redis:
         image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-redis:${IMAGE_TAG:-latest}
         container_name: pandypost-redis-prod
@@ -54,19 +132,68 @@ services:
             - redis_data_prod:/data
         networks:
             - pandypost-network-prod
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+            start_period: 10s
         deploy:
             resources:
                 limits:
-                    cpus: "0.20"
-                    memory: 256M
+                    cpus: "0.35"
+                    memory: 512M
                 reservations:
-                    cpus: "0.05"
+                    memory: 128M
+
+    # Instância de cache / sessão: descartável, LRU global, sem persistência.
+    redis-cache:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-redis:${IMAGE_TAG:-latest}
+        container_name: pandypost-redis-cache-prod
+        restart: always
+        command:
+            - redis-server
+            - --maxmemory
+            - 384mb
+            - --maxmemory-policy
+            - allkeys-lru
+            - --maxmemory-samples
+            - "7"
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            - --lazyfree-lazy-eviction
+            - "yes"
+            - --lazyfree-lazy-expire
+            - "yes"
+            - --lazyfree-lazy-server-del
+            - "yes"
+            - --databases
+            - "2"
+            - --tcp-keepalive
+            - "60"
+            - --hz
+            - "10"
+        networks:
+            - pandypost-network-prod
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+            start_period: 10s
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.25"
+                    memory: 512M
+                reservations:
                     memory: 64M
 
 volumes:
     redis_data_prod:
     app_storage:
-    app_public:
 
 networks:
     pandypost-network-prod:

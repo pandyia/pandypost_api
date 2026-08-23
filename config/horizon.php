@@ -252,25 +252,44 @@ return [
     ],
 
     'environments' => [
+
+        /*
+         * VPS de produção: 2 vCPU / 8GB, com o container horizon limitado a
+         * 1.0 CPU e 2304M (ver docker-compose.prod.yml).
+         *
+         * O teto é RAM, não CPU: os jobs são I/O-bound (chamadas às APIs de
+         * Meta/YouTube/TikTok), mas cada processo PHP reserva memória própria.
+         * Soma dos piores casos com os valores abaixo:
+         *   3x128 + 3x128 + 2x256 + 2x256 = 1792M, + 64M do master supervisor,
+         * + ~320M de opcache/JIT compartilhado = folga sobre os 2304M.
+         *
+         * Os valores vêm de env para dar para escalar sem rebuild da imagem —
+         * basta editar o .env no servidor e recriar o container horizon.
+         * Ao mexer nos números, refaça a conta acima contra o limite de 2304M.
+         */
         'production' => [
             'supervisor-default' => [
-                'maxProcesses' => 5,
+                'minProcesses' => 1,
+                'maxProcesses' => (int) env('HORIZON_MAX_DEFAULT', 3),
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
             'supervisor-instagram' => [
-                'maxProcesses' => 10,
-                'balanceMaxShift' => 2,
+                'minProcesses' => 1,
+                'maxProcesses' => (int) env('HORIZON_MAX_INSTAGRAM', 3),
+                'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
             'supervisor-youtube' => [
-                'maxProcesses' => 8,
-                'balanceMaxShift' => 2,
+                'minProcesses' => 1,
+                'maxProcesses' => (int) env('HORIZON_MAX_YOUTUBE', 2),
+                'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
             'supervisor-tiktok' => [
-                'maxProcesses' => 8,
-                'balanceMaxShift' => 2,
+                'minProcesses' => 1,
+                'maxProcesses' => (int) env('HORIZON_MAX_TIKTOK', 2),
+                'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
         ],

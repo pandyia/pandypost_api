@@ -22,26 +22,37 @@ RUN apk add --no-cache \
     logrotate \
     linux-headers
 
+# posix é exigido por laravel/horizon (ao lado de pcntl) para o master
+# supervisor sinalizar os workers.
 RUN curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions \
     -o /usr/local/bin/install-php-extensions \
     && chmod +x /usr/local/bin/install-php-extensions \
     && install-php-extensions \
-        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl dom opcache \
-    && rm /usr/local/bin/install-php-extensions
+        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl posix dom opcache \
+    && rm /usr/local/bin/install-php-extensions \
+    && php -m | grep -qx pcntl \
+    && php -m | grep -qx posix \
+    && php -m | grep -qx redis
 
 COPY docker/php/prod/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/prod/www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker/php/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php/prod/logrotate.conf /etc/logrotate.d/laravel
+COPY docker/php/prod/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN adduser -u ${uid} -D -h /home/${user} -s /bin/sh ${user} \
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+    && adduser -u ${uid} -D -h /home/${user} -s /bin/sh ${user} \
     && mkdir -p /home/${user}/.config/psysh /var/log/php \
     && chown -R ${user}:${user} /home/${user}/.config /var/log/php
 
 WORKDIR /var/www/html
 
-COPY --from=vendor /app/vendor ./vendor
+# O código vem primeiro e o vendor depois: na ordem inversa, um `vendor/` no
+# contexto de build sobrescreveria o vendor otimizado --no-dev do estágio
+# anterior. (.dockerignore também exclui vendor/, mas a ordem correta é a
+# garantia de verdade.)
 COPY . .
+COPY --from=vendor /app/vendor ./vendor
 
 RUN chown -R ${user}:${user} /var/www/html \
     && chmod -R 775 storage bootstrap/cache
@@ -49,5 +60,7 @@ RUN chown -R ${user}:${user} /var/www/html \
 USER ${user}
 
 EXPOSE 9000
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
