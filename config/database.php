@@ -109,9 +109,10 @@ return [
              * valores no cliente (ainda com escape do libpq).
              * Em session mode deixe false: prepares no servidor são mais rápidos.
              */
-            'options' => env('DB_EMULATE_PREPARES', false)
-                ? [PDO::ATTR_EMULATE_PREPARES => true]
-                : [],
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_PERSISTENT => false,
+            ],
         ],
 
         'sqlsrv' => [
@@ -164,7 +165,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
