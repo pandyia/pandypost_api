@@ -8,25 +8,21 @@ class LoginException extends BaseException
 {
     public static function invalidCredentials(): self
     {
-        $error = LoginError::INVALID_CREDENTIALS;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(LoginError::INVALID_CREDENTIALS);
     }
 
     public static function userNotFound(): self
     {
-        $error = LoginError::USER_NOT_FOUND;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(LoginError::USER_NOT_FOUND);
     }
 
     public static function accountDisabled(): self
     {
-        $error = LoginError::ACCOUNT_DISABLED;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(LoginError::ACCOUNT_DISABLED);
     }
 
     public static function emailNotVerified(): self
     {
-        $error = LoginError::EMAIL_NOT_VERIFIED;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(LoginError::EMAIL_NOT_VERIFIED);
     }
 }

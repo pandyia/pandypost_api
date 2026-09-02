@@ -50,6 +50,15 @@ class DynamicFilter
             return;
         }
 
+        // Se a coluna for uuid ou terminar com _uuid, precisamos de tratamento especial no PostgreSQL
+        if ($column === 'uuid' || str_ends_with($column, '_uuid')) {
+            $driverName = $query->getConnection()->getDriverName();
+            if ($driverName === 'pgsql') {
+                $query->whereRaw("LOWER(CAST({$column} AS text)) LIKE LOWER(?)", ["%{$value}%"]);
+                return;
+            }
+        }
+
         $query->whereRaw("LOWER({$column}) LIKE LOWER(?)", ["%{$value}%"]);
     }
 

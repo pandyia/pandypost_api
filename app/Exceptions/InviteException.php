@@ -8,25 +8,21 @@ class InviteException extends BaseException
 {
     public static function alreadyInvited(): self
     {
-        $error = InviteError::ALREADY_INVITED;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(InviteError::ALREADY_INVITED);
     }
 
     public static function notYourInvite(): self
     {
-        $error = InviteError::NOT_YOUR_INVITE;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(InviteError::NOT_YOUR_INVITE);
     }
 
     public static function inviteNotPending(): self
     {
-        $error = InviteError::INVITE_NOT_PENDING;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(InviteError::INVITE_NOT_PENDING);
     }
 
     public static function alreadyMember(): self
     {
-        $error = InviteError::ALREADY_MEMBER;
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(InviteError::ALREADY_MEMBER);
     }
 }

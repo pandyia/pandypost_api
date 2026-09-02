@@ -12,20 +12,16 @@ class ContentPipelineException extends BaseException
         $error   = PipelineError::INVALID_STAGE_TRANSITION;
         $context = "não é possível mover de '{$from->value}' para '{$to->value}'";
 
-        return new self($error->message($context), $error, $error->httpCode());
+        return static::make($error, $error->message($context));
     }
 
     public static function scheduledStageForbidden(): self
     {
-        $error = PipelineError::SCHEDULED_STAGE_FORBIDDEN;
-
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(PipelineError::SCHEDULED_STAGE_FORBIDDEN);
     }
 
     public static function notFound(): self
     {
-        $error = PipelineError::CARD_NOT_FOUND;
-
-        return new self($error->message(), $error, $error->httpCode());
+        return static::make(PipelineError::CARD_NOT_FOUND);
     }
 }

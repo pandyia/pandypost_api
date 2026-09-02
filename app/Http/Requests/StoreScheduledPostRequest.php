@@ -38,7 +38,7 @@ class StoreScheduledPostRequest extends FormRequest
             'title' => [
                 'nullable',
                 'string',
-                'max:100'
+                'max:100',
             ],
             'caption' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date', 'after:+5 minutes'],

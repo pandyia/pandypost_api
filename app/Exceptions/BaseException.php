@@ -17,6 +17,12 @@ abstract class BaseException extends Exception
         $this->errorCode = $errorCode instanceof BackedEnum ? $errorCode->value : $errorCode;
     }
 
+    protected static function make(object $error, ?string $customMessage = null): static
+    {
+        $message = $customMessage ?: $error->message();
+        return new static($message, $error, $error->httpCode());
+    }
+
     public function getErrorCode(): string
     {
         return $this->errorCode;
@@ -41,7 +47,7 @@ abstract class BaseException extends Exception
     public function render(): JsonResponse
     {
         $response = [
-            'error' => $this->getErrorCode(),
+            'error'   => $this->errorCode,
             'message' => $this->getMessage(),
         ];
 
@@ -49,6 +55,6 @@ abstract class BaseException extends Exception
             $response['context'] = $this->context;
         }
 
-        return response()->json($response, $this->getHttpCode());
+        return response()->json($response, $this->getCode());
     }
 }

@@ -103,20 +103,27 @@ class SocialAccount extends Model implements Auditable
             return $this->access_token;
         }
 
-        if ($this->platform === Platform::YOUTUBE->value) {
-            return $this->refreshYouTubeToken();
-        }
-
-        return $this->access_token;
+        return match ($this->platform) {
+            Platform::YOUTUBE->value   => $this->refreshYouTubeToken(),
+            Platform::INSTAGRAM->value => $this->refreshInstagramToken(),
+            default                    => $this->access_token,
+        };
     }
 
     public function revokeToken(): void
     {
-        if ($this->access_token) {
-            Http::post('https://oauth2.googleapis.com/revoke', [
-                'token' => $this->access_token,
-            ]);
+        if (!$this->access_token) {
+            return;
         }
+
+        match ($this->platform) {
+            Platform::YOUTUBE->value => Http::post('https://oauth2.googleapis.com/revoke', [
+                'token' => $this->access_token,
+            ]),
+            // Instagram não tem endpoint público de revogação via API.
+            // A desconexão é feita apenas no lado do app (delete do registro).
+            default => null,
+        };
     }
 
     private function refreshYouTubeToken(): string
@@ -144,6 +151,27 @@ class SocialAccount extends Model implements Auditable
         }
 
         throw new \Exception("Não foi possível renovar o token do Google: " . $response->body());
+    }
+
+    private function refreshInstagramToken(): string
+    {
+        $response = Http::get('https://graph.instagram.com/refresh_access_token', [
+            'grant_type'   => 'ig_refresh_token',
+            'access_token' => $this->access_token,
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+
+            $this->update([
+                'access_token' => $data['access_token'],
+                'expires_at'   => now()->addSeconds($data['expires_in'] ?? 5184000),
+            ]);
+
+            return $data['access_token'];
+        }
+
+        throw new \Exception("Não foi possível renovar o token do Instagram: " . $response->body());
     }
 
     /**
