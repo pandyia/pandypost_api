@@ -55,6 +55,10 @@ return [
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
+            // Base das presigned URLs, quando ela difere do endpoint interno.
+            // Usado só em dev, para apontar o browser ao proxy do MinIO; em
+            // produção fica vazio e as URLs saem com o endpoint do B2.
+            'temporary_url' => env('AWS_TEMPORARY_URL'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,

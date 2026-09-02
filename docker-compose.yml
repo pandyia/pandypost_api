@@ -4,12 +4,17 @@ services:
         container_name: pandypost-nginx
         ports:
             - "9000:80"
+            # Proxy do MinIO: é por aqui que o browser consome as presigned URLs.
+            - "127.0.0.1:9002:9002"
+            - "[::1]:9002:9002"
         volumes:
             - ./:/var/www/html
             - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./docker/nginx/minio.conf:/etc/nginx/conf.d/minio.conf
         depends_on:
             - php
             - reverb
+            - minio
         networks:
             - pandypost-network
 
@@ -33,6 +38,7 @@ services:
             - redis
             - redis-cache
             - pgsql
+            - minio
         networks:
             - pandypost-network
         extra_hosts:
@@ -110,9 +116,50 @@ services:
         networks:
             - pandypost-network
 
+    # MinIO — S3 local, no lugar do Backblaze B2 usado em produção.
+    #
+    # A API S3 não é publicada no host de propósito: o browser chega nela pelo
+    # proxy do nginx em localhost:9002, que devolve o header Host assinado pelo
+    # PHP. Publicar direto aqui daria SignatureDoesNotMatch nas presigned URLs.
+    minio:
+        image: minio/minio:latest
+        container_name: pandypost-minio
+        restart: unless-stopped
+        command: server /data --console-address ":9001"
+        environment:
+            MINIO_ROOT_USER: pandypost
+            MINIO_ROOT_PASSWORD: pandypost
+            # O PUT direto do browser (FRONTEND_URL) precisa passar no preflight.
+            MINIO_API_CORS_ALLOW_ORIGIN: "*"
+        ports:
+            # Console web: http://localhost:9001 (login pandypost / pandypost)
+            - "127.0.0.1:9001:9001"
+        volumes:
+            - minio_data:/data
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        networks:
+            - pandypost-network
+
+    # Cria o bucket do AWS_BUCKET no primeiro up e encerra. Idempotente.
+    minio-init:
+        image: minio/mc:latest
+        container_name: pandypost-minio-init
+        depends_on:
+            minio:
+                condition: service_healthy
+        entrypoint: ["sh", "-c", "mc alias set local http://minio:9000 pandypost pandypost && mc mb --ignore-existing local/pandypost"]
+        networks:
+            - pandypost-network
+
 volumes:
     redis_data:
     pgsql_data:
+    minio_data:
 
 networks:
     pandypost-network:
