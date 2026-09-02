@@ -15,7 +15,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // O Cashier registra sozinho um POST /stripe/webhook com o nome
+        // `cashier.webhook`, e routes/api.php declara o mesmo nome em
+        // /api/stripe/webhook. Sem cache de rotas o Laravel tolera o nome
+        // duplicado, mas `artisan route:cache` aborta com LogicException — ou
+        // seja, produção estava rodando sem cache de rotas. Como a rota do app
+        // é a única divulgada no dashboard do Stripe (e a única que passa pelo
+        // pipeline de middleware da API), desligamos o registro do pacote.
+        if (class_exists(\Laravel\Cashier\Cashier::class)) {
+            \Laravel\Cashier\Cashier::ignoreRoutes();
+        }
     }
 
     /**

@@ -68,7 +68,11 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Precisa ser maior que o maior 'timeout' de config/horizon.php
+            // (300s em youtube/tiktok). Com o default 90 do Laravel a fila
+            // devolveria o job para outro worker enquanto o primeiro ainda
+            // estivesse publicando, duplicando o post.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 360),
             'block_for' => null,
             'after_commit' => false,
         ],
