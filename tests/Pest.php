@@ -119,6 +119,7 @@ function createUserWithPermissions(array $permissionNames = [], bool $isPersonal
     ]);
 
     $user->update(['access_id' => $access->id]);
+    $user->setRelation('currentAccess', $access);
     $user->test_token = $user->createToken('test')->plainTextToken;
 
     return $user;

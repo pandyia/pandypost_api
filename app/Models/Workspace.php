@@ -32,6 +32,10 @@ class Workspace extends Model implements Auditable
         'id',
     ];
 
+    protected $casts = [
+        'is_personal_team' => 'boolean',
+    ];
+
     /**
      * Memoiza a moeda resolvida: ManagesInvoices chama preferredCurrency() uma
      * vez por item da fatura, e cada chamada faria uma query no Price.

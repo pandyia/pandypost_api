@@ -210,7 +210,7 @@ class SocialAccount extends Model implements Auditable
             return 0;
         }
 
-        return $latest->diffInDays(now());
+        return (int) $latest->diffInDays(now());
     }
 
     /**

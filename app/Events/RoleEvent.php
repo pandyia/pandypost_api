@@ -29,8 +29,10 @@ class RoleEvent implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
+        $uuid = $this->role->workspace()->withoutGlobalScopes()->value('uuid');
+
         return [
-            new PrivateChannel('workspaces.' . $this->role->workspace->uuid),
+            new PrivateChannel('workspaces.' . $uuid),
         ];
     }
 

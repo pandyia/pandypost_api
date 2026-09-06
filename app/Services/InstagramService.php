@@ -196,6 +196,6 @@ class InstagramService implements SocialMediaServiceInterface
             $paths[] = $payload['thumbnail_path'];
         }
 
-        $this->storageService->deleteMany($paths);
+        $this->storageService->deleteIfUnused($paths, $post->id);
     }
 }

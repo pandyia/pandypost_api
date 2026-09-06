@@ -2,6 +2,7 @@
 
 namespace App\Services\Storage;
 
+use App\Models\ScheduledPost;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -125,5 +126,36 @@ class StorageService
         }
 
         return $newPath;
+    }
+
+    /**
+     * Deleta os caminhos do S3 SOMENTE se nenhum outro post agendado estiver usando o mesmo arquivo.
+     */
+    public function deleteIfUnused(array $paths, ?int $currentPostId = null): bool
+    {
+        $paths = array_filter($paths);
+        if (empty($paths)) {
+            return true;
+        }
+
+        $toDelete = [];
+        foreach ($paths as $path) {
+            $isUsedByOtherPost = ScheduledPost::where('media_path', $path)
+                ->whereIn('status', ['pending', 'processing'])
+                ->when($currentPostId, fn($q) => $q->where('id', '!=', $currentPostId))
+                ->exists();
+
+            if (!$isUsedByOtherPost) {
+                $toDelete[] = $path;
+            } else {
+                \Illuminate\Support\Facades\Log::info("Mantendo arquivo no S3 pois ainda esta em uso por outro post agendado: {$path}");
+            }
+        }
+
+        if (!empty($toDelete)) {
+            return Storage::disk('s3')->delete($toDelete);
+        }
+
+        return true;
     }
 }

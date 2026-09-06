@@ -175,7 +175,7 @@ class YouTubeService implements SocialMediaServiceInterface
             $paths[] = $thumbnailPath;
         }
 
-        $this->storageService->deleteMany($paths);
+        $this->storageService->deleteIfUnused($paths, $post->id);
     }
 
     /**

@@ -105,6 +105,8 @@ class User extends Authenticatable implements Auditable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'is_active' => 'boolean',
+            'remember_me' => 'boolean',
         ];
     }
 
@@ -157,7 +159,7 @@ class User extends Authenticatable implements Auditable
 
         if (!$access) {
             $access = $this->accesses()
-                ->whereHas('workspace', fn($q) => $q->where('is_personal_team', true))
+                ->whereHas('workspace', fn($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
                 ->first();
             $this->update(['access_id' => $access?->id]);
         }

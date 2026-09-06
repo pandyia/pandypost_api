@@ -110,7 +110,7 @@ return [
              * Em session mode deixe false: prepares no servidor são mais rápidos.
              */
             'options' => [
-                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_EMULATE_PREPARES => filter_var(env('DB_EMULATE_PREPARES', false), FILTER_VALIDATE_BOOLEAN),
                 PDO::ATTR_PERSISTENT => false,
             ],
         ],
