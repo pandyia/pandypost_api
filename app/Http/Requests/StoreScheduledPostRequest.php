@@ -51,6 +51,13 @@ class StoreScheduledPostRequest extends FormRequest
             'youtube_tags.*' => ['string', 'max:50'],
             'youtube_made_for_kids' => ['nullable', 'boolean'],
 
+            // Campos dinâmicos do TikTok
+            'tiktok_privacy_level' => ['nullable', 'string', Rule::in(['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY', 'FOLLOWER_OF_CREATOR'])],
+            'tiktok_disable_comment' => ['nullable', 'boolean'],
+            'tiktok_disable_duet' => ['nullable', 'boolean'],
+            'tiktok_disable_stitch' => ['nullable', 'boolean'],
+            'tiktok_brand_content_toggle' => ['nullable', 'boolean'],
+
             // Optional: links this post to a pipeline card, moving it to "scheduled" automatically.
             'pipeline_card_uuid'   => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
         ];

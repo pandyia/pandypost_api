@@ -14,7 +14,13 @@ return [
     |
     */
 
-    'meta' => [
+        'tiktok' => [
+        'client_key' => env('TIKTOK_CLIENT_KEY'),
+        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
+        'redirect' => env('TIKTOK_REDIRECT_URI'),
+    ],
+
+'meta' => [
         'app_id' => env('META_APP_ID'),
         'app_secret' => env('META_APP_SECRET'),
         'redirect' => env('META_REDIRECT_URI'),

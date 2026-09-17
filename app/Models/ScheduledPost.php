@@ -110,12 +110,10 @@ class ScheduledPost extends Model implements Auditable
     public function getPlatformPostUrl(): ?string
     {
         return match ($this->platform) {
-                // Platform::FACEBOOK => $this->platform_post_id ? "https://www.facebook.com/{$this->platform_post_id}" : null,
-                // Platform::TWITTER => $this->platform_post_id ? "https://twitter.com/i/web/status/{$this->platform_post_id}" : null,
-                // Platform::LINKEDIN => $this->platform_post_id ? "https://www.linkedin.com/feed/update/{$this->platform_post_id}" : null,
             Platform::INSTAGRAM => $this->platform_post_id ? "https://www.instagram.com/p/{$this->platform_post_id}" : null,
-            Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
-            _ => null,
+            Platform::YOUTUBE   => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
+            Platform::TIKTOK    => $this->platform_post_id ? "https://www.tiktok.com/video/{$this->platform_post_id}" : null,
+            default             => null,
         };
     }
 }
