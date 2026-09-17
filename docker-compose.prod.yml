@@ -11,6 +11,8 @@ services:
         depends_on:
             php:
                 condition: service_healthy
+            reverb:
+                condition: service_healthy
         networks:
             - pandypost-network-prod
         healthcheck:
@@ -56,6 +58,41 @@ services:
                     memory: 1536M
                 reservations:
                     memory: 512M
+
+    reverb:
+        image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
+        container_name: pandypost-reverb-prod
+        restart: always
+        env_file:
+            - .env
+        command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+        ports:
+            - "8080:8080"
+        stop_signal: SIGTERM
+        stop_grace_period: 30s
+        volumes:
+            - app_storage:/var/www/html/storage
+            - ./storage/logs:/var/www/html/storage/logs
+        depends_on:
+            redis:
+                condition: service_healthy
+            redis-cache:
+                condition: service_healthy
+        networks:
+            - pandypost-network-prod
+        healthcheck:
+            test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 8080) ? 0 : 1);'"]
+            interval: 15s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.50"
+                    memory: 512M
+                reservations:
+                    memory: 128M
 
     horizon:
         image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}

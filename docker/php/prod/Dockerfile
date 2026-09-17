@@ -20,7 +20,15 @@ ARG uid=1000
 RUN apk add --no-cache \
     supervisor \
     logrotate \
-    linux-headers
+    linux-headers \
+    bash \
+    curl \
+    wget \
+    git \
+    procps \
+    zip \
+    unzip \
+    redis
 
 # posix é exigido por laravel/horizon (ao lado de pcntl) para o master
 # supervisor sinalizar os workers.
@@ -28,11 +36,13 @@ RUN curl -sSLf https://github.com/mlocati/docker-php-extension-installer/release
     -o /usr/local/bin/install-php-extensions \
     && chmod +x /usr/local/bin/install-php-extensions \
     && install-php-extensions \
-        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl posix dom opcache \
+        gd bcmath bz2 pdo_pgsql pgsql zip ftp redis exif mbstring pcntl posix dom opcache swoole intl gmp \
     && rm /usr/local/bin/install-php-extensions \
     && php -m | grep -qx pcntl \
     && php -m | grep -qx posix \
-    && php -m | grep -qx redis
+    && php -m | grep -qx redis \
+    && php -m | grep -qx swoole \
+    && php -m | grep -qx intl
 
 COPY docker/php/prod/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/prod/www.conf /usr/local/etc/php-fpm.d/www.conf
