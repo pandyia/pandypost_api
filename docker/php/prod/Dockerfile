@@ -8,7 +8,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignor
 
 COPY . .
 
-RUN composer dump-autoload --optimize --no-dev
+RUN composer dump-autoload --optimize --no-dev --no-scripts
 
 # ---
 
