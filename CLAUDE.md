@@ -234,4 +234,19 @@ docker exec -it pandypost-php ./vendor/bin/pint --dirty   # formata arquivos alt
 docker exec -it pandypost-php composer test               # alternativa ao make test
 ```
 
+> **Para o agente:** o agente que tem permissão para usar Docker **pode usar o `make` diretamente** (`make up`, `make migrate`, `make horizon-status`, `make logs-octane`, `make restart-octane`, `make test-s3`...), respeitando as regras de "O que NÃO fazer sem pedir" (alvos destrutivos/produção continuam exigindo confirmação).
+>
+> Exceção: não há TTY, então os alvos do Makefile que usam `docker exec -it` (variável `exec`: `make test`, `make e`...) falham. Nesses casos use o equivalente `docker exec pandypost-php <comando>` sem `-it` (ex.: `docker exec pandypost-php php artisan test`).
+
+## Agentes (subagents do Claude Code)
+
+Definidos em `.claude/agents/`, ligados ao fluxo de SDD:
+
+- **`dev`**: implementa o `tasks.md` de uma spec aprovada, uma tarefa por vez.
+- **`qa`**: confere a implementação contra os critérios de aceite do `spec.md`, escreve os testes que faltam, roda a suíte e entrega um relatório. **Só escreve em `tests/`** (e cria factories novas); nunca altera código da aplicação. É uma regra de instrução, não imposta por ferramenta: o relatório termina com `git status --short` para conferência.
+
+**Proteções do projeto (`.claude/settings.json`):** regras `ask` que exigem confirmação do usuário (inclusive em modo auto, e para qualquer agente) antes de: push/tag, `git reset --hard`/`git clean`, migrations destrutivas e `db:wipe`, alvos destrutivos ou de produção do Makefile, `composer require/remove/update`, apagar volumes do Docker e editar `.env.example`, arquivos de produção do Docker e `.github/`.
+
+Fluxo típico: spec/plan/tasks aprovados → `dev` → `qa` → bugs do relatório voltam para o `dev`.
+
 Documentação da API (Postman): `docs/pandy-api.postman_collection.json` / https://documenter.getpostman.com/view/19909270/2sBXc8oi7R
