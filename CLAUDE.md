@@ -8,7 +8,7 @@ Tudo roda em Docker; **não há `vendor/` no host**. Sem TTY: use `docker exec p
 
 ## Fluxo SDD
 
-Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **002**). Modelo de referência: `specs/001-billing/`.
+Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **003**). Modelo de referência: `specs/001-billing/`.
 
 1. **`spec.md`** — o quê e por quê, sem detalhe técnico. Seções: Contexto, Escopo, Requisitos (RF-n), Contrato de API, Critérios de aceite, Fora de escopo, Questões em aberto.
 2. **`plan.md`** — como: decisões (+ alternativa descartada), modelo de dados, arquivos, efeitos colaterais, testes, riscos.

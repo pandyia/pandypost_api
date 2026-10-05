@@ -3,8 +3,11 @@
 use App\Models\Access;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\ScheduledPost;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +20,7 @@ use App\Models\Workspace;
 |
 */
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
     // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
@@ -100,11 +103,11 @@ function createUserWithPermissions(array $permissionNames = [], bool $isPersonal
     ]);
 
     $role = Role::withoutGlobalScopes()->create([
-        'name' => 'Test Role ' . uniqid(),
+        'name' => 'Test Role '.uniqid(),
         'workspace_id' => $workspace->id,
     ]);
 
-    if (!empty($permissionNames)) {
+    if (! empty($permissionNames)) {
         foreach ($permissionNames as $name) {
             permission($name);
         }
@@ -138,7 +141,7 @@ function addUserToWorkspace(Workspace $workspace, ?User $user = null): User
     $user ??= User::factory()->create();
 
     $role = Role::withoutGlobalScopes()->create([
-        'name' => 'Member Role ' . uniqid(),
+        'name' => 'Member Role '.uniqid(),
         'workspace_id' => $workspace->id,
     ]);
 
@@ -153,3 +156,36 @@ function addUserToWorkspace(Workspace $workspace, ?User $user = null): User
     return $user;
 }
 
+/**
+ * Cria uma conta TikTok conectada (token válido) no workspace corrente do usuário.
+ */
+function createTikTokAccount(User $user, array $overrides = []): SocialAccount
+{
+    return SocialAccount::create(array_merge([
+        'workspace_id' => $user->currentAccess->workspace_id,
+        'user_id' => $user->id,
+        'platform' => 'tiktok',
+        'platform_id' => 'tiktok_open_id_'.uniqid(),
+        'nickname' => 'Criador TikTok',
+        'access_token' => 'tiktok_access_token',
+        'refresh_token' => 'tiktok_refresh_token',
+        'expires_at' => now()->addHours(12),
+    ], $overrides));
+}
+
+/**
+ * Cria um post de TikTok para a conta informada.
+ */
+function createTikTokPost(SocialAccount $account, array $overrides = []): ScheduledPost
+{
+    $workspaceUuid = $account->workspace()->withoutGlobalScopes()->first()->uuid;
+
+    return ScheduledPost::create(array_merge([
+        'user_id' => $account->user_id,
+        'social_account_id' => $account->id,
+        'platform' => 'tiktok',
+        'media_path' => "workspaces/{$workspaceUuid}/videos/video.mp4",
+        'caption' => 'Meu vídeo no TikTok',
+        'status' => 'pending',
+    ], $overrides));
+}

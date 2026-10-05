@@ -4,8 +4,8 @@ namespace App\Models;
 
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
@@ -56,7 +56,7 @@ class ScheduledPost extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
+        static::creating(fn ($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
     }
 
     // Relationships
@@ -85,7 +85,7 @@ class ScheduledPost extends Model implements Auditable
 
     public function hasValidContainer(): bool
     {
-        if (!$this->container_id || !$this->container_created_at) {
+        if (! $this->container_id || ! $this->container_created_at) {
             return false;
         }
 
@@ -111,9 +111,10 @@ class ScheduledPost extends Model implements Auditable
     {
         return match ($this->platform) {
             Platform::INSTAGRAM => $this->platform_post_id ? "https://www.instagram.com/p/{$this->platform_post_id}" : null,
-            Platform::YOUTUBE   => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
-            Platform::TIKTOK    => $this->platform_post_id ? "https://www.tiktok.com/video/{$this->platform_post_id}" : null,
-            default             => null,
+            Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
+            // O TikTok resolve o vídeo pelo id; o @usuário pode ficar vazio.
+            Platform::TIKTOK => $this->platform_post_id ? "https://www.tiktok.com/@/video/{$this->platform_post_id}" : null,
+            default => null,
         };
     }
 }

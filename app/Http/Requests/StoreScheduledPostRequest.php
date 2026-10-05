@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TikTokPrivacyLevel;
 use App\Enums\YouTubePrivacyStatus;
 use App\Rules\StoragePathRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -43,7 +44,7 @@ class StoreScheduledPostRequest extends FormRequest
             'caption' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date', 'after:+5 minutes'],
             'is_short' => ['nullable', 'boolean'],
-            
+
             // Campos dinâmicos do YouTube
             'youtube_privacy_status' => ['nullable', Rule::enum(YouTubePrivacyStatus::class)],
             'youtube_category_id' => ['nullable', 'string', 'max:10'],
@@ -52,14 +53,14 @@ class StoreScheduledPostRequest extends FormRequest
             'youtube_made_for_kids' => ['nullable', 'boolean'],
 
             // Campos dinâmicos do TikTok
-            'tiktok_privacy_level' => ['nullable', 'string', Rule::in(['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY', 'FOLLOWER_OF_CREATOR'])],
+            'tiktok_privacy_level' => ['nullable', Rule::enum(TikTokPrivacyLevel::class)],
             'tiktok_disable_comment' => ['nullable', 'boolean'],
             'tiktok_disable_duet' => ['nullable', 'boolean'],
             'tiktok_disable_stitch' => ['nullable', 'boolean'],
             'tiktok_brand_content_toggle' => ['nullable', 'boolean'],
 
             // Optional: links this post to a pipeline card, moving it to "scheduled" automatically.
-            'pipeline_card_uuid'   => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
+            'pipeline_card_uuid' => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
         ];
     }
 
@@ -77,6 +78,7 @@ class StoreScheduledPostRequest extends FormRequest
             'social_account_uuids.*.exists' => 'A conta social selecionada não foi encontrada.',
             'scheduled_at.after' => 'O agendamento precisa ser de pelo menos 5 minutos no futuro.',
             'youtube_privacy_status.in' => 'A privacidade do YouTube deve ser public, private ou unlisted.',
+            'tiktok_privacy_level.enum' => 'A privacidade do TikTok deve ser PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR ou SELF_ONLY.',
         ];
     }
 }

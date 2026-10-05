@@ -9,6 +9,7 @@ class SocialAccountException extends BaseException
     public static function authFailed(string $platform): self
     {
         $error = SocialAccountError::AUTH_FAILED;
+
         return static::make($error, $error->message($platform));
     }
 
@@ -25,12 +26,14 @@ class SocialAccountException extends BaseException
     public static function platformNotSupported(string $platform): self
     {
         $error = SocialAccountError::PLATFORM_NOT_SUPPORTED;
+
         return static::make($error, $error->message($platform));
     }
 
     public static function accountAlreadyLinked(string $platform): self
     {
         $error = SocialAccountError::ACCOUNT_ALREADY_LINKED;
+
         return static::make($error, $error->message($platform));
     }
 
@@ -47,5 +50,19 @@ class SocialAccountException extends BaseException
     public static function oauthInitializationFailed(): self
     {
         return static::make(SocialAccountError::OAUTH_INITIALIZATION_FAILED);
+    }
+
+    public static function tokenRefreshFailed(string $platform): self
+    {
+        $error = SocialAccountError::TOKEN_REFRESH_FAILED;
+
+        return static::make($error, $error->message($platform));
+    }
+
+    public static function missingPermissions(string $platform): self
+    {
+        $error = SocialAccountError::MISSING_PERMISSIONS;
+
+        return static::make($error, $error->message($platform));
     }
 }

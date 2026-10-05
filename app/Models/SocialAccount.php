@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use App\Enums\Platform;
+use App\Exceptions\SocialAccountException;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Services\OAuthProviders\TikTokOAuthProvider;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -29,7 +33,7 @@ class SocialAccount extends Model implements Auditable
 
     public function getAuditRepresentation(): string
     {
-        return $this->nickname . ' (' . $this->platform . ')';
+        return $this->nickname.' ('.$this->platform.')';
     }
 
     protected $fillable = [
@@ -64,7 +68,7 @@ class SocialAccount extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($account) => $account->uuid = $account->uuid ?: (string) Str::uuid());
+        static::creating(fn ($account) => $account->uuid = $account->uuid ?: (string) Str::uuid());
     }
 
     private const TOKEN_EXPIRY_MARGIN_MINUTES = 5;
@@ -90,7 +94,7 @@ class SocialAccount extends Model implements Auditable
 
     public function isTokenExpired(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return true;
         }
 
@@ -99,26 +103,31 @@ class SocialAccount extends Model implements Auditable
 
     public function getValidToken(): string
     {
-        if (!$this->isTokenExpired()) {
+        if (! $this->isTokenExpired()) {
             return $this->access_token;
         }
 
         return match ($this->platform) {
-            Platform::YOUTUBE->value   => $this->refreshYouTubeToken(),
+            Platform::YOUTUBE->value => $this->refreshYouTubeToken(),
             Platform::INSTAGRAM->value => $this->refreshInstagramToken(),
-            Platform::TIKTOK->value    => $this->refreshTikTokToken(),
-            default                    => $this->access_token,
+            Platform::TIKTOK->value => $this->refreshTikTokToken(),
+            default => $this->access_token,
         };
     }
 
     public function revokeToken(): void
     {
-        if (!$this->access_token) {
+        if (! $this->access_token) {
             return;
         }
 
         match ($this->platform) {
             Platform::YOUTUBE->value => Http::post('https://oauth2.googleapis.com/revoke', [
+                'token' => $this->access_token,
+            ]),
+            Platform::TIKTOK->value => Http::asForm()->post(TikTokOAuthProvider::REVOKE_URL, [
+                'client_key' => config('services.tiktok.client_key'),
+                'client_secret' => config('services.tiktok.client_secret'),
                 'token' => $this->access_token,
             ]),
             // Instagram não tem endpoint público de revogação via API.
@@ -129,8 +138,8 @@ class SocialAccount extends Model implements Auditable
 
     private function refreshYouTubeToken(): string
     {
-        if (!$this->refresh_token) {
-            throw new \Exception("Refresh token ausente. O usuário precisa reconectar a conta.");
+        if (! $this->refresh_token) {
+            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
         }
 
         $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
@@ -151,13 +160,13 @@ class SocialAccount extends Model implements Auditable
             return $data['access_token'];
         }
 
-        throw new \Exception("Não foi possível renovar o token do Google: " . $response->body());
+        throw new \Exception('Não foi possível renovar o token do Google: '.$response->body());
     }
 
     private function refreshInstagramToken(): string
     {
         $response = Http::get('https://graph.instagram.com/refresh_access_token', [
-            'grant_type'   => 'ig_refresh_token',
+            'grant_type' => 'ig_refresh_token',
             'access_token' => $this->access_token,
         ]);
 
@@ -166,19 +175,53 @@ class SocialAccount extends Model implements Auditable
 
             $this->update([
                 'access_token' => $data['access_token'],
-                'expires_at'   => now()->addSeconds($data['expires_in'] ?? 5184000),
+                'expires_at' => now()->addSeconds($data['expires_in'] ?? 5184000),
             ]);
 
             return $data['access_token'];
         }
 
-        throw new \Exception("Não foi possível renovar o token do Instagram: " . $response->body());
+        throw new \Exception('Não foi possível renovar o token do Instagram: '.$response->body());
+    }
+
+    private function refreshTikTokToken(): string
+    {
+        if (! $this->refresh_token) {
+            throw SocialAccountException::tokenRefreshFailed(Platform::TIKTOK->label());
+        }
+
+        $response = Http::asForm()->post(TikTokOAuthProvider::TOKEN_URL, [
+            'client_key' => config('services.tiktok.client_key'),
+            'client_secret' => config('services.tiktok.client_secret'),
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $this->refresh_token,
+        ]);
+
+        $accessToken = $response->json('access_token');
+
+        if (! $response->successful() || ! $accessToken) {
+            Log::warning("Falha ao renovar o token do TikTok da conta {$this->id}.", [
+                'status' => $response->status(),
+                'error' => $response->json('error'),
+                'error_description' => $response->json('error_description'),
+            ]);
+            throw SocialAccountException::tokenRefreshFailed(Platform::TIKTOK->label());
+        }
+
+        // O TikTok pode rotacionar o refresh token a cada renovação.
+        $this->update([
+            'access_token' => $accessToken,
+            'refresh_token' => $response->json('refresh_token') ?? $this->refresh_token,
+            'expires_at' => now()->addSeconds($response->json('expires_in') ?? 86400),
+        ]);
+
+        return $accessToken;
     }
 
     /**
      * Retorna a data da atividade mais recente (publicada ou agendada)
      */
-    public function getLatestActivityDate(): ?\Carbon\Carbon
+    public function getLatestActivityDate(): ?Carbon
     {
         if ($this->relationLoaded('scheduledPosts')) {
             return $this->scheduledPosts
@@ -202,7 +245,7 @@ class SocialAccount extends Model implements Auditable
     {
         $latest = $this->getLatestActivityDate();
 
-        if (!$latest) {
+        if (! $latest) {
             return null; // Nunca postou
         }
 
@@ -228,38 +271,4 @@ class SocialAccount extends Model implements Auditable
 
         return $days >= $daysThreshold;
     }
-
-    private function refreshTikTokToken(): string
-    {
-        if (!$this->refresh_token) {
-            throw new \Exception("Refresh token do TikTok ausente. O usuário precisa reconectar a conta.");
-        }
-
-        $response = Http::asForm()->post('https://open.tiktokapis.com/v2/oauth/token/', [
-            'client_key' => config('services.tiktok.client_key'),
-            'client_secret' => config('services.tiktok.client_secret'),
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $this->refresh_token,
-        ]);
-
-        if ($response->successful()) {
-            $data = $response->json();
-            $accessToken = $data['access_token'] ?? null;
-            $refreshToken = $data['refresh_token'] ?? $this->refresh_token;
-            $expiresIn = $data['expires_in'] ?? 86400;
-
-            if ($accessToken) {
-                $this->update([
-                    'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken,
-                    'expires_at' => now()->addSeconds($expiresIn),
-                ]);
-
-                return $accessToken;
-            }
-        }
-
-        throw new \Exception("Não foi possível renovar o token do TikTok: " . $response->body());
-    }
-
 }
