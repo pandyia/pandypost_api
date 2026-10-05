@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git tag *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(*migrate:fresh*)",
+      "Bash(*migrate:rollback*)",
+      "Bash(*migrate:reset*)",
+      "Bash(*migrate:refresh*)",
+      "Bash(*db:wipe*)",
+      "Bash(make ms*)",
+      "Bash(make wipe*)",
+      "Bash(make rollback*)",
+      "Bash(make prod-*)",
+      "Bash(make setup-ssl*)",
+      "Bash(*composer require*)",
+      "Bash(*composer remove*)",
+      "Bash(*composer update*)",
+      "Bash(*docker compose down*-v*)",
+      "Bash(*docker volume rm*)",
+      "Edit(/.env.example)",
+      "Edit(/docker-compose.prod.yml)",
+      "Edit(/docker/php/prod/**)",
+      "Edit(/docker/nginx/Dockerfile.prod)",
+      "Edit(/docker/nginx/prod.conf)",
+      "Edit(/.github/**)"
+    ]
+  }
+}
