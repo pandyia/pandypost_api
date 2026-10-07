@@ -48,6 +48,7 @@ class TikTokService implements SocialMediaServiceInterface
         private readonly StorageService $storageService,
     ) {}
 
+    // Inicia a publicação, envia o vídeo em pedaços e agenda a checagem do status.
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload para TikTok. Post ID: {$post->id}");
@@ -68,10 +69,7 @@ class TikTokService implements SocialMediaServiceInterface
         CheckTikTokPostStatusJob::dispatch($post, $account, $upload['publish_id']);
     }
 
-    /**
-     * Vídeo menor que um pedaço vai inteiro. Acima disso, o total de pedaços é arredondado
-     * para baixo e o último absorve o resto (regra do TikTok).
-     */
+    // Divide o vídeo em pedaços; o último absorve o resto (regra do TikTok).
     private function buildSourceInfo(int $videoSize): array
     {
         if ($videoSize === 0) {
@@ -88,9 +86,7 @@ class TikTokService implements SocialMediaServiceInterface
         ];
     }
 
-    /**
-     * Cria a publicação no TikTok e devolve o publish_id e a URL de upload.
-     */
+    // Cria a publicação no TikTok e devolve o publish_id e a URL de upload.
     private function initializeUpload(string $accessToken, ScheduledPost $post, array $sourceInfo): array
     {
         $response = Http::withToken($accessToken)->post(self::INIT_URL, [
@@ -113,6 +109,7 @@ class TikTokService implements SocialMediaServiceInterface
         return $data;
     }
 
+    // Opções escolhidas no agendamento: privacidade, comentários, duet e stitch.
     private function buildPostInfo(ScheduledPost $post): array
     {
         $payload = $post->payload ?? [];
@@ -132,9 +129,7 @@ class TikTokService implements SocialMediaServiceInterface
         return $postInfo;
     }
 
-    /**
-     * Envia o vídeo do S3 para o TikTok em pedaços, sem materializar o arquivo inteiro na memória.
-     */
+    // Envia o vídeo do S3 em pedaços, sem carregar o arquivo inteiro na memória.
     private function uploadChunks(string $uploadUrl, ScheduledPost $post, array $sourceInfo): void
     {
         $videoSize = $sourceInfo['video_size'];
@@ -186,6 +181,7 @@ class TikTokService implements SocialMediaServiceInterface
         return self::MIME_TYPES[$extension] ?? self::DEFAULT_MIME_TYPE;
     }
 
+    // Traduz o código de erro do TikTok para uma mensagem que o usuário entende.
     private function describeError(?string $code, ?string $message): string
     {
         if ($code !== null && isset(self::ERROR_MESSAGES[$code])) {

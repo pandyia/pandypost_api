@@ -4,10 +4,10 @@ namespace App\Jobs;
 
 use App\Enums\Platform;
 use App\Exceptions\ScheduledPostException;
+use App\Jobs\Concerns\PollsPlatformStatus;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
-use DateTimeInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,13 +19,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Consulta o status de uma publicação no TikTok até ela ser concluída ou recusada.
- * O TikTok processa e modera o vídeo depois do upload; isso costuma levar ~1 min, mas pode demorar mais.
- */
+// Consulta o status do post no TikTok até publicar ou falhar (processar e moderar leva ~1 min).
 class CheckTikTokPostStatusJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, PollsPlatformStatus, Queueable, SerializesModels;
 
     private const STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
 
@@ -44,16 +41,7 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         $this->onQueue(Platform::TIKTOK->value);
     }
 
-    public function retryUntil(): DateTimeInterface
-    {
-        return now()->addMinutes(self::MONITORING_WINDOW_MINUTES);
-    }
-
-    public function backoff(): array
-    {
-        return self::POLL_DELAYS_SECONDS;
-    }
-
+    // Publicado ou recusado encerra; qualquer outro status volta para a fila e consulta de novo.
     public function handle(StorageService $storageService): void
     {
         $data = $this->fetchStatus();
@@ -68,9 +56,7 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         };
     }
 
-    /**
-     * Prazo de acompanhamento esgotado ou erros repetidos na consulta.
-     */
+    // Prazo esgotado ou erros demais na consulta: marca o post como falho.
     public function failed(Throwable $exception): void
     {
         $message = $exception instanceof MaxAttemptsExceededException
@@ -97,46 +83,22 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         return $response->json('data') ?? [];
     }
 
-    private function nextPollDelay(): int
-    {
-        $index = min($this->attempts() - 1, count(self::POLL_DELAYS_SECONDS) - 1);
-
-        return self::POLL_DELAYS_SECONDS[$index];
-    }
-
-    /**
-     * O id público só existe quando o vídeo é público e já passou pela moderação;
-     * posts privados (ou ainda em moderação) ficam sem id.
-     */
+    // O id público só vem para vídeo público já moderado; senão o post fica sem link.
     private function markAsPublished(array $data, StorageService $storageService): void
     {
         $publicPostId = Arr::first($data['publicaly_available_post_id'] ?? []);
 
-        $this->post->update([
-            'status' => 'published',
-            'platform_post_id' => $publicPostId !== null ? (string) $publicPostId : null,
-            'published_at' => now(),
-        ]);
+        $this->post->markAsPublished($publicPostId !== null ? (string) $publicPostId : null);
+        $storageService->deletePostMedia($this->post);
 
         Log::info("Post {$this->post->id} publicado com sucesso no TikTok!");
-        $this->cleanupFiles($storageService);
     }
 
     private function markAsFailed(string $error, StorageService $storageService): void
     {
-        $this->post->update([
-            'status' => 'failed',
-            'error_message' => mb_substr($error, 0, 255),
-        ]);
+        $this->post->markAsFailed($error);
+        $storageService->deletePostMedia($this->post);
 
         Log::error("Falha no post TikTok {$this->post->id}: {$error}");
-        $this->cleanupFiles($storageService);
-    }
-
-    private function cleanupFiles(StorageService $storageService): void
-    {
-        $paths = [$this->post->media_path, Arr::get($this->post->payload ?? [], 'thumbnail_path')];
-
-        $storageService->deleteIfUnused($paths, $this->post->id);
     }
 }

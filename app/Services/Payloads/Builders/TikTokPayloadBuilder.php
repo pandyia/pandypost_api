@@ -11,6 +11,7 @@ class TikTokPayloadBuilder extends AbstractPlatformPayloadBuilder
         'tiktok_brand_content_toggle',
     ];
 
+    // Move as opções do TikTok do request para o payload do post.
     protected function extractPayload(array &$attributes): array
     {
         $payload = parent::extractPayload($attributes);

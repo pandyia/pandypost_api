@@ -2,25 +2,33 @@
 
 namespace App\Jobs;
 
+use App\Enums\Platform;
+use App\Exceptions\ScheduledPostException;
+use App\Jobs\Concerns\PollsPlatformStatus;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Services\InstagramService;
+use App\Services\Storage\StorageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Throwable;
 
+// Acompanha o container do Instagram e publica quando fica pronto; no warmup ($shouldPublish = false) só espera.
 class CheckInstagramContainerJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, PollsPlatformStatus, Queueable, SerializesModels;
 
-    private const GRAPH_API_VERSION = 'v25.0';
-    private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
+    private const MONITORING_WINDOW_MINUTES = 30;
 
-    public int $tries = 15;
+    private const POLL_DELAYS_SECONDS = [5, 10, 20, 30, 60];
+
+    // Erros na consulta ou na publicação (rede, token, limite) tolerados antes de desistir.
+    public int $maxExceptions = 3;
 
     public function __construct(
         public ScheduledPost $post,
@@ -28,114 +36,58 @@ class CheckInstagramContainerJob implements ShouldQueue
         public string $containerId,
         public bool $shouldPublish = true
     ) {
-        $this->onQueue('instagram');
+        $this->onQueue(Platform::INSTAGRAM->value);
     }
 
-    public function backoff(): array
-    {
-        return [2, 4, 8, 16, 30];
-    }
-
-    public function handle(): void
+    // Pronto publica, erro descarta; qualquer outro status volta para a fila e consulta de novo.
+    public function handle(InstagramService $instagram): void
     {
         $accessToken = $this->account->getValidToken();
-        $status = $this->getContainerStatus($accessToken);
-        $attempt = $this->attempts();
+        $status = $instagram->containerStatus($this->containerId, $accessToken);
 
-        Log::info("Container {$this->containerId} - Status: {$status} (tentativa {$attempt}/{$this->tries}) [Publish: " . ($this->shouldPublish ? 'Sim' : 'Não') . "]");
+        Log::info("Container {$this->containerId} - Status: {$status} (tentativa {$this->attempts()}) [publicar: ".($this->shouldPublish ? 'sim' : 'não').']');
 
         match ($status) {
-            'FINISHED' => $this->handleFinishedContainer($accessToken),
-            'ERROR' => $this->handleError(),
-            default => $this->retryWithBackoff(),
+            InstagramService::CONTAINER_FINISHED => $this->onContainerReady($instagram, $accessToken),
+            InstagramService::CONTAINER_ERROR => $this->onContainerError(),
+            default => $this->release($this->nextPollDelay()),
         };
     }
 
-    private function retryWithBackoff(): void
+    // Prazo esgotado ou erros demais: marca o post como falho (no warmup só registra no log).
+    public function failed(Throwable $exception): void
     {
-        $backoffValues = $this->backoff();
-        $attempt = min($this->attempts() - 1, count($backoffValues) - 1);
-        $delay = $backoffValues[$attempt] ?? 30;
-        
-        Log::info("Container ainda processando. Próxima tentativa em {$delay}s");
-        $this->release($delay);
-    }
+        if (! $this->shouldPublish) {
+            Log::warning("[Warmup] Container {$this->containerId} não ficou pronto: {$exception->getMessage()}");
 
-    private function getContainerStatus(string $accessToken): ?string
-    {
-        $response = Http::get(
-            self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $this->containerId,
-            [
-                'fields' => 'status_code',
-                'access_token' => $accessToken,
-            ]
-        )->json();
-
-        return $response['status_code'] ?? null;
-    }
-
-    private function handleFinishedContainer(string $accessToken): void
-    {
-        if (!$this->shouldPublish) {
-            Log::info("Container {$this->containerId} pronto para uso futuro! (Warmup completo)");
             return;
         }
 
-        $this->publishContainer($accessToken);
+        $this->post->markAsFailed($exception instanceof MaxAttemptsExceededException
+            ? 'O Instagram não terminou de processar a mídia dentro do prazo de acompanhamento.'
+            : $exception->getMessage());
+
+        app(StorageService::class)->deletePostMedia($this->post);
     }
 
-    private function publishContainer(string $accessToken): void
+    private function onContainerReady(InstagramService $instagram, string $accessToken): void
     {
-        $response = Http::post(
-            self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $this->account->platform_id . '/media_publish',
-            [
-                'creation_id' => $this->containerId,
-                'access_token' => $accessToken,
-            ]
-        )->json();
+        if (! $this->shouldPublish) {
+            Log::info("[Warmup] Container {$this->containerId} pronto para a publicação.");
 
-        if (isset($response['error'])) {
-            Log::error('Falha ao publicar no Instagram', ['response' => $response]);
-            $this->markAsFailed('Erro na publicação: ' . json_encode($response));
             return;
         }
 
-        $this->markAsPublished($response['id'] ?? null);
+        $instagram->publish($this->post, $this->account, $accessToken);
     }
 
-    private function markAsPublished(?string $platformPostId): void
+    // Descarta o container com erro; no warmup a publicação cria outro, na publicação o post falha.
+    private function onContainerError(): void
     {
-        $this->post->update([
-            'status' => 'published',
-            'platform_post_id' => $platformPostId,
-            'published_at' => now(),
-        ]);
+        $this->post->update(['container_id' => null, 'container_created_at' => null]);
 
-        // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
-
-        Log::info("Post {$this->post->id} publicado com sucesso no Instagram!");
-    }
-
-    private function markAsFailed(string $error): void
-    {
-        $this->post->update([
-            'status' => 'failed',
-            'error_message' => substr($error, 0, 255),
-        ]);
-
-        Log::error("Falha no post {$this->post->id}: {$error}");
-    }
-
-    private function handleError(): void
-    {
-        // Limpa container inválido para permitir nova tentativa
-        $this->post->update([
-            'container_id' => null,
-            'container_created_at' => null,
-        ]);
-        
-        $this->markAsFailed('Erro no processamento do container pelo Instagram');
-        $this->fail(new Exception('Container processing failed'));
+        if ($this->shouldPublish) {
+            $this->fail(ScheduledPostException::publishFailed(Platform::INSTAGRAM->label(), 'o Instagram não conseguiu processar a mídia.'));
+        }
     }
 }
-

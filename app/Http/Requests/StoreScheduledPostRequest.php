@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Platform;
 use App\Enums\TikTokPrivacyLevel;
 use App\Enums\YouTubePrivacyStatus;
+use App\Models\SocialAccount;
 use App\Rules\StoragePathRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreScheduledPostRequest extends FormRequest
 {
@@ -64,11 +67,31 @@ class StoreScheduledPostRequest extends FormRequest
         ];
     }
 
+    /**
+     * O YouTube não aceita vídeo sem título: barra aqui, em vez de falhar só na hora de publicar.
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                if (blank($this->input('title')) && $this->targetsYouTube()) {
+                    $validator->errors()->add('title', 'Para postar no YouTube, você precisa definir um título.');
+                }
+            },
+        ];
+    }
+
+    private function targetsYouTube(): bool
+    {
+        return SocialAccount::whereIn('uuid', (array) $this->input('social_account_uuids', []))
+            ->where('platform', Platform::YOUTUBE->value)
+            ->exists();
+    }
+
     public function messages(): array
     {
         return [
             'media_storage_path.required' => 'O vídeo é obrigatório. Faça o upload primeiro usando o endpoint upload-url.',
-            'title.required_if' => 'Para postar no YouTube, você precisa definir um título.',
 
             'social_account_uuids.required' => 'Selecione ao menos uma conta social.',
             'social_account_uuids.array' => 'O campo de contas sociais deve ser uma lista.',
@@ -77,7 +100,7 @@ class StoreScheduledPostRequest extends FormRequest
             'social_account_uuids.*.uuid' => 'A conta social informada é inválida.',
             'social_account_uuids.*.exists' => 'A conta social selecionada não foi encontrada.',
             'scheduled_at.after' => 'O agendamento precisa ser de pelo menos 5 minutos no futuro.',
-            'youtube_privacy_status.in' => 'A privacidade do YouTube deve ser public, private ou unlisted.',
+            'youtube_privacy_status.enum' => 'A privacidade do YouTube deve ser public, private ou unlisted.',
             'tiktok_privacy_level.enum' => 'A privacidade do TikTok deve ser PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR ou SELF_ONLY.',
         ];
     }

@@ -7,12 +7,13 @@ use App\Services\Payloads\PayloadBuildResult;
 
 abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderInterface
 {
+    // Separa os campos do post (attributes) das opções da plataforma (payload).
     public function build(array $input): PayloadBuildResult
     {
         $attributes = $input;
         $payload = $this->extractPayload($attributes);
 
-        // A thumbnail agora chega como um path do S3 no $input, não como UploadedFile.
+        // A thumbnail já está no S3; só o caminho dela vai para o payload.
         $thumbnailPath = $this->pull($attributes, 'thumbnail_storage_path');
         if ($thumbnailPath) {
             $payload['thumbnail_path'] = $thumbnailPath;
@@ -28,6 +29,7 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
         return $attributes['payload'] ?? [];
     }
 
+    // Converte "true", "1", "on" etc. vindos do request; valor inválido vira $default.
     protected function normalizeBoolean(mixed $value, ?bool $default = null): ?bool
     {
         if ($value === null || $value === '') {
@@ -49,6 +51,7 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
         ), static fn (string $item): bool => $item !== ''));
     }
 
+    // Tira a chave do array e devolve o valor, para ela não sobrar nos attributes.
     protected function pull(array &$attributes, string $key, mixed $default = null): mixed
     {
         if (!array_key_exists($key, $attributes)) {

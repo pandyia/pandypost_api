@@ -16,8 +16,8 @@ const TIKTOK_STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fe
 beforeEach(function () {
     Storage::fake('s3');
 
-    $this->account = createTikTokAccount(createUserWithPermissions());
-    $this->post = createTikTokPost($this->account, [
+    $this->account = createSocialAccount('tiktok', createUserWithPermissions());
+    $this->post = createScheduledPost($this->account, [
         'status' => 'processing',
         'container_id' => 'v_pub_file~123',
         'payload' => ['thumbnail_path' => 'workspaces/x/thumbnails/capa.jpg'],
@@ -72,7 +72,7 @@ describe('publicação concluída', function () {
     });
 
     it('mantém o vídeo no storage quando outro post pendente usa o mesmo arquivo', function () {
-        createTikTokPost($this->account, ['media_path' => $this->post->media_path, 'status' => 'pending']);
+        createScheduledPost($this->account, ['media_path' => $this->post->media_path, 'status' => 'pending']);
         fakeTikTokStatus(['status' => 'PUBLISH_COMPLETE', 'publicaly_available_post_id' => [123]]);
 
         runTikTokStatusJob(new CheckTikTokPostStatusJob($this->post, $this->account, 'v_pub_file~123'));

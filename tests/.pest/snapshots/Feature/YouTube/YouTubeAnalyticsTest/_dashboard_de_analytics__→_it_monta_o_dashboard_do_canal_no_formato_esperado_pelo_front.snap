@@ -1,0 +1,133 @@
+{
+    "overviewMetrics": {
+        "views": 1200,
+        "viewsTrend": 20,
+        "watchTimeHours": 10,
+        "watchTimeTrend": 20,
+        "netSubscribers": 25,
+        "netSubscribersTrend": 56.3,
+        "estimatedRevenue": 12.5,
+        "revenueTrend": 25,
+        "avgViewDuration": "2:30",
+        "avgViewDurationTrend": 7.1
+    },
+    "timeSeriesData": {
+        "categories": [
+            "24 set",
+            "25 set",
+            "26 set",
+            "27 set",
+            "28 set",
+            "29 set",
+            "30 set",
+            "01 out"
+        ],
+        "series": {
+            "views": [
+                {
+                    "name": "Views",
+                    "data": [
+                        200,
+                        300,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Views (Per\u00edodo Anterior)",
+                    "data": [
+                        150,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "watchTime": [
+                {
+                    "name": "Tempo de Exibi\u00e7\u00e3o (h)",
+                    "data": [
+                        1.67,
+                        2.5,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "name": "Tempo de Exibi\u00e7\u00e3o (Per\u00edodo Anterior)",
+                    "data": [
+                        1.33,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ]
+        }
+    },
+    "trafficSources": {
+        "labels": [
+            "Pesquisa do YouTube",
+            "V\u00eddeos Sugeridos"
+        ],
+        "series": [
+            700,
+            500
+        ]
+    },
+    "topVideos": [
+        {
+            "id": "vid_a",
+            "title": "V\u00eddeo campe\u00e3o",
+            "thumbnail": "https:\/\/i.ytimg.com\/vid_a.jpg",
+            "views": 800,
+            "watchTime": 400,
+            "ctr": 0,
+            "retention": 50,
+            "winnerScore": 94,
+            "is_short": false,
+            "totalViews": 5000,
+            "totalLikes": 50,
+            "totalComments": 7
+        },
+        {
+            "id": "vid_b",
+            "title": "Short r\u00e1pido",
+            "thumbnail": "https:\/\/i.ytimg.com\/vid_b.jpg",
+            "views": 400,
+            "watchTime": 200,
+            "ctr": 0,
+            "retention": 66.7,
+            "winnerScore": 86,
+            "is_short": true,
+            "totalViews": 900,
+            "totalLikes": 50,
+            "totalComments": 7
+        }
+    ],
+    "alerts": [
+        {
+            "type": "success",
+            "title": "V\u00eddeo Vencedor Identificado",
+            "message": "O v\u00eddeo 'V\u00eddeo campe\u00e3o' est\u00e1 com \u00f3tima performance e atingiu um Score de 94. Fa\u00e7a mais conte\u00fado similar.",
+            "icon": "mdi-trophy"
+        }
+    ],
+    "channelScore": 65
+}

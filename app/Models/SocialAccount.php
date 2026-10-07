@@ -5,11 +5,14 @@ namespace App\Models;
 use App\Enums\Platform;
 use App\Exceptions\SocialAccountException;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Services\OAuthProviders\GoogleOAuthProvider;
+use App\Services\OAuthProviders\InstagramOAuthProvider;
 use App\Services\OAuthProviders\TikTokOAuthProvider;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -73,6 +76,13 @@ class SocialAccount extends Model implements Auditable
 
     private const TOKEN_EXPIRY_MARGIN_MINUTES = 5;
 
+    // Validade usada quando a plataforma não informa expires_in.
+    private const DEFAULT_TOKEN_TTL_SECONDS = [
+        'youtube' => 3600,
+        'tiktok' => 86400,
+        'instagram' => 5184000, // 60 dias
+    ];
+
     // Relationships
 
     public function user(): BelongsTo
@@ -92,6 +102,7 @@ class SocialAccount extends Model implements Auditable
 
     // Business Methods
 
+    // Considera vencido um pouco antes do prazo, para o token não expirar no meio de uma chamada.
     public function isTokenExpired(): bool
     {
         if (! $this->expires_at) {
@@ -101,20 +112,34 @@ class SocialAccount extends Model implements Auditable
         return $this->expires_at->subMinutes(self::TOKEN_EXPIRY_MARGIN_MINUTES)->isPast();
     }
 
+    // Devolve o token atual ou renova se estiver vencido.
     public function getValidToken(): string
     {
-        if (! $this->isTokenExpired()) {
-            return $this->access_token;
-        }
+        return $this->isTokenExpired() ? $this->refreshToken() : $this->access_token;
+    }
 
+    // Renova o token na plataforma e salva o novo; lança erro se a plataforma recusar.
+    public function refreshToken(): string
+    {
         return match ($this->platform) {
-            Platform::YOUTUBE->value => $this->refreshYouTubeToken(),
-            Platform::INSTAGRAM->value => $this->refreshInstagramToken(),
-            Platform::TIKTOK->value => $this->refreshTikTokToken(),
+            Platform::YOUTUBE->value => $this->refreshWithRefreshToken(Platform::YOUTUBE, GoogleOAuthProvider::TOKEN_URL, [
+                'client_id' => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+            ]),
+            Platform::TIKTOK->value => $this->refreshWithRefreshToken(Platform::TIKTOK, TikTokOAuthProvider::TOKEN_URL, [
+                'client_key' => config('services.tiktok.client_key'),
+                'client_secret' => config('services.tiktok.client_secret'),
+            ]),
+            // O Instagram não usa refresh token: o próprio token de longa duração é trocado por um novo.
+            Platform::INSTAGRAM->value => $this->saveRefreshedToken(Platform::INSTAGRAM, Http::get(InstagramOAuthProvider::REFRESH_URL, [
+                'grant_type' => 'ig_refresh_token',
+                'access_token' => $this->access_token,
+            ])),
             default => $this->access_token,
         };
     }
 
+    // Revoga o acesso na plataforma ao desconectar a conta.
     public function revokeToken(): void
     {
         if (! $this->access_token) {
@@ -122,7 +147,7 @@ class SocialAccount extends Model implements Auditable
         }
 
         match ($this->platform) {
-            Platform::YOUTUBE->value => Http::post('https://oauth2.googleapis.com/revoke', [
+            Platform::YOUTUBE->value => Http::post(GoogleOAuthProvider::REVOKE_URL, [
                 'token' => $this->access_token,
             ]),
             Platform::TIKTOK->value => Http::asForm()->post(TikTokOAuthProvider::REVOKE_URL, [
@@ -130,89 +155,42 @@ class SocialAccount extends Model implements Auditable
                 'client_secret' => config('services.tiktok.client_secret'),
                 'token' => $this->access_token,
             ]),
-            // Instagram não tem endpoint público de revogação via API.
-            // A desconexão é feita apenas no lado do app (delete do registro).
+            // O Instagram não tem revogação pela API: a desconexão só apaga o registro.
             default => null,
         };
     }
 
-    private function refreshYouTubeToken(): string
+    private function refreshWithRefreshToken(Platform $platform, string $tokenUrl, array $credentials): string
     {
         if (! $this->refresh_token) {
-            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
+            throw SocialAccountException::tokenRefreshFailed($platform->label());
         }
 
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        return $this->saveRefreshedToken($platform, Http::asForm()->post($tokenUrl, [
+            ...$credentials,
             'grant_type' => 'refresh_token',
             'refresh_token' => $this->refresh_token,
-            'client_id' => config('services.google.client_id'),
-            'client_secret' => config('services.google.client_secret'),
-        ]);
-
-        if ($response->successful()) {
-            $data = $response->json();
-
-            $this->update([
-                'access_token' => $data['access_token'],
-                'expires_at' => now()->addSeconds($data['expires_in']),
-            ]);
-
-            return $data['access_token'];
-        }
-
-        throw new \Exception('Não foi possível renovar o token do Google: '.$response->body());
+        ]));
     }
 
-    private function refreshInstagramToken(): string
+    private function saveRefreshedToken(Platform $platform, Response $response): string
     {
-        $response = Http::get('https://graph.instagram.com/refresh_access_token', [
-            'grant_type' => 'ig_refresh_token',
-            'access_token' => $this->access_token,
-        ]);
-
-        if ($response->successful()) {
-            $data = $response->json();
-
-            $this->update([
-                'access_token' => $data['access_token'],
-                'expires_at' => now()->addSeconds($data['expires_in'] ?? 5184000),
-            ]);
-
-            return $data['access_token'];
-        }
-
-        throw new \Exception('Não foi possível renovar o token do Instagram: '.$response->body());
-    }
-
-    private function refreshTikTokToken(): string
-    {
-        if (! $this->refresh_token) {
-            throw SocialAccountException::tokenRefreshFailed(Platform::TIKTOK->label());
-        }
-
-        $response = Http::asForm()->post(TikTokOAuthProvider::TOKEN_URL, [
-            'client_key' => config('services.tiktok.client_key'),
-            'client_secret' => config('services.tiktok.client_secret'),
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $this->refresh_token,
-        ]);
-
         $accessToken = $response->json('access_token');
 
-        if (! $response->successful() || ! $accessToken) {
-            Log::warning("Falha ao renovar o token do TikTok da conta {$this->id}.", [
+        if ($response->failed() || ! $accessToken) {
+            Log::warning("Falha ao renovar o token do {$platform->label()} da conta {$this->id}.", [
                 'status' => $response->status(),
                 'error' => $response->json('error'),
-                'error_description' => $response->json('error_description'),
             ]);
-            throw SocialAccountException::tokenRefreshFailed(Platform::TIKTOK->label());
+
+            throw SocialAccountException::tokenRefreshFailed($platform->label());
         }
 
-        // O TikTok pode rotacionar o refresh token a cada renovação.
         $this->update([
             'access_token' => $accessToken,
+            // O TikTok rotaciona o refresh token; Google e Instagram não mandam um novo.
             'refresh_token' => $response->json('refresh_token') ?? $this->refresh_token,
-            'expires_at' => now()->addSeconds($response->json('expires_in') ?? 86400),
+            'expires_at' => now()->addSeconds($response->json('expires_in') ?? self::DEFAULT_TOKEN_TTL_SECONDS[$platform->value]),
         ]);
 
         return $accessToken;

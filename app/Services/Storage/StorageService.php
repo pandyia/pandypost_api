@@ -2,7 +2,9 @@
 
 namespace App\Services\Storage;
 
+use App\Enums\ScheduledPostStatus;
 use App\Models\ScheduledPost;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -11,10 +13,10 @@ class StorageService
     /**
      * Gera uma presigned PUT URL para o client fazer upload direto no S3.
      *
-     * @param string $directory  Diretório lógico (ex: 'videos', 'thumbnails')
-     * @param string $workspaceUuid  UUID do workspace para prefixo de isolamento
-     * @param string $contentType  MIME type permitido (ex: 'video/mp4')
-     * @param string $extension  Extensão do arquivo (ex: 'mp4')
+     * @param  string  $directory  Diretório lógico (ex: 'videos', 'thumbnails')
+     * @param  string  $workspaceUuid  UUID do workspace para prefixo de isolamento
+     * @param  string  $contentType  MIME type permitido (ex: 'video/mp4')
+     * @param  string  $extension  Extensão do arquivo (ex: 'mp4')
      * @return array{url: string, path: string, content_type: string, max_size: int, expires_in: int}
      */
     public function generateUploadUrl(
@@ -25,19 +27,19 @@ class StorageService
     ): array {
         $uuid = (string) Str::uuid();
         $path = "workspaces/{$workspaceUuid}/{$directory}/{$uuid}.{$extension}";
-        $ttl  = (int) config('services.s3.presigned_put_ttl', 86400);
+        $ttl = (int) config('services.s3.presigned_put_ttl', 86400);
 
         $url = Storage::disk('s3')->temporaryUploadUrl($path, now()->addSeconds($ttl), [
             'ContentType' => $contentType,
         ]);
 
         return [
-            'url'          => $url['url'],
-            'headers'      => $url['headers'] ?? [],
-            'path'         => $path,
+            'url' => $url['url'],
+            'headers' => $url['headers'] ?? [],
+            'path' => $path,
             'content_type' => $contentType,
-            'max_size'     => (int) config('services.s3.max_upload_size', 32212254720),
-            'expires_in'   => $ttl,
+            'max_size' => (int) config('services.s3.max_upload_size', 32212254720),
+            'expires_in' => $ttl,
         ];
     }
 
@@ -65,20 +67,6 @@ class StorageService
     public function delete(string $path): bool
     {
         return Storage::disk('s3')->delete($path);
-    }
-
-    /**
-     * Deleta múltiplos objetos do S3.
-     */
-    public function deleteMany(array $paths): bool
-    {
-        $paths = array_filter($paths);
-
-        if (empty($paths)) {
-            return true;
-        }
-
-        return Storage::disk('s3')->delete($paths);
     }
 
     /**
@@ -129,33 +117,36 @@ class StorageService
     }
 
     /**
-     * Deleta os caminhos do S3 SOMENTE se nenhum outro post agendado estiver usando o mesmo arquivo.
+     * Apaga a mídia e a thumbnail do post, mantendo os arquivos que outro post ativo ainda usa
+     * (agendar para várias contas cria vários posts com os mesmos arquivos).
      */
-    public function deleteIfUnused(array $paths, ?int $currentPostId = null): bool
+    public function deletePostMedia(ScheduledPost $post): void
     {
-        $paths = array_filter($paths);
-        if (empty($paths)) {
-            return true;
+        $this->deleteIfUnused($post->mediaPaths(), $post->id);
+    }
+
+    /**
+     * Apaga os caminhos do S3 que nenhum outro post pendente ou em processamento usa como mídia ou thumbnail.
+     */
+    private function deleteIfUnused(array $paths, ?int $currentPostId = null): bool
+    {
+        $unused = array_filter(array_filter($paths), fn (string $path) => ! $this->isUsedByActivePost($path, $currentPostId));
+
+        return $unused === [] || Storage::disk('s3')->delete(array_values($unused));
+    }
+
+    private function isUsedByActivePost(string $path, ?int $exceptPostId): bool
+    {
+        $inUse = ScheduledPost::query()
+            ->whereIn('status', [ScheduledPostStatus::PENDING->value, ScheduledPostStatus::PROCESSING->value])
+            ->where(fn ($query) => $query->where('media_path', $path)->orWhere('payload->thumbnail_path', $path))
+            ->when($exceptPostId, fn ($query) => $query->whereKeyNot($exceptPostId))
+            ->exists();
+
+        if ($inUse) {
+            Log::info("Mantendo arquivo no S3: ainda está em uso por outro post agendado ({$path}).");
         }
 
-        $toDelete = [];
-        foreach ($paths as $path) {
-            $isUsedByOtherPost = ScheduledPost::where('media_path', $path)
-                ->whereIn('status', ['pending', 'processing'])
-                ->when($currentPostId, fn($q) => $q->where('id', '!=', $currentPostId))
-                ->exists();
-
-            if (!$isUsedByOtherPost) {
-                $toDelete[] = $path;
-            } else {
-                \Illuminate\Support\Facades\Log::info("Mantendo arquivo no S3 pois ainda esta em uso por outro post agendado: {$path}");
-            }
-        }
-
-        if (!empty($toDelete)) {
-            return Storage::disk('s3')->delete($toDelete);
-        }
-
-        return true;
+        return $inUse;
     }
 }

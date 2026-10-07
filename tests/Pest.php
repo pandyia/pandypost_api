@@ -7,6 +7,13 @@ use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use Google\Client;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Facades\Storage;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Tests\TestCase;
 
 /*
@@ -157,35 +164,126 @@ function addUserToWorkspace(Workspace $workspace, ?User $user = null): User
 }
 
 /**
- * Cria uma conta TikTok conectada (token válido) no workspace corrente do usuário.
+ * Cria uma conta social conectada (token válido) no workspace corrente do usuário.
  */
-function createTikTokAccount(User $user, array $overrides = []): SocialAccount
+function createSocialAccount(string $platform, User $user, array $overrides = []): SocialAccount
 {
-    return SocialAccount::create(array_merge([
+    return SocialAccount::create([
         'workspace_id' => $user->currentAccess->workspace_id,
         'user_id' => $user->id,
-        'platform' => 'tiktok',
-        'platform_id' => 'tiktok_open_id_'.uniqid(),
-        'nickname' => 'Criador TikTok',
-        'access_token' => 'tiktok_access_token',
-        'refresh_token' => 'tiktok_refresh_token',
+        'platform' => $platform,
+        'platform_id' => "{$platform}_id_".uniqid(),
+        'nickname' => 'Conta de teste',
+        'access_token' => "{$platform}_access_token",
+        'refresh_token' => "{$platform}_refresh_token",
         'expires_at' => now()->addHours(12),
-    ], $overrides));
+        ...$overrides,
+    ]);
 }
 
 /**
- * Cria um post de TikTok para a conta informada.
+ * Cria um post da plataforma da conta, com a mídia no diretório de vídeos do workspace.
  */
-function createTikTokPost(SocialAccount $account, array $overrides = []): ScheduledPost
+function createScheduledPost(SocialAccount $account, array $overrides = []): ScheduledPost
 {
     $workspaceUuid = $account->workspace()->withoutGlobalScopes()->first()->uuid;
 
-    return ScheduledPost::create(array_merge([
+    return ScheduledPost::create([
         'user_id' => $account->user_id,
         'social_account_id' => $account->id,
-        'platform' => 'tiktok',
+        'platform' => $account->platform,
         'media_path' => "workspaces/{$workspaceUuid}/videos/video.mp4",
-        'caption' => 'Meu vídeo no TikTok',
+        'caption' => 'Meu vídeo',
         'status' => 'pending',
-    ], $overrides));
+        ...$overrides,
+    ]);
+}
+
+/**
+ * Coloca um vídeo no S3 fake, no diretório de vídeos do workspace corrente do usuário.
+ */
+function uploadVideo(User $user, string $fileName = 'video.mp4'): string
+{
+    $workspaceUuid = Workspace::withoutGlobalScopes()->find($user->currentAccess->workspace_id)->uuid;
+    $path = "workspaces/{$workspaceUuid}/videos/{$fileName}";
+
+    Storage::disk('s3')->put($path, 'video');
+
+    return $path;
+}
+
+/**
+ * Stream que entrega no máximo 8 KB por leitura, como o stream de rede do S3.
+ * Uso: PacketStream::register($tamanho); fopen('packet://video', 'r').
+ */
+final class PacketStream
+{
+    public static int $size = 0;
+
+    public $context;
+
+    private int $position = 0;
+
+    public static function register(int $size): void
+    {
+        self::$size = $size;
+
+        if (! in_array('packet', stream_get_wrappers(), true)) {
+            stream_wrapper_register('packet', self::class);
+        }
+    }
+
+    public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
+    {
+        return true;
+    }
+
+    public function stream_read(int $count): string
+    {
+        $length = min($count, 8192, self::$size - $this->position);
+        $this->position += $length;
+
+        return str_repeat('v', $length);
+    }
+
+    public function stream_eof(): bool
+    {
+        return $this->position >= self::$size;
+    }
+
+    public function stream_stat(): array
+    {
+        return [];
+    }
+}
+
+/**
+ * Liga um Google\Client fake: toda requisição ao Google passa pelo $responder e fica registrada.
+ *
+ * @param  Closure(RequestInterface): ResponseInterface  $responder
+ * @return ArrayObject<int, RequestInterface>
+ */
+function fakeGoogleApi(Closure $responder): ArrayObject
+{
+    $requests = new ArrayObject;
+
+    $handler = HandlerStack::create(function ($request) use ($responder, $requests) {
+        $requests[] = $request;
+
+        return Create::promiseFor($responder($request));
+    });
+
+    app()->bind(Client::class, function () use ($handler) {
+        $client = new Client;
+        $client->setHttpClient(new GuzzleHttp\Client(['handler' => $handler]));
+
+        return $client;
+    });
+
+    return $requests;
+}
+
+function googleResponse(array $body = [], int $status = 200, array $headers = []): Response
+{
+    return new Response($status, ['Content-Type' => 'application/json', ...$headers], json_encode($body));
 }

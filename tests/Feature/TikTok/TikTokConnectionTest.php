@@ -202,7 +202,7 @@ describe('renovação de token', function () {
 
     it('renova o token vencido e guarda o novo refresh token', function () {
         $user = createUserWithPermissions();
-        $account = createTikTokAccount($user, ['expires_at' => now()->subMinute()]);
+        $account = createSocialAccount('tiktok', $user, ['expires_at' => now()->subMinute()]);
 
         Http::fake([TikTokOAuthProvider::TOKEN_URL => Http::response([
             'access_token' => 'act.renovado',
@@ -222,14 +222,14 @@ describe('renovação de token', function () {
 
     it('não chama o TikTok enquanto o token ainda é válido', function () {
         Http::fake();
-        $account = createTikTokAccount(createUserWithPermissions());
+        $account = createSocialAccount('tiktok', createUserWithPermissions());
 
         expect($account->getValidToken())->toBe('tiktok_access_token');
         Http::assertNothingSent();
     });
 
     it('lança erro de domínio quando não há refresh token', function () {
-        $account = createTikTokAccount(createUserWithPermissions(), [
+        $account = createSocialAccount('tiktok', createUserWithPermissions(), [
             'refresh_token' => null,
             'expires_at' => now()->subMinute(),
         ]);
@@ -240,7 +240,7 @@ describe('renovação de token', function () {
 
     it('lança erro de domínio quando o TikTok recusa a renovação', function () {
         Http::fake([TikTokOAuthProvider::TOKEN_URL => Http::response(['error' => 'invalid_grant'], 400)]);
-        $account = createTikTokAccount(createUserWithPermissions(), ['expires_at' => now()->subMinute()]);
+        $account = createSocialAccount('tiktok', createUserWithPermissions(), ['expires_at' => now()->subMinute()]);
 
         expect(fn () => $account->getValidToken())->toThrow(SocialAccountException::class);
         expect($account->fresh()->access_token)->toBe('tiktok_access_token');
@@ -252,7 +252,7 @@ describe('desconexão', function () {
     it('revoga o token no TikTok e remove a conta', function () {
         Http::fake([TikTokOAuthProvider::REVOKE_URL => Http::response([])]);
         $user = createUserWithPermissions(['social_accounts.disconnect']);
-        $account = createTikTokAccount($user);
+        $account = createSocialAccount('tiktok', $user);
 
         $this->withToken($user->test_token)
             ->deleteJson("/api/social-accounts/{$account->uuid}")

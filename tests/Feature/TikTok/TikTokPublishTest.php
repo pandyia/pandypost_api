@@ -17,47 +17,12 @@ const TIKTOK_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/
 const TIKTOK_UPLOAD_URL = 'https://open-upload.tiktokapis.com/video/?upload_id=123';
 const MEGABYTE = 1024 * 1024;
 
-/**
- * Stream que entrega no máximo 8 KB por leitura, como o stream de rede do S3.
- */
-final class PacketStream
-{
-    public static int $size = 0;
-
-    public $context;
-
-    private int $position = 0;
-
-    public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
-    {
-        return true;
-    }
-
-    public function stream_read(int $count): string
-    {
-        $length = min($count, 8192, self::$size - $this->position);
-        $this->position += $length;
-
-        return str_repeat('v', $length);
-    }
-
-    public function stream_eof(): bool
-    {
-        return $this->position >= self::$size;
-    }
-
-    public function stream_stat(): array
-    {
-        return [];
-    }
-}
-
 beforeEach(function () {
     Bus::fake();
     Storage::fake('s3');
 
-    $this->account = createTikTokAccount(createUserWithPermissions());
-    $this->post = createTikTokPost($this->account);
+    $this->account = createSocialAccount('tiktok', createUserWithPermissions());
+    $this->post = createScheduledPost($this->account);
 });
 
 function fakeTikTokInit(array $response = []): void
@@ -96,7 +61,7 @@ describe('envio do vídeo', function () {
                 'total_chunk_count' => 1,
             ]
             && $request['post_info'] === [
-                'title' => 'Meu vídeo no TikTok',
+                'title' => 'Meu vídeo',
                 'privacy_level' => 'PUBLIC_TO_EVERYONE',
                 'disable_comment' => false,
                 'disable_duet' => false,
@@ -121,10 +86,7 @@ describe('envio do vídeo', function () {
     it('divide vídeo grande em pedaços de 10 MEGABYTE e o último absorve o resto, mesmo com o stream entregando 8 KB por leitura', function () {
         fakeTikTokInit();
 
-        if (! in_array('packet', stream_get_wrappers(), true)) {
-            stream_wrapper_register('packet', PacketStream::class);
-        }
-        PacketStream::$size = 65 * MEGABYTE;
+        PacketStream::register(65 * MEGABYTE);
 
         $this->mock(StorageService::class, function ($mock) {
             $mock->shouldReceive('size')->andReturn(65 * MEGABYTE);

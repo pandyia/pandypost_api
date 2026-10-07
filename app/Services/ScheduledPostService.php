@@ -5,16 +5,16 @@ namespace App\Services;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Exceptions\ScheduledPostException;
+use App\Jobs\PublishPostJob;
 use App\Models\ContentPipeline;
-use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
-use App\Services\Factories\PayloadBuilderFactory;
-use App\Services\Billing\Tenant\SubscriptionService;
+use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\Billing\Tenant\SubscriptionService;
+use App\Services\Factories\PayloadBuilderFactory;
 use App\Services\Storage\StorageService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use App\Jobs\PublishPostJob;
 use Illuminate\Support\Facades\DB;
 
 class ScheduledPostService extends BaseService
@@ -31,37 +31,28 @@ class ScheduledPostService extends BaseService
         parent::__construct($scheduledPost);
     }
 
-    /**
-     * Agenda posts para uma ou mais contas sociais.
-     *
-     * O vídeo e a thumbnail já estão no S3 — recebemos apenas os paths
-     * validados pelo StoragePathRule no FormRequest.
-     */
+    // Cria um post por conta escolhida; a mídia já está no S3 (caminho validado no FormRequest).
     public function schedule(User $user, array $data): Collection
     {
         $this->subscriptionService->ensureValidSubscription($user);
 
-        $accountUuids     = $data['social_account_uuids'];
+        $accountUuids = $data['social_account_uuids'];
         $pipelineCardUuid = Arr::pull($data, 'pipeline_card_uuid');
         $mediaStoragePath = $data['media_storage_path'];
 
         return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $mediaStoragePath) {
             $this->subscriptionService->consumeQuota($user, count($accountUuids));
 
-            $posts = collect($accountUuids)->map(fn (string $uuid) =>
-                $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
+            $posts = collect($accountUuids)->map(fn (string $uuid) => $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
             );
 
-            $this->handlePipelineCard($pipelineCardUuid, $posts); //TODO tem a ver com kanban, não implementado ainda no frontend.
+            $this->handlePipelineCard($pipelineCardUuid, $posts); // TODO tem a ver com kanban, não implementado ainda no frontend.
 
             return $posts;
         });
     }
 
-    /**
-     * Cancela um post agendado.
-     * Só é possível cancelar posts com status "pending".
-     */
+    // Cancela um post ainda pendente e apaga a mídia que nenhum outro post usa.
     public function cancel(User $user, string $uuid): void
     {
         $post = ScheduledPost::where('uuid', $uuid)
@@ -73,38 +64,29 @@ class ScheduledPostService extends BaseService
         }
 
         $post->update(['status' => ScheduledPostStatus::CANCELLED->value]);
-
-        $paths = [$post->media_path];
-        $payload = $post->payload ?? [];
-        if (!empty($payload['thumbnail_path'])) {
-            $paths[] = $payload['thumbnail_path'];
-        }
-
-        $this->storageService->deleteMany(array_filter($paths));
+        $this->storageService->deletePostMedia($post);
     }
 
-    /**
-     * Cria e agenda o post para uma conta social específica.
-     */
+    // Cria o post de uma conta e agenda o job de publicação.
     private function createPostForAccount(
         User $user,
         string $uuid,
         string $mediaStoragePath,
         array $data,
     ): ScheduledPost {
-        $account      = $this->ensureValidSocialAccount($user, $uuid);
-        $platform     = Platform::from($account->platform);
+        $account = $this->ensureValidSocialAccount($user, $uuid);
+        $platform = Platform::from($account->platform);
         $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data);
-        $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
+        $attributes = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
 
         $postData = array_merge($attributes, [
-            'user_id'           => $user->id,
+            'user_id' => $user->id,
             'social_account_id' => $account->id,
-            'platform'          => $platform->value,
-            'media_path'        => $mediaStoragePath,
-            'payload'           => $payloadBuild->payload(),
-            'status'            => ScheduledPostStatus::PENDING->value,
-            'scheduled_at'      => $attributes['scheduled_at'] ?? null,
+            'platform' => $platform->value,
+            'media_path' => $mediaStoragePath,
+            'payload' => $payloadBuild->payload(),
+            'status' => ScheduledPostStatus::PENDING->value,
+            'scheduled_at' => $attributes['scheduled_at'] ?? null,
         ]);
 
         $post = $this->store($postData);
@@ -113,10 +95,7 @@ class ScheduledPostService extends BaseService
         return $post;
     }
 
-    /**
-     * Vincula o primeiro post gerado ao cartão da pipeline correspondente
-     * e o move automaticamente para a etapa "agendado".
-     */
+    // Liga o primeiro post ao cartão do kanban e move o cartão para "agendado".
     private function handlePipelineCard(?string $pipelineCardUuid, Collection $posts): void
     {
         if ($pipelineCardUuid && $posts->isNotEmpty()) {
@@ -134,13 +113,14 @@ class ScheduledPostService extends BaseService
             ->where('uuid', $socialAccountUuid)
             ->first();
 
-        if (!$account) {
+        if (! $account) {
             throw ScheduledPostException::noAccountLinked($socialAccountUuid);
         }
 
         return $account;
     }
 
+    // Sem data publica na hora; com data, o job espera até o horário.
     private function dispatchPlatformJob(ScheduledPost $post): void
     {
         $post->scheduled_at

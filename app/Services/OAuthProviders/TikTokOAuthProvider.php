@@ -8,10 +8,13 @@ use App\Exceptions\SocialAccountException;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\OAuthProviders\Concerns\ResolvesAccountOwner;
 use Illuminate\Support\Facades\Http;
 
 class TikTokOAuthProvider implements OAuthProviderInterface
 {
+    use ResolvesAccountOwner;
+
     public const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 
     public const REVOKE_URL = 'https://open.tiktokapis.com/v2/oauth/revoke/';
@@ -27,6 +30,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
 
     private const DEFAULT_TOKEN_TTL_SECONDS = 86400;
 
+    // Monta a URL de login do TikTok; o state leva o workspace para o callback saber onde salvar a conta.
     public function getRedirectUrl(?User $user = null): string
     {
         $workspace = $user?->currentAccess?->workspace;
@@ -46,15 +50,10 @@ class TikTokOAuthProvider implements OAuthProviderInterface
         return self::AUTHORIZE_URL.'?'.http_build_query($params);
     }
 
+    // Callback do OAuth: troca o código pelo token e cria ou atualiza a conta conectada no workspace.
     public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
     {
-        if ($context instanceof Workspace) {
-            $workspaceId = $context->id;
-            $userId = $context->accesses()->first()?->user_id;
-        } else {
-            $workspaceId = $context->currentAccess->workspace_id;
-            $userId = $context->id;
-        }
+        [$workspaceId, $userId] = $this->accountOwner($context);
 
         if (! $code) {
             throw SocialAccountException::authFailed(Platform::TIKTOK->label());
@@ -80,10 +79,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
         );
     }
 
-    /**
-     * Troca o código de autorização pelo token e garante que o usuário concedeu a permissão de publicar
-     * (a tela de consentimento do TikTok permite desmarcar escopos).
-     */
+    // Troca o código do callback pelo token e exige o escopo de publicar, que o usuário pode desmarcar.
     private function requestToken(string $code): array
     {
         $token = Http::asForm()->post(self::TOKEN_URL, [
@@ -107,9 +103,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
         return $token;
     }
 
-    /**
-     * Busca nome e avatar do perfil. Falha aqui não impede a conexão.
-     */
+    // Pega nome e avatar da conta, que o token não traz, para exibir no sistema.
     private function fetchProfile(string $accessToken): array
     {
         return Http::withToken($accessToken)

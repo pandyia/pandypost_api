@@ -41,6 +41,8 @@ class ScheduledPost extends Model implements Auditable
 
     protected $hidden = ['id'];
 
+    private const ERROR_MESSAGE_MAX_LENGTH = 255;
+
     protected $casts = [
         'platform' => Platform::class,
         'scheduled_at' => 'datetime',
@@ -83,6 +85,30 @@ class ScheduledPost extends Model implements Auditable
 
     // Business Methods
 
+    public function markAsPublished(?string $platformPostId): void
+    {
+        $this->update([
+            'status' => ScheduledPostStatus::PUBLISHED->value,
+            'platform_post_id' => $platformPostId,
+            'published_at' => now(),
+        ]);
+    }
+
+    public function markAsFailed(string $message): void
+    {
+        $this->update([
+            'status' => ScheduledPostStatus::FAILED->value,
+            'error_message' => mb_substr($message, 0, self::ERROR_MESSAGE_MAX_LENGTH),
+        ]);
+    }
+
+    // Arquivos do post no S3: a mídia e, se houver, a thumbnail.
+    public function mediaPaths(): array
+    {
+        return array_values(array_filter([$this->media_path, $this->payload['thumbnail_path'] ?? null]));
+    }
+
+    // Diz se o container do warmup ainda pode ser usado na publicação.
     public function hasValidContainer(): bool
     {
         if (! $this->container_id || ! $this->container_created_at) {
@@ -110,7 +136,8 @@ class ScheduledPost extends Model implements Auditable
     public function getPlatformPostUrl(): ?string
     {
         return match ($this->platform) {
-            Platform::INSTAGRAM => $this->platform_post_id ? "https://www.instagram.com/p/{$this->platform_post_id}" : null,
+            // O link do Instagram usa o shortcode do post, guardado como permalink na publicação.
+            Platform::INSTAGRAM => $this->payload['permalink'] ?? null,
             Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
             // O TikTok resolve o vídeo pelo id; o @usuário pode ficar vazio.
             Platform::TIKTOK => $this->platform_post_id ? "https://www.tiktok.com/@/video/{$this->platform_post_id}" : null,

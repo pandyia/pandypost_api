@@ -1,6 +1,6 @@
 # Pandypost API
 
-SaaS de agendamento/publicação de vídeos (YouTube, TikTok, Instagram), **multi-tenant por Workspace**. Só a API (Laravel 12, PHP 8.4, Octane/Swoole); o frontend é um SPA separado.
+SaaS de agendamento/publicação de vídeos (YouTube, TikTok, Instagram), **multi-tenant por Workspace**. Só a API (Laravel 12, PHP 8.4, Octane/Swoole); o frontend é um SPA separado, em `../pandypost_ui` (acesso só com autorização, ver "Não fazer sem pedir").
 
 Stack: PostgreSQL · Sanctum · Redis + Horizon (uma fila por plataforma) · Reverb · S3 (upload via presigned URL) · Cashier/Stripe (`Billable` no Workspace) · Pest.
 
@@ -8,7 +8,7 @@ Tudo roda em Docker; **não há `vendor/` no host**. Sem TTY: use `docker exec p
 
 ## Fluxo SDD
 
-Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **003**). Modelo de referência: `specs/001-billing/`.
+Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **006**). Modelo de referência: `specs/001-billing/`.
 
 1. **`spec.md`** — o quê e por quê, sem detalhe técnico. Seções: Contexto, Escopo, Requisitos (RF-n), Contrato de API, Critérios de aceite, Fora de escopo, Questões em aberto.
 2. **`plan.md`** — como: decisões (+ alternativa descartada), modelo de dados, arquivos, efeitos colaterais, testes, riscos.
@@ -37,6 +37,7 @@ Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: 
 
 ## Convenções
 
+- **Código enxuto, legível e confortável de ler** — é prioridade. Métodos curtos com nomes que dizem o que fazem; o método público conta a história em poucas linhas e delega os detalhes. Constantes nomeadas em vez de números/strings mágicas (URLs, limites, tempos). Sem código morto, comentado ou duplicado. Comentário só para explicar o **porquê**. Referência: `TikTokService` e `CheckTikTokPostStatusJob`.
 - Código em inglês; mensagens, erros e comentários em **pt-BR**.
 - **Validação:** FormRequest. Ao sobrescrever método do `BaseController`: `$data = app(StoreXRequest::class)->validated();`. Nunca `$request->validate()` inline.
 - **Respostas:** sempre `JsonResource`. Escrita: `response()->json(['message' => '...', 'data' => new XResource($m)], 201)`.
@@ -62,6 +63,7 @@ Branch `develop`, PR para `main`. Conventional Commits em pt-BR (`feat(billing):
 - Alterar `.env.example`, `docker-compose.prod.yml`, `docker/` de produção, `.github/`.
 - Mexer em produtos/preços do Stripe ou chamar APIs reais das redes sociais.
 - Commitar sem a minha autorização.
+- Acessar o front em `../pandypost_ui`, seja para ler ou alterar. Peça autorização **toda vez** que precisar, dizendo o que vai olhar e por quê; uma autorização anterior não vale para a próxima.
 
 ## Agentes
 

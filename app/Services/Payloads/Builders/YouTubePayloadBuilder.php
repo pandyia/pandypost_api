@@ -6,6 +6,7 @@ use App\Enums\YouTubePrivacyStatus;
 
 class YouTubePayloadBuilder extends AbstractPlatformPayloadBuilder
 {
+    // Move as opções do YouTube do request para o payload do post.
     protected function extractPayload(array &$attributes): array
     {
         $payload = parent::extractPayload($attributes);

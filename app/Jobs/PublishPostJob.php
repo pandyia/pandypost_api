@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\ScheduledPostException;
+use App\Exceptions\SubscriptionException;
 use App\Models\ScheduledPost;
 use App\Services\Factories\SocialMediaFactory;
 use App\Services\Storage\StorageService;
@@ -13,57 +15,46 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
+// Publica um post na fila da plataforma. Sem $timeout próprio: vale o do supervisor (config/horizon.php).
 class PublishPostJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
-    public int $timeout = 180;
+
+    // Espera entre as tentativas, para erros temporários (rede, limite de requisições) terem chance de passar.
+    public array $backoff = [30, 120];
 
     public function __construct(public ScheduledPost $post)
     {
-        $this->onQueue($post->platform->value); // separando filas por plataforma
+        $this->onQueue($post->platform->value);
     }
 
+    // Confere assinatura e conta, e passa o upload para o service da plataforma.
     public function handle(SocialMediaFactory $factory): void
     {
-        // Verificação Tardinha: Se o usuário cancelou a assinatura entre a data do clique e a data do post, nós barramos.
-        $user = $this->post->user;
-        if (!$user->hasValidSubscriptionForPublishing()) {
-            throw new \Exception("Assinatura Inativa ou Expirada no momento exato do agendamento.");
+        // A assinatura pode ter vencido entre o agendamento e a publicação.
+        if (! $this->post->user->hasValidSubscriptionForPublishing()) {
+            throw SubscriptionException::subscriptionInactive();
         }
 
         $account = $this->post->socialAccount;
 
-        if (!$account || $account->user_id !== $user->id) {
-            throw new \Exception("Conta vinculada ao agendamento não encontrada.");
+        if (! $account || $account->user_id !== $this->post->user_id) {
+            throw ScheduledPostException::noAccountLinked($this->post->platform->label());
         }
 
-        Log::info("Publicando post {$this->post->id} em {$this->post->platform->value} [queue: {$this->post->platform->value}]");
+        Log::info("Publicando post {$this->post->id} em {$this->post->platform->value}.");
 
-        $service = $factory->make($this->post->platform);
-        $service->upload($account, $this->post);
+        $factory->make($this->post->platform)->upload($account, $this->post);
     }
 
+    // Depois da última tentativa: marca o post como falho e apaga a mídia.
     public function failed(Throwable $exception): void
     {
-        Log::error("Falha no post {$this->post->id}: {$exception->getMessage()}");
+        Log::error("Falha definitiva no post {$this->post->id}: {$exception->getMessage()}");
 
-        $this->post->update([
-            'status' => 'failed',
-            'error_message' => substr($exception->getMessage(), 0, 255),
-        ]);
-        
-        // Limpa os arquivos do S3 se o post falhou de vez e caiu no Failed Jobs
-        $storageService = app(StorageService::class);
-
-        $paths = [$this->post->media_path];
-        
-        $payload = $this->post->payload ?? [];
-        if (!empty($payload['thumbnail_path'])) {
-            $paths[] = $payload['thumbnail_path'];
-        }
-
-        $storageService->deleteMany($paths);
+        $this->post->markAsFailed($exception->getMessage());
+        app(StorageService::class)->deletePostMedia($this->post);
     }
 }

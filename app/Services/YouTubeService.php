@@ -3,197 +3,174 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
-use App\Models\SocialAccount;
+use App\Enums\Platform;
+use App\Enums\ScheduledPostStatus;
+use App\Enums\YouTubePrivacyStatus;
+use App\Exceptions\ScheduledPostException;
 use App\Models\ScheduledPost;
+use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
+use Closure;
 use Google\Client;
 use Google\Http\MediaFileUpload;
+use Google\Service\Exception as GoogleException;
 use Google\Service\YouTube;
 use Google\Service\YouTube\Video;
 use Google\Service\YouTube\VideoSnippet;
 use Google\Service\YouTube\VideoStatus;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
-use Exception;
+use Illuminate\Support\Facades\Log;
+use Psr\Http\Message\RequestInterface;
+use Throwable;
 
 class YouTubeService implements SocialMediaServiceInterface
 {
-    private const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB
+    // Upload resumable: o Google pede pedaços múltiplos de 256 KB (exceto o último).
+    private const CHUNK_SIZE = 8 * 1024 * 1024;
+
+    private const DEFAULT_CATEGORY_ID = '22'; // Pessoas e blogs
+
+    // Motivos de erro do YouTube → explicação exibida ao usuário.
+    private const ERROR_MESSAGES = [
+        'quotaExceeded' => 'a cota diária da API do YouTube acabou. Tente novamente amanhã.',
+        'uploadLimitExceeded' => 'o canal atingiu o limite de envios do YouTube. Tente novamente mais tarde.',
+        'authError' => 'o acesso ao canal expirou ou foi revogado. Reconecte a conta.',
+        'forbidden' => 'o canal não permite esse envio. Verifique se ele está ativo e verificado.',
+    ];
 
     public function __construct(
         private readonly StorageService $storageService,
     ) {}
 
+    // Envia vídeo e thumbnail, marca o post como publicado e apaga a mídia do S3.
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload YouTube. Post ID: {$post->id}");
-        $post->update(['status' => 'processing']);
+        $post->update(['status' => ScheduledPostStatus::PROCESSING->value]);
 
-        try {
-            $client = $this->getAuthenticatedClient($account);
-            $youtube = new YouTube($client);
-            $video = $this->createVideoMetadata($post);
-            
-            $videoId = $this->streamVideoUpload($client, $youtube, $video, $post);
+        $client = $this->clientFor($account);
+        $youtube = new YouTube($client);
 
-            $payload = $post->payload ?? [];
-            
-            // O YouTube desqualifica Shorts e os transforma em Vídeos Normais se injetarmos uma Custom Thumbnail via API.
-            // Portanto, bloqueamos o envio da thumb caso o post seja marcado como Short.
-            $isShort = (bool) Arr::get($payload, 'is_short', false);
-            
-            $thumbnailPath = Arr::get($payload, 'thumbnail_path');
+        $videoId = $this->uploadVideo($client, $youtube, $post);
+        $this->uploadThumbnail($client, $youtube, $videoId, $post);
 
-            if (!$isShort && $thumbnailPath) {
-                $this->streamThumbnailUpload($client, $youtube, $videoId, $thumbnailPath);
-            }
+        $post->markAsPublished($videoId);
+        $this->storageService->deletePostMedia($post);
 
-            $post->update([
-                'status' => 'published',
-                'platform_post_id' => $videoId,
-                'published_at' => now(),
-            ]);
-            
-            Log::info("Post {$post->id} enviado ao YouTube com sucesso! Removendo arquivo do S3...");
-            $this->cleanupFiles($post, $payload);
-            
-        } catch (Exception $e) {
-            Log::error("Erro no upload do YouTube para o Post {$post->id}: " . $e->getMessage());
-            throw $e;
-        }
+        Log::info("Post {$post->id} publicado no YouTube (vídeo {$videoId}).");
     }
 
-    private function getAuthenticatedClient(SocialAccount $account): Client
+    // Client do Google com o token da conta, renovado se estiver perto de vencer.
+    public function clientFor(SocialAccount $account): Client
     {
-        $client = new Client();
-        $client->setClientId(config('services.google.client_id'));
-        $client->setClientSecret(config('services.google.client_secret'));
-        $client->setAccessToken($account->access_token);
-
-        if ($client->isAccessTokenExpired()) {
-            if (!$account->refresh_token) {
-                throw new Exception("Token expirado e sem refresh_token disponível.");
-            }
-            $newTokens = $client->fetchAccessTokenWithRefreshToken($account->refresh_token);
-            if (isset($newTokens['access_token'])) {
-                $account->update([
-                    'access_token' => $newTokens['access_token'],
-                    'expires_at' => now()->addSeconds($newTokens['expires_in'] ?? 3600),
-                ]);
-            }
-        }
+        $client = app(Client::class);
+        $client->setAccessToken($account->getValidToken());
 
         return $client;
     }
 
-    private function createVideoMetadata(ScheduledPost $post): Video
+    private function uploadVideo(Client $client, YouTube $youtube, ScheduledPost $post): string
     {
-        $video = new Video();
-        $snippet = new VideoSnippet();
-        $snippet->setTitle($post->title);
-        
-        $description = $post->caption ?? '';
-        $payload = $post->payload ?? [];
-        
-        $snippet->setDescription($description);
-        
-        // Categoria dinâmica (padrão 22 = People & Blogs)
-        $snippet->setCategoryId((string) Arr::get($payload, 'youtube_category_id', '22'));
-
-        // Tags dinâmicas vindas do Frontend (obrigatórias sendo um Array genuíno)
-        $tags = Arr::get($payload, 'youtube_tags', []);
-        if (is_array($tags) && $tags !== []) {
-            $snippet->setTags(array_map('trim', $tags));
+        try {
+            $video = $this->resumableUpload(
+                $client,
+                fn () => $youtube->videos->insert('snippet,status', $this->buildVideo($post)),
+                $post->media_path,
+                'video/*',
+            );
+        } catch (GoogleException $e) {
+            throw ScheduledPostException::publishFailed(Platform::YOUTUBE->label(), $this->describeError($e));
         }
 
-        $video->setSnippet($snippet);
+        if (! isset($video->id)) {
+            throw ScheduledPostException::publishFailed(Platform::YOUTUBE->label(), 'o YouTube não confirmou o envio do vídeo.');
+        }
 
-        $statusObj = new VideoStatus();
-        $privacy = (string) Arr::get($payload, 'youtube_privacy_status', 'public');
-        $statusObj->setPrivacyStatus($privacy);
-        
-        // Regra COPPA de conteúdo para crianças (padrão: false)
-        $isForKids = (bool) Arr::get($payload, 'youtube_made_for_kids', false);
-        $statusObj->setSelfDeclaredMadeForKids($isForKids);
-        
-        $video->setStatus($statusObj);
+        return $video->id;
+    }
+
+    // Monta título, descrição e opções escolhidas no agendamento.
+    private function buildVideo(ScheduledPost $post): Video
+    {
+        $payload = $post->payload ?? [];
+
+        $snippet = new VideoSnippet;
+        $snippet->setTitle($post->title);
+        $snippet->setDescription($post->caption ?? '');
+        $snippet->setCategoryId((string) Arr::get($payload, 'youtube_category_id', self::DEFAULT_CATEGORY_ID));
+
+        if ($tags = Arr::get($payload, 'youtube_tags')) {
+            $snippet->setTags($tags);
+        }
+
+        $status = new VideoStatus;
+        $status->setPrivacyStatus(Arr::get($payload, 'youtube_privacy_status', YouTubePrivacyStatus::PUBLIC->value));
+        $status->setSelfDeclaredMadeForKids((bool) Arr::get($payload, 'youtube_made_for_kids', false));
+
+        $video = new Video;
+        $video->setSnippet($snippet);
+        $video->setStatus($status);
 
         return $video;
     }
 
-    /**
-     * Faz stream do S3 direto para a YouTube API usando resumable upload.
-     * Os bytes passam pelo worker em stream (nunca materializa o arquivo em disco).
-     */
-    private function streamVideoUpload(Client $client, YouTube $youtube, Video $video, ScheduledPost $post): string
+    // Short não recebe capa (o YouTube o viraria vídeo normal); falha aqui não impede a publicação.
+    private function uploadThumbnail(Client $client, YouTube $youtube, string $videoId, ScheduledPost $post): void
     {
-        $client->setDefer(true);
-        $insertRequest = $youtube->videos->insert('snippet,status', $video);
-        $fileSize = $this->storageService->size($post->media_path);
-        
-        $media = new MediaFileUpload($client, $insertRequest, 'video/*', null, true, self::CHUNK_SIZE);
-        $media->setFileSize($fileSize);
+        $thumbnailPath = Arr::get($post->payload ?? [], 'thumbnail_path');
 
-        $handle = $this->storageService->readStream($post->media_path);
-        $status = $this->processResumableStream($handle, $media);
-        
+        if (! $thumbnailPath || Arr::get($post->payload, 'is_short', false)) {
+            return;
+        }
+
+        try {
+            $this->resumableUpload(
+                $client,
+                fn () => $youtube->thumbnails->set($videoId),
+                $thumbnailPath,
+                $this->storageService->mimeType($thumbnailPath),
+            );
+        } catch (Throwable $e) {
+            Log::warning("Falha ao enviar a thumbnail do vídeo {$videoId} ao YouTube: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Envia um arquivo do S3 em pedaços, sem carregar o arquivo inteiro na memória.
+     *
+     * @param  Closure(): RequestInterface  $buildRequest  chamada à API que vira a requisição de upload
+     */
+    private function resumableUpload(Client $client, Closure $buildRequest, string $path, string $mimeType): mixed
+    {
+        // Com defer, a chamada devolve a requisição em vez de executá-la, para enviar em pedaços.
+        $client->setDefer(true);
+        $request = $buildRequest();
         $client->setDefer(false);
 
-        if (!$status || !isset($status->id)) {
-            throw new Exception("Falha ao fazer upload do vídeo para o YouTube.");
-        }
-        
-        return $status->id;
-    }
+        $media = new MediaFileUpload($client, $request, $mimeType, null, true, self::CHUNK_SIZE);
+        $media->setFileSize($this->storageService->size($path));
 
-    private function streamThumbnailUpload(Client $client, YouTube $youtube, string $videoId, string $thumbnailPath): void
-    {
+        $stream = $this->storageService->readStream($path);
+
         try {
-            $thumbSize = $this->storageService->size($thumbnailPath);
-            $thumbMime = $this->storageService->mimeType($thumbnailPath);
-            $thumbHandle = $this->storageService->readStream($thumbnailPath);
-            
-            $client->setDefer(true);
-            $thumbRequest = $youtube->thumbnails->set($videoId);
-            $thumbMedia = new MediaFileUpload($client, $thumbRequest, $thumbMime, null, true, self::CHUNK_SIZE);
-            $thumbMedia->setFileSize($thumbSize);
-            
-            $this->processResumableStream($thumbHandle, $thumbMedia);
-            
-            $client->setDefer(false);
-        } catch (Exception $e) {
-            Log::warning("Falha ao subir thumbnail pro YouTube: " . $e->getMessage());
+            $result = false;
+
+            while ($result === false && ! feof($stream)) {
+                // stream_get_contents lê o pedaço inteiro; fread pararia no primeiro pacote do stream do S3.
+                $result = $media->nextChunk(stream_get_contents($stream, self::CHUNK_SIZE));
+            }
+
+            return $result;
+        } finally {
+            fclose($stream);
         }
     }
 
-    private function cleanupFiles(ScheduledPost $post, array $payload): void
+    // Traduz o motivo do erro do YouTube para uma mensagem que o usuário entende.
+    private function describeError(GoogleException $e): string
     {
-        $paths = [$post->media_path];
-        
-        $thumbnailPath = Arr::get($payload, 'thumbnail_path');
-        if ($thumbnailPath) {
-            $paths[] = $thumbnailPath;
-        }
+        $error = $e->getErrors()[0] ?? [];
 
-        $this->storageService->deleteIfUnused($paths, $post->id);
-    }
-
-    /**
-     * Processa a leitura do Stream do S3 e envio em partes (Chunks) para a API.
-     * 
-     * @param resource $handle
-     * @param MediaFileUpload $media
-     * @return mixed 
-     */
-    private function processResumableStream($handle, MediaFileUpload $media)
-    {
-        $status = false;
-        while (!$status && !feof($handle)) {
-            $chunk = fread($handle, self::CHUNK_SIZE);
-            $status = $media->nextChunk($chunk);
-        }
-        fclose($handle);
-        
-        return $status;
+        return self::ERROR_MESSAGES[$error['reason'] ?? ''] ?? ($error['message'] ?? 'erro inesperado no envio do vídeo.');
     }
 }

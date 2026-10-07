@@ -3,21 +3,23 @@
 namespace App\Services\Factories;
 
 use App\Contracts\OAuthProviderInterface;
-use App\Services\OAuthProviders\DefaultSocialiteProvider;
+use App\Exceptions\SocialAccountException;
 use App\Services\OAuthProviders\GoogleOAuthProvider;
 use App\Services\OAuthProviders\InstagramOAuthProvider;
 use App\Services\OAuthProviders\TikTokOAuthProvider;
-use InvalidArgumentException;
 
 class OAuthProviderFactory
 {
+    /**
+     * A plataforma vem da URL (/social-accounts/{platform}/auth); o YouTube conecta pelo Google.
+     */
     public function make(string $platform): OAuthProviderInterface
     {
         return match ($platform) {
+            'google' => app(GoogleOAuthProvider::class),
             'instagram' => app(InstagramOAuthProvider::class),
-            'google'    => app(GoogleOAuthProvider::class),
-            'tiktok'    => app(TikTokOAuthProvider::class),
-            default     => new DefaultSocialiteProvider($platform),
+            'tiktok' => app(TikTokOAuthProvider::class),
+            default => throw SocialAccountException::platformNotSupported($platform),
         };
     }
 }
