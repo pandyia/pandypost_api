@@ -6,6 +6,7 @@ use App\Enums\BillingFrequency;
 use App\Enums\Currency;
 use App\Models\Plan;
 use App\Models\Price;
+use App\Services\Billing\Admin\StripeCatalogService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -18,9 +19,15 @@ class PlanSeeder extends Seeder
      * - Price: valor em CENTAVOS, moeda (App\Enums\Currency) e frequência
      *   (App\Enums\BillingFrequency). gateway_price_id fica nulo — é preenchido
      *   ao sincronizar com o Stripe, não no seed.
+     *
+     * Produtos e preços sem ID do gateway são criados no Stripe (ou recebem ids
+     * `dev_...` quando STRIPE_ENABLED=false). Re-seeds não duplicam: só cria o
+     * que ainda não tem ID.
      */
     public function run(): void
     {
+        $gateway = app(StripeCatalogService::class);
+
         $plans = [
             [
                 'name' => 'Free',
@@ -70,6 +77,15 @@ class PlanSeeder extends Seeder
                 $plan->save();
             }
 
+            if (! $plan->gateway_product_id) {
+                $plan->gateway_product_id = $gateway->createProduct(
+                    $plan->name,
+                    $plan->description,
+                    ['plan_uuid' => $plan->uuid],
+                );
+                $plan->save();
+            }
+
             foreach ($prices as $priceData) {
                 // O DatabaseSeeder usa WithoutModelEvents, então o hook `creating`
                 // que gera o uuid não dispara aqui. Como prices.uuid é NOT NULL,
@@ -88,6 +104,17 @@ class PlanSeeder extends Seeder
                 }
 
                 $price->save();
+
+                if (! $price->gateway_price_id) {
+                    $price->gateway_price_id = $gateway->createPrice(
+                        $plan->gateway_product_id,
+                        $price->amount,
+                        $price->currency instanceof Currency ? $price->currency : Currency::from($price->currency),
+                        $price->frequency instanceof BillingFrequency ? $price->frequency : BillingFrequency::from($price->frequency),
+                        ['plan_uuid' => $plan->uuid],
+                    );
+                    $price->save();
+                }
             }
         }
     }

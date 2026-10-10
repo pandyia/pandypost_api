@@ -23,6 +23,10 @@ class CheckoutService
             throw BillingException::alreadySubscribed();
         }
 
+        if (! $price->gateway_price_id) {
+            throw BillingException::priceNotSynced();
+        }
+
         $builder = $workspace->newSubscription('default', $price->gateway_price_id);
 
         if ($price->trial_period_days > 0) {
@@ -35,7 +39,7 @@ class CheckoutService
                 'price_uuid' => $price->uuid,
             ])
             ->checkout([
-                'success_url' => config('services.stripe.checkout_success_url') . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => config('services.stripe.checkout_success_url').'?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => config('services.stripe.checkout_cancel_url'),
             ]);
 

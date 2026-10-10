@@ -8,10 +8,10 @@ npm:
 	exec npm install
 
 packages:
-	exec composer install && exec npm install
+	$(exec) composer install
 
 buildup:
-	docker compose up -d --build && docker compose exec php composer install && docker compose exec php npm install
+	docker compose build && docker compose run --rm --no-deps --entrypoint "" php composer install && docker compose up -d
 
 down:
 	docker compose down
@@ -97,7 +97,7 @@ recreate:
 	docker-compose up -d --force-recreate
 
 ngrok:
-	sudo ngrok http 9000
+	ngrok http 9000
 
 test:
 	$(exec) php artisan test

@@ -36,7 +36,7 @@ services:
         networks:
             - pandypost-network
         extra_hosts:
-            - "host.docker.internal:internal-gateway"
+            - "host.docker.internal:host-gateway"
 
     reverb:
         build:
@@ -55,7 +55,7 @@ services:
         networks:
             - pandypost-network
         extra_hosts:
-            - "host.docker.internal:internal-gateway"
+            - "host.docker.internal:host-gateway"
 
     horizon:
         build:
@@ -72,7 +72,7 @@ services:
         networks:
             - pandypost-network
         extra_hosts:
-            - "host.docker.internal:internal-gateway"
+            - "host.docker.internal:host-gateway"
 
     redis:
         image: redis:alpine
@@ -110,10 +110,13 @@ services:
 
     # Inicializador do Bucket Dev (play.minio) com protecao para Producao
     bucket-init:
-        image: minio/mc:latest
+        image: amazon/aws-cli:latest
         container_name: pandypost-bucket-init
         environment:
             - APP_ENV=${APP_ENV:-local}
+            - AWS_ACCESS_KEY_ID=Q3AM3UQ867SPQQA43P2F
+            - AWS_SECRET_ACCESS_KEY=zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+            - AWS_DEFAULT_REGION=us-east-1
         entrypoint: >
             /bin/sh -c "
             if [ "\$$APP_ENV" = "production" ] || [ "\$$APP_ENV" = "prod" ]; then
@@ -121,10 +124,10 @@ services:
                 exit 0;
              fi;
              echo 'Configurando bucket de dev no play.min.io...';
-            mc alias set play https://play.min.io Q3AM3UQ867SPQQA43P2F zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG;
-            mc mb play/pandypost-dev --ignore-existing;
-            mc anonymous set download play/pandypost-dev;
-            echo '[SUCESSO] Bucket pandypost-dev proto para uso!';
+            aws --endpoint-url https://play.min.io s3api head-bucket --bucket pandypost-dev 2>/dev/null ||
+            aws --endpoint-url https://play.min.io s3api create-bucket --bucket pandypost-dev;
+            aws --endpoint-url https://play.min.io s3api put-bucket-policy --bucket pandypost-dev --policy '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::pandypost-dev/*\"]}]}';
+            echo '[SUCESSO] Bucket pandypost-dev pronto para uso!';
             exit 0;
             "
         networks:

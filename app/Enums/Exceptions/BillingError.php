@@ -15,6 +15,7 @@ enum BillingError: string implements ErrorEnumInterface
     case ALREADY_SUBSCRIBED = 'already_subscribed';
     case NO_ACTIVE_SUBSCRIPTION = 'no_active_subscription';
     case DEFAULT_CARD_REQUIRED = 'default_card_required';
+    case PRICE_NOT_SYNCED = 'price_not_synced';
 
     public function message(): string
     {
@@ -28,6 +29,7 @@ enum BillingError: string implements ErrorEnumInterface
             self::ALREADY_SUBSCRIBED => 'Este workspace já possui uma assinatura ativa.',
             self::NO_ACTIVE_SUBSCRIPTION => 'Nenhuma assinatura ativa para este workspace.',
             self::DEFAULT_CARD_REQUIRED => 'Não é possível remover o cartão padrão; defina outro como padrão antes.',
+            self::PRICE_NOT_SYNCED => 'Este preço ainda não foi sincronizado com o gateway de pagamento.',
         };
     }
 
@@ -41,7 +43,8 @@ enum BillingError: string implements ErrorEnumInterface
             self::ALREADY_SUBSCRIBED => 409,
             self::PRICE_PLAN_MISMATCH,
             self::NO_ACTIVE_SUBSCRIPTION => 404,
-            self::DEFAULT_CARD_REQUIRED => 422,
+            self::DEFAULT_CARD_REQUIRED,
+            self::PRICE_NOT_SYNCED => 422,
             self::GATEWAY_ERROR => 502,
         };
     }
