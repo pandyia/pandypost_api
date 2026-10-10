@@ -52,4 +52,9 @@ class BillingException extends BaseException
     {
         return static::make(BillingError::DEFAULT_CARD_REQUIRED);
     }
+
+    public static function priceNotSynced(): self
+    {
+        return static::make(BillingError::PRICE_NOT_SYNCED);
+    }
 }
