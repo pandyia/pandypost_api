@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Plan;
 use App\Models\Price;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -18,7 +17,7 @@ function createPlanViaApi(string $token): string
 }
 
 test('admin pode adicionar um preço ao plano', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
     $planUuid = createPlanViaApi($user->test_token);
 
     $response = $this->withToken($user->test_token)->postJson("/api/admin/plans/{$planUuid}/prices", [
@@ -39,7 +38,7 @@ test('admin pode adicionar um preço ao plano', function () {
 });
 
 test('editar preço arquiva o antigo no histórico e cria um novo gateway_price_id', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
     $planUuid = createPlanViaApi($user->test_token);
 
     $priceUuid = $this->withToken($user->test_token)
@@ -64,7 +63,7 @@ test('editar preço arquiva o antigo no histórico e cria um novo gateway_price_
 });
 
 test('não é possível remover o único preço ativo da combinação moeda/frequência', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
     $planUuid = createPlanViaApi($user->test_token);
 
     $priceUuid = $this->withToken($user->test_token)
@@ -79,7 +78,7 @@ test('não é possível remover o único preço ativo da combinação moeda/freq
 });
 
 test('preço nunca usado com substituto ativo é removido definitivamente', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
     $planUuid = createPlanViaApi($user->test_token);
 
     // dois preços na mesma combinação (brl/monthly)
@@ -101,7 +100,7 @@ test('preço nunca usado com substituto ativo é removido definitivamente', func
 });
 
 test('admin lista o histórico de versões de um preço', function () {
-    $user = createUserWithPermissions(['billing.manage', 'billing.view']);
+    $user = createSuperAdmin();
     $planUuid = createPlanViaApi($user->test_token);
 
     $priceUuid = $this->withToken($user->test_token)

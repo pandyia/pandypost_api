@@ -11,7 +11,7 @@ beforeEach(function () {
 });
 
 test('admin pode criar um plano e recebe um gateway_product_id', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $response = $this->withToken($user->test_token)->postJson('/api/admin/plans', [
         'name' => 'Pro',
@@ -28,7 +28,7 @@ test('admin pode criar um plano e recebe um gateway_product_id', function () {
 });
 
 test('admin pode listar planos', function () {
-    $user = createUserWithPermissions(['billing.manage', 'billing.view']);
+    $user = createSuperAdmin();
 
     $this->withToken($user->test_token)->postJson('/api/admin/plans', ['name' => 'Starter']);
     $this->withToken($user->test_token)->postJson('/api/admin/plans', ['name' => 'Agency']);
@@ -39,7 +39,7 @@ test('admin pode listar planos', function () {
 });
 
 test('admin pode detalhar um plano pelo uuid', function () {
-    $user = createUserWithPermissions(['billing.manage', 'billing.view']);
+    $user = createSuperAdmin();
 
     $create = $this->withToken($user->test_token)->postJson('/api/admin/plans', ['name' => 'Pro']);
     $uuid = $create->json('data.id');
@@ -51,7 +51,7 @@ test('admin pode detalhar um plano pelo uuid', function () {
 });
 
 test('admin pode atualizar o nome de um plano', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $uuid = $this->withToken($user->test_token)
         ->postJson('/api/admin/plans', ['name' => 'Pro'])
@@ -65,7 +65,7 @@ test('admin pode atualizar o nome de um plano', function () {
 });
 
 test('admin pode desativar um plano pelo update', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $uuid = $this->withToken($user->test_token)
         ->postJson('/api/admin/plans', ['name' => 'Pro'])
@@ -79,7 +79,7 @@ test('admin pode desativar um plano pelo update', function () {
 });
 
 test('admin pode reativar um plano pelo update', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $uuid = $this->withToken($user->test_token)
         ->postJson('/api/admin/plans', ['name' => 'Pro'])
@@ -94,7 +94,7 @@ test('admin pode reativar um plano pelo update', function () {
 });
 
 test('plano nunca usado é removido definitivamente (hard delete)', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $uuid = $this->withToken($user->test_token)
         ->postJson('/api/admin/plans', ['name' => 'Pro'])
@@ -106,15 +106,15 @@ test('plano nunca usado é removido definitivamente (hard delete)', function () 
     expect(Plan::withTrashed()->where('uuid', $uuid)->exists())->toBeFalse();
 });
 
-test('usuário sem permissão billing.manage não pode criar plano', function () {
-    $user = createUserWithPermissions(['billing.view']);
+test('usuário que não é super admin não pode criar plano, mesmo com billing.manage', function () {
+    $user = createUserWithPermissions(['billing.view', 'billing.manage']);
 
     $this->withToken($user->test_token)->postJson('/api/admin/plans', ['name' => 'Pro'])
         ->assertStatus(403);
 });
 
 test('nome do plano é obrigatório', function () {
-    $user = createUserWithPermissions(['billing.manage']);
+    $user = createSuperAdmin();
 
     $this->withToken($user->test_token)->postJson('/api/admin/plans', [])
         ->assertStatus(422)

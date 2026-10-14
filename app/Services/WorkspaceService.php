@@ -24,14 +24,16 @@ class WorkspaceService extends BaseService
         $user = auth()->user();
 
         $alreadyExists = $user->accesses()
-            ->whereHas('workspace', fn($q) => $q->where('name', $data['name']))
+            ->whereHas('workspace', fn ($q) => $q->where('name', $data['name']))
             ->exists();
 
         if ($alreadyExists) {
             throw WorkspaceException::nameAlreadyExists();
         }
 
-        return $this->createAllAccess($user, $data);
+        // Só o nome vem do usuário; is_personal_team/role_name/permissions são
+        // exclusivos do workspace pessoal criado pelo UserObserver.
+        return $this->createAllAccess($user, ['name' => $data['name']]);
     }
 
     public function createAllAccess(User $user, array $data): Workspace
@@ -94,7 +96,7 @@ class WorkspaceService extends BaseService
             ->where('workspace_id', $workspace->id)
             ->first();
 
-        if (!$access) {
+        if (! $access) {
             throw WorkspaceException::userNotLinked();
         }
 

@@ -38,4 +38,11 @@ class Access extends Model implements Auditable
     {
         return $this->belongsTo(Workspace::class);
     }
+
+    // Scopes
+
+    public function scopeForWorkspace($query, int $workspaceId)
+    {
+        return $query->where('workspace_id', $workspaceId);
+    }
 }
