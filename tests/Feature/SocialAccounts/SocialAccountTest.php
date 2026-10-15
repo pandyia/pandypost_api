@@ -170,13 +170,6 @@ describe('analytics de conta social', function () {
         Http::assertNothingSent();
     });
 
-    it('retorna 400 para plataformas sem suporte a analytics', function () {
-        $user = createUserWithPermissions(['social_accounts.view']);
-        $account = socialAccountFor($user, ['platform' => 'tiktok']);
-
-        $this->withToken($user->test_token)
-            ->getJson("/api/analytics/{$account->uuid}/dashboard")
-            ->assertStatus(400);
-    });
+    // Analytics por plataforma (inclusive TikTok, que antes respondia 400): tests/Feature/Analytics/.
 
 });

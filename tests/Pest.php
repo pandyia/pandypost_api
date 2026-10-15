@@ -3,6 +3,7 @@
 use App\Models\Access;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use Tests\TestCase;
@@ -164,4 +165,21 @@ function createSuperAdmin(): User
     $user->is_super_admin = true;
 
     return $user;
+}
+
+/**
+ * Conta social conectada no workspace corrente do usuário, com token válido.
+ */
+function connectedSocialAccount(User $user, string $platform, array $overrides = []): SocialAccount
+{
+    return SocialAccount::withoutGlobalScopes()->create(array_merge([
+        'user_id' => $user->id,
+        'workspace_id' => $user->currentAccess->workspace_id,
+        'platform' => $platform,
+        'platform_id' => "{$platform}-".uniqid(),
+        'access_token' => 'token-valido',
+        'refresh_token' => 'refresh-valido',
+        'expires_at' => now()->addDay(),
+        'nickname' => 'Conta de teste',
+    ], $overrides));
 }
