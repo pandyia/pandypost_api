@@ -1,33 +1,33 @@
 <?php
 
 use App\Http\Controllers\Api\AccessController;
+use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Billing\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Api\Billing\Admin\PriceController as AdminPriceController;
+use App\Http\Controllers\Api\Billing\Public\PlanController;
 use App\Http\Controllers\Api\Billing\Tenant\PaymentController as BillingPaymentController;
 use App\Http\Controllers\Api\Billing\Tenant\PaymentMethodController as BillingPaymentMethodController;
 use App\Http\Controllers\Api\Billing\Tenant\SubscriptionController as BillingSubscriptionController;
+use App\Http\Controllers\Api\ContentPipelineController;
 use App\Http\Controllers\Api\InviteController;
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PermissionController;
-use App\Http\Controllers\Api\Billing\Public\PlanController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
+use App\Http\Controllers\Api\SocialAccountController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Controllers\Api\YouTubeCategoryController;
 use App\Http\Controllers\Api\YouTubePrivacyStatusController;
-use App\Http\Controllers\Api\AuditLogController;
-use App\Http\Controllers\Api\SocialAccountController;
-use App\Http\Controllers\Api\AnalyticsController;
-use App\Http\Controllers\Api\ContentPipelineController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Cashier\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
 | Autenticação Pública
 |--------------------------------------------------------------------------
 */
-
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('auth/signup', 'signup')->middleware('throttle:3,1');
@@ -62,7 +62,7 @@ Route::get('plans', [PlanController::class, 'index'])->middleware('throttle:45,1
 | (usa STRIPE_WEBHOOK_SECRET). URL no dashboard do Stripe: /api/stripe/webhook.
 | A lógica custom (tabela Payment) roda via listener de WebhookReceived.
 */
-Route::post('stripe/webhook', [\Laravel\Cashier\Http\Controllers\WebhookController::class, 'handleWebhook'])
+Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])
     ->name('cashier.webhook');
 
 /*
@@ -82,7 +82,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function () {
-    Route::prefix('admin')->group(function () {
+    // Catálogo global de planos/preços: exclusivo do super admin (specs/002 D1).
+    Route::prefix('admin')->middleware('super_admin')->group(function () {
         Route::get('plans', [AdminPlanController::class, 'index']);
         Route::post('plans', [AdminPlanController::class, 'store']);
         Route::get('plans/{plan}', [AdminPlanController::class, 'show']);

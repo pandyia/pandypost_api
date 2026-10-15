@@ -26,6 +26,13 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    // TikTok Login Kit + Display API. Redirect = {APP_URL}/api/social-accounts/tiktok/callback
+    'tiktok' => [
+        'client_key' => env('TIKTOK_CLIENT_KEY'),
+        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
+        'redirect' => env('TIKTOK_REDIRECT_URI', env('APP_URL').'/api/social-accounts/tiktok/callback'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -48,13 +55,13 @@ return [
     ],
 
     's3' => [
-        'presigned_put_ttl'  => (int) env('S3_PRESIGNED_PUT_TTL', 86400),
-        'presigned_get_ttl'  => (int) env('S3_PRESIGNED_GET_TTL', 1800),
+        'presigned_put_ttl' => (int) env('S3_PRESIGNED_PUT_TTL', 86400),
+        'presigned_get_ttl' => (int) env('S3_PRESIGNED_GET_TTL', 1800),
         // 5 GiB: teto de um PutObject de parte única na API S3-compatível do
         // Backblaze B2 (mesmo limite da AWS). Acima disso seria necessário
         // multipart upload, que o fluxo de presigned PUT atual não faz.
         // Valor apenas informativo — devolvido ao client, não validado aqui.
-        'max_upload_size'    => (int) env('S3_MAX_UPLOAD_SIZE', 5368709120),
+        'max_upload_size' => (int) env('S3_MAX_UPLOAD_SIZE', 5368709120),
     ],
 
     'stripe' => [
@@ -64,8 +71,8 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
-        'checkout_success_url' => env('STRIPE_CHECKOUT_SUCCESS_URL', env('FRONTEND_URL') . '/billing/success'),
-        'checkout_cancel_url' => env('STRIPE_CHECKOUT_CANCEL_URL', env('FRONTEND_URL') . '/billing/cancel'),
+        'checkout_success_url' => env('STRIPE_CHECKOUT_SUCCESS_URL', env('FRONTEND_URL').'/billing/success'),
+        'checkout_cancel_url' => env('STRIPE_CHECKOUT_CANCEL_URL', env('FRONTEND_URL').'/billing/cancel'),
     ],
 
 ];

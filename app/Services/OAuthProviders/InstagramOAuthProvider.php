@@ -15,7 +15,7 @@ class InstagramOAuthProvider implements OAuthProviderInterface
     {
         $workspace = $user?->currentAccess?->workspace;
 
-        if (!$workspace) {
+        if (! $workspace) {
             throw SocialAccountException::oauthInitializationFailed();
         }
 
@@ -25,13 +25,14 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             'client_id' => config('services.meta.app_id'),
             'redirect_uri' => config('services.meta.redirect'),
             'response_type' => 'code',
-            'scope' => 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages',
+            // manage_insights: leitura das métricas do dashboard (specs/003 RF-13).
+            'scope' => 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_insights',
             'state' => $state,
         ];
 
         $query = http_build_query($params);
 
-        return 'https://www.instagram.com/oauth/authorize?' . $query;
+        return 'https://www.instagram.com/oauth/authorize?'.$query;
     }
 
     public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
@@ -44,7 +45,7 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             $userId = $context->id;
         }
 
-        if (!$code) {
+        if (! $code) {
             throw SocialAccountException::authFailed('Instagram');
         }
 
@@ -53,11 +54,11 @@ class InstagramOAuthProvider implements OAuthProviderInterface
         $accessToken = $tokenResponse['access_token'] ?? null;
         $instagramId = $tokenResponse['user_id'] ?? null;
 
-        if (!$accessToken || !$instagramId) {
+        if (! $accessToken || ! $instagramId) {
             throw SocialAccountException::authFailed('Instagram');
         }
 
-        $profileResponse = Http::get("https://graph.instagram.com/v25.0/me", [
+        $profileResponse = Http::get('https://graph.instagram.com/v25.0/me', [
             'fields' => 'id,username',
             'access_token' => $accessToken,
         ])->json();
@@ -115,4 +116,3 @@ class InstagramOAuthProvider implements OAuthProviderInterface
         ];
     }
 }
-

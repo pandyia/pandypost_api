@@ -4,6 +4,7 @@ use App\Exceptions\GeneralException;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureSubscriptionAccess;
+use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\ForceJsonResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -16,9 +17,9 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__ . '/../routes/web.php',
-        api: __DIR__ . '/../routes/api.php',
-        commands: __DIR__ . '/../routes/console.php',
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -30,25 +31,26 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'verified' => EnsureEmailIsVerified::class,
             'subscribed' => EnsureSubscriptionAccess::class,
+            'super_admin' => EnsureSuperAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $e, $request) {
             return response()->json([
                 'message' => 'Não autenticado',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 401);
         });
 
         $exceptions->render(function (RouteNotFoundException $e) {
             return response()->json([
-                'message' => 'Rota de login não definida'
+                'message' => 'Rota de login não definida',
             ], 404);
         });
 
         $exceptions->render(function (AuthorizationException $e) {
             return response()->json([
-                'message' => $e->getMessage() ?: 'Acesso negado'
+                'message' => $e->getMessage() ?: 'Acesso negado',
             ], 403);
         });
 
@@ -68,7 +70,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //     if ($e instanceof \Illuminate\Validation\ValidationException) {
         //         return null; // Deixa o Laravel tratar normalmente
         //     }
-    
+
         //     return response()->json([
         //         'message' => $e->getMessage(),
         //         'error' => 'Erro interno'

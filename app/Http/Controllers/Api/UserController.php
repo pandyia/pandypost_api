@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\BaseController;
-use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -14,8 +13,9 @@ class UserController extends BaseController
     protected ?string $resourceClass = UserResource::class;
 
     protected static string $permissionGroup = 'users';
+
     protected static array $permissionMethods = [
-        'view'   => ['index', 'show'],
+        'view' => ['index', 'show'],
         'create' => ['store'],
         'update' => ['update'],
         'delete' => ['destroy'],
@@ -26,6 +26,15 @@ class UserController extends BaseController
         private UserService $userService
     ) {
         parent::__construct($userService);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = app(StoreUserRequest::class)->validated();
+
+        $this->userService->store($data);
+
+        return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
     }
 
     public function destroy(int|string $id): JsonResponse

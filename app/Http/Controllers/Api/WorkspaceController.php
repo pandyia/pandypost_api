@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\StoreWorkspaceRequest;
+use App\Http\Requests\UpdateWorkspaceRequest;
 use App\Http\Resources\SwitchWorkspaceResource;
 use App\Services\WorkspaceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
 class WorkspaceController extends BaseController
 {
     protected static string $permissionGroup = 'workspaces';
+
     protected static array $permissionMethods = [
         'view' => ['index', 'show', 'switchWorkspace'],
         'create' => ['store'],
@@ -21,9 +25,21 @@ class WorkspaceController extends BaseController
     ) {
         parent::__construct($workspaceService);
     }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = app(StoreWorkspaceRequest::class)->validated();
+
+        $this->workspaceService->store($data);
+
+        return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
+    }
+
     public function update(Request $request, $uuid): JsonResponse
     {
-        $this->workspaceService->updateByUuid($request->all(), $uuid);
+        $data = app(UpdateWorkspaceRequest::class)->validated();
+
+        $this->workspaceService->updateByUuid($data, $uuid);
 
         return response()->json(['message' => 'Registro atualizado com sucesso.'], 200);
     }

@@ -3,8 +3,10 @@
 use App\Models\Access;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +19,7 @@ use App\Models\Workspace;
 |
 */
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
     // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
@@ -100,11 +102,11 @@ function createUserWithPermissions(array $permissionNames = [], bool $isPersonal
     ]);
 
     $role = Role::withoutGlobalScopes()->create([
-        'name' => 'Test Role ' . uniqid(),
+        'name' => 'Test Role '.uniqid(),
         'workspace_id' => $workspace->id,
     ]);
 
-    if (!empty($permissionNames)) {
+    if (! empty($permissionNames)) {
         foreach ($permissionNames as $name) {
             permission($name);
         }
@@ -138,7 +140,7 @@ function addUserToWorkspace(Workspace $workspace, ?User $user = null): User
     $user ??= User::factory()->create();
 
     $role = Role::withoutGlobalScopes()->create([
-        'name' => 'Member Role ' . uniqid(),
+        'name' => 'Member Role '.uniqid(),
         'workspace_id' => $workspace->id,
     ]);
 
@@ -153,3 +155,31 @@ function addUserToWorkspace(Workspace $workspace, ?User $user = null): User
     return $user;
 }
 
+/**
+ * Cria um super admin (equipe do Pandypost) — único com acesso a /admin/**.
+ */
+function createSuperAdmin(): User
+{
+    $user = createUserWithPermissions([]);
+    User::whereKey($user->id)->update(['is_super_admin' => true]);
+    $user->is_super_admin = true;
+
+    return $user;
+}
+
+/**
+ * Conta social conectada no workspace corrente do usuário, com token válido.
+ */
+function connectedSocialAccount(User $user, string $platform, array $overrides = []): SocialAccount
+{
+    return SocialAccount::withoutGlobalScopes()->create(array_merge([
+        'user_id' => $user->id,
+        'workspace_id' => $user->currentAccess->workspace_id,
+        'platform' => $platform,
+        'platform_id' => "{$platform}-".uniqid(),
+        'access_token' => 'token-valido',
+        'refresh_token' => 'refresh-valido',
+        'expires_at' => now()->addDay(),
+        'nickname' => 'Conta de teste',
+    ], $overrides));
+}

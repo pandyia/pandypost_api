@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Platform;
 use App\Models\Traits\BelongsToWorkspace;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,7 +30,7 @@ class SocialAccount extends Model implements Auditable
 
     public function getAuditRepresentation(): string
     {
-        return $this->nickname . ' (' . $this->platform . ')';
+        return $this->nickname.' ('.$this->platform.')';
     }
 
     protected $fillable = [
@@ -64,7 +65,7 @@ class SocialAccount extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($account) => $account->uuid = $account->uuid ?: (string) Str::uuid());
+        static::creating(fn ($account) => $account->uuid = $account->uuid ?: (string) Str::uuid());
     }
 
     private const TOKEN_EXPIRY_MARGIN_MINUTES = 5;
@@ -86,11 +87,16 @@ class SocialAccount extends Model implements Auditable
         return $this->hasMany(ScheduledPost::class);
     }
 
+    public function metricSnapshots(): HasMany
+    {
+        return $this->hasMany(SocialAccountMetricSnapshot::class);
+    }
+
     // Business Methods
 
     public function isTokenExpired(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return true;
         }
 
@@ -99,25 +105,31 @@ class SocialAccount extends Model implements Auditable
 
     public function getValidToken(): string
     {
-        if (!$this->isTokenExpired()) {
+        if (! $this->isTokenExpired()) {
             return $this->access_token;
         }
 
         return match ($this->platform) {
-            Platform::YOUTUBE->value   => $this->refreshYouTubeToken(),
+            Platform::YOUTUBE->value => $this->refreshYouTubeToken(),
             Platform::INSTAGRAM->value => $this->refreshInstagramToken(),
-            default                    => $this->access_token,
+            Platform::TIKTOK->value => $this->refreshTikTokToken(),
+            default => $this->access_token,
         };
     }
 
     public function revokeToken(): void
     {
-        if (!$this->access_token) {
+        if (! $this->access_token) {
             return;
         }
 
         match ($this->platform) {
             Platform::YOUTUBE->value => Http::post('https://oauth2.googleapis.com/revoke', [
+                'token' => $this->access_token,
+            ]),
+            Platform::TIKTOK->value => Http::asForm()->post('https://open.tiktokapis.com/v2/oauth/revoke/', [
+                'client_key' => config('services.tiktok.client_key'),
+                'client_secret' => config('services.tiktok.client_secret'),
                 'token' => $this->access_token,
             ]),
             // Instagram não tem endpoint público de revogação via API.
@@ -128,8 +140,8 @@ class SocialAccount extends Model implements Auditable
 
     private function refreshYouTubeToken(): string
     {
-        if (!$this->refresh_token) {
-            throw new \Exception("Refresh token ausente. O usuário precisa reconectar a conta.");
+        if (! $this->refresh_token) {
+            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
         }
 
         $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
@@ -150,13 +162,44 @@ class SocialAccount extends Model implements Auditable
             return $data['access_token'];
         }
 
-        throw new \Exception("Não foi possível renovar o token do Google: " . $response->body());
+        throw new \Exception('Não foi possível renovar o token do Google: '.$response->body());
+    }
+
+    /**
+     * Access token do TikTok dura 24h; o refresh token (365 dias) pode ser trocado a cada renovação.
+     */
+    private function refreshTikTokToken(): string
+    {
+        if (! $this->refresh_token) {
+            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
+        }
+
+        $response = Http::asForm()->post('https://open.tiktokapis.com/v2/oauth/token/', [
+            'client_key' => config('services.tiktok.client_key'),
+            'client_secret' => config('services.tiktok.client_secret'),
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $this->refresh_token,
+        ]);
+
+        if ($response->successful() && $response->json('access_token')) {
+            $data = $response->json();
+
+            $this->update([
+                'access_token' => $data['access_token'],
+                'refresh_token' => $data['refresh_token'] ?? $this->refresh_token,
+                'expires_at' => now()->addSeconds($data['expires_in'] ?? 86400),
+            ]);
+
+            return $data['access_token'];
+        }
+
+        throw new \Exception('Não foi possível renovar o token do TikTok: '.$response->body());
     }
 
     private function refreshInstagramToken(): string
     {
         $response = Http::get('https://graph.instagram.com/refresh_access_token', [
-            'grant_type'   => 'ig_refresh_token',
+            'grant_type' => 'ig_refresh_token',
             'access_token' => $this->access_token,
         ]);
 
@@ -165,19 +208,19 @@ class SocialAccount extends Model implements Auditable
 
             $this->update([
                 'access_token' => $data['access_token'],
-                'expires_at'   => now()->addSeconds($data['expires_in'] ?? 5184000),
+                'expires_at' => now()->addSeconds($data['expires_in'] ?? 5184000),
             ]);
 
             return $data['access_token'];
         }
 
-        throw new \Exception("Não foi possível renovar o token do Instagram: " . $response->body());
+        throw new \Exception('Não foi possível renovar o token do Instagram: '.$response->body());
     }
 
     /**
      * Retorna a data da atividade mais recente (publicada ou agendada)
      */
-    public function getLatestActivityDate(): ?\Carbon\Carbon
+    public function getLatestActivityDate(): ?Carbon
     {
         if ($this->relationLoaded('scheduledPosts')) {
             return $this->scheduledPosts
@@ -201,7 +244,7 @@ class SocialAccount extends Model implements Auditable
     {
         $latest = $this->getLatestActivityDate();
 
-        if (!$latest) {
+        if (! $latest) {
             return null; // Nunca postou
         }
 

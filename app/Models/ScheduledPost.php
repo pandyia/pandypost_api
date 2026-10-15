@@ -4,8 +4,9 @@ namespace App\Models;
 
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\BelongsToWorkspace;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
@@ -13,7 +14,10 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class ScheduledPost extends Model implements Auditable
 {
-    use AuditableTrait;
+    use AuditableTrait, BelongsToWorkspace;
+
+    // Sem coluna workspace_id: o escopo de tenant vem da conta social do post.
+    protected string $workspaceRelation = 'socialAccount';
 
     public function generateTags(): array
     {
@@ -56,7 +60,7 @@ class ScheduledPost extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
+        static::creating(fn ($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
     }
 
     // Relationships
@@ -85,7 +89,7 @@ class ScheduledPost extends Model implements Auditable
 
     public function hasValidContainer(): bool
     {
-        if (!$this->container_id || !$this->container_created_at) {
+        if (! $this->container_id || ! $this->container_created_at) {
             return false;
         }
 
@@ -110,9 +114,9 @@ class ScheduledPost extends Model implements Auditable
     public function getPlatformPostUrl(): ?string
     {
         return match ($this->platform) {
-                // Platform::FACEBOOK => $this->platform_post_id ? "https://www.facebook.com/{$this->platform_post_id}" : null,
-                // Platform::TWITTER => $this->platform_post_id ? "https://twitter.com/i/web/status/{$this->platform_post_id}" : null,
-                // Platform::LINKEDIN => $this->platform_post_id ? "https://www.linkedin.com/feed/update/{$this->platform_post_id}" : null,
+            // Platform::FACEBOOK => $this->platform_post_id ? "https://www.facebook.com/{$this->platform_post_id}" : null,
+            // Platform::TWITTER => $this->platform_post_id ? "https://twitter.com/i/web/status/{$this->platform_post_id}" : null,
+            // Platform::LINKEDIN => $this->platform_post_id ? "https://www.linkedin.com/feed/update/{$this->platform_post_id}" : null,
             Platform::INSTAGRAM => $this->platform_post_id ? "https://www.instagram.com/p/{$this->platform_post_id}" : null,
             Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
             _ => null,

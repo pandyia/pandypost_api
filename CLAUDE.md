@@ -8,7 +8,7 @@ Tudo roda em Docker; **não há `vendor/` no host**. Sem TTY: use `docker exec p
 
 ## Fluxo SDD
 
-Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **002**). Modelo de referência: `specs/001-billing/`.
+Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **003**). Modelo de referência: `specs/001-billing/`.
 
 1. **`spec.md`** — o quê e por quê, sem detalhe técnico. Seções: Contexto, Escopo, Requisitos (RF-n), Contrato de API, Critérios de aceite, Fora de escopo, Questões em aberto.
 2. **`plan.md`** — como: decisões (+ alternativa descartada), modelo de dados, arquivos, efeitos colaterais, testes, riscos.
@@ -35,6 +35,16 @@ Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: 
 - **Efeitos colaterais:** Observers, Events (broadcast Reverb), Jobs na fila da plataforma, Notifications.
 - **Billing:** regras em `specs/001-billing/plan.md`.
 
+## Segurança
+
+Achados abertos e decisões pendentes: `specs/002-security-hardening/spec.md`.
+
+- **Nunca** `$request->all()`/`input()` direto no Eloquent: `store`/`update` usam `validated()` e campos explícitos. `is_super_admin`, `access_id`, `workspace_id`, `user_id`, `uuid` e `is_personal_team` nunca vêm do request.
+- Model novo com dado de tenant usa `BelongsToWorkspace` (ou filtro explícito pelo workspace corrente). Toda ação de controller (inclusive `update`/`destroy`/`restore` herdados e ações custom) entra em `$permissionMethods`.
+- Rotas `/admin/**` são do dono do SaaS, não do dono do workspace.
+- Respostas nunca expõem `$e->getMessage()` de exceção de terceiros nem tokens de plataforma.
+- OAuth: `state` com nonce, expiração e vínculo ao usuário; stubs de plataforma só em `local`/`testing`.
+
 ## Convenções
 
 - Código em inglês; mensagens, erros e comentários em **pt-BR**.
@@ -49,6 +59,10 @@ Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: 
 
 Pest em `tests/Feature/<Dominio>/`, `describe()`/`it()` em português, SQLite em memória. Helpers em `tests/Pest.php` (`createUserWithPermissions([...])`).
 Toda rota nova: happy path + erro/validação + **403** + **isolamento entre workspaces**. APIs externas sempre mockadas. Rode a suíte antes de concluir.
+
+- Isolamento = recurso de outro workspace retorna 404 **e** nada muda no banco.
+- Testes de segurança em `tests/Feature/Security/`. Vulnerabilidade confirmada e ainda não corrigida: teste do comportamento seguro com `->skip('VULN-NN: causa')` e ID na spec de segurança; ao corrigir, remova o `skip`. Proteção frágil/incidental ganha teste de regressão ativo.
+- Nunca enfraqueça ou apague teste para fazer passar.
 
 ## Git
 
@@ -65,4 +79,12 @@ Branch `develop`, PR para `main`. Conventional Commits em pt-BR (`feat(billing):
 
 ## Agentes
 
-`dev` implementa o `tasks.md` de spec aprovada; `qa` valida contra os critérios de aceite e só escreve em `tests/`. Fluxo: spec/plan/tasks aprovados → `dev` → `qa`.
+| Agente | Papel | Escreve em |
+|--------|-------|------------|
+| `tdd` | Fase vermelha: testes da spec antes do código, falhando pelo motivo certo | `tests/` |
+| `dev` | Implementa o `tasks.md` de spec aprovada | código |
+| `refactor` | Refatoração de `specs/NNN-refactor-*` sem mudar comportamento; caracterização antes | código |
+| `qa` | Valida contra os critérios de aceite | `tests/` |
+| `security` | Audita e prova falhas com teste; não corrige | `tests/` |
+
+Fluxo de feature: spec/plan/tasks aprovados → `tdd` → `dev` → `qa` → `security` (obrigatório em área crítica). Refatoração: spec aprovada → `refactor` → `qa`. Agentes que só escrevem em `tests/` não corrigem bugs: reportam.
