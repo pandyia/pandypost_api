@@ -101,6 +101,8 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
             ->middleware('permission:billing.view');
         Route::post('subscription/checkout', [BillingSubscriptionController::class, 'checkout'])
             ->middleware('permission:billing.manage');
+        Route::post('subscription/checkout/confirm', [BillingSubscriptionController::class, 'confirm'])
+            ->middleware('permission:billing.manage');
 
         Route::get('setup-intent', [BillingPaymentMethodController::class, 'setupIntent'])
             ->middleware('permission:billing.view');

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Billing\Tenant;
 
 use App\Exceptions\BillingException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Billing\Tenant\ConfirmCheckoutRequest;
 use App\Http\Requests\Billing\Tenant\StoreCheckoutRequest;
 use App\Http\Resources\Billing\Tenant\SubscriptionResource;
 use App\Models\Price;
 use App\Models\Workspace;
 use App\Services\Billing\Tenant\CheckoutService;
+use App\Services\Billing\Tenant\ConfirmCheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +25,8 @@ use Illuminate\Http\Request;
 class SubscriptionController extends Controller
 {
     public function __construct(
-        private readonly CheckoutService $checkout
+        private readonly CheckoutService $checkout,
+        private readonly ConfirmCheckoutService $confirmCheckout
     ) {}
 
     /**
@@ -83,6 +86,32 @@ class SubscriptionController extends Controller
         $url = $this->checkout->start($this->workspace($request), $price);
 
         return response()->json(['checkout_url' => $url]);
+    }
+
+    /**
+     * Confirmar checkout
+     *
+     * Chame ao voltar do Stripe, com o `session_id` recebido na URL de sucesso. A API confirma a sessão direto no Stripe
+     * e cria a assinatura sem esperar o webhook. É idempotente.
+     *
+     * **Permissão:** `billing.manage`
+     *
+     * @bodyParam session_id string required `session_id` devolvido pelo Stripe na URL de sucesso. Example: cs_test_a1b2c3
+     *
+     * @response 200 {"data": {"billing_status": "active", "stripe_status": "active", "on_trial": false, "trial_ends_at": null, "ends_at": null, "plan": {"id": "1a2b3c4d-...", "name": "Pro"}, "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}}}
+     * @response 404 scenario="sessão de outro workspace" {"error": "checkout_session_not_found", "message": "Sessão de checkout não encontrada para este workspace."}
+     * @response 404 scenario="checkout não concluído" {"error": "no_active_subscription", "message": "Nenhuma assinatura ativa para este workspace."}
+     * @response 502 scenario="falha no Stripe" {"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}
+     */
+    public function confirm(Request $request): JsonResponse
+    {
+        $data = app(ConfirmCheckoutRequest::class)->validated();
+
+        $subscription = $this->confirmCheckout->confirm($this->workspace($request), $data['session_id']);
+
+        // O JsonResource responderia 201 na primeira chamada (model recém-criado);
+        // o contrato é 200 sempre, já que a confirmação é idempotente.
+        return (new SubscriptionResource($subscription))->response()->setStatusCode(200);
     }
 
     private function workspace(Request $request): Workspace
