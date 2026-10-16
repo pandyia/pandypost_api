@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ContentPipelineController;
 use App\Http\Controllers\Api\InviteController;
 use App\Http\Controllers\Api\LandingSettingsController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
 use App\Http\Controllers\Api\SocialAccountController;
@@ -76,6 +77,15 @@ Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+
+    // Meu perfil: dados, foto (URL pré-assinada) e senha do próprio usuário
+    Route::patch('me', [ProfileController::class, 'update']);
+    Route::prefix('me')->group(function () {
+        Route::post('avatar/upload-url', [ProfileController::class, 'avatarUploadUrl'])->middleware('throttle:20,1');
+        Route::put('avatar', [ProfileController::class, 'setAvatar']);
+        Route::delete('avatar', [ProfileController::class, 'removeAvatar']);
+        Route::put('password', [ProfileController::class, 'changePassword'])->middleware('throttle:5,1');
+    });
     Route::post('auth/resend-email-verification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,1');
 });
 

@@ -237,7 +237,12 @@ class AuthController extends Controller
      *   }
      * }
      *
-     * @responseField email_verified_at string|null Formato `d/m/Y H:i:s`. `null` = email não confirmado.
+     * @responseField email_verified_at string|null ISO 8601. `null` = email não confirmado.
+     * @responseField avatar string|null URL assinada da foto de perfil (muda a cada chamada), ou `null`.
+     * @responseField phone string|null Só dígitos (DDD + número).
+     * @responseField bio string|null Até 160 caracteres.
+     * @responseField timezone string Fuso horário IANA.
+     * @responseField created_at string ISO 8601.
      * @responseField current_workspace object Ausente se o usuário não tiver workspace.
      */
     public function me(Request $request)

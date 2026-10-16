@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LandingBrand;
 use App\Models\AppSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -41,6 +42,21 @@ describe('PUT /api/admin/landing-settings', function () {
 
         $this->getJson('/api/landing-settings')->assertJsonPath('data.brand', 'bambu');
     });
+
+    // Cobre qualquer tema que entrar no enum: criar o tema no front sem o `case` aqui deixa de passar despercebido.
+    it('aceita todos os temas do enum e a rota pública devolve cada um', function (LandingBrand $brand) {
+        $admin = createSuperAdmin();
+
+        $this->withToken($admin->test_token)
+            ->putJson('/api/admin/landing-settings', ['brand' => $brand->value])
+            ->assertOk()
+            ->assertJsonPath('data.brand', $brand->value);
+
+        $this->getJson('/api/landing-settings')->assertJsonPath('data.brand', $brand->value);
+    })->with(array_combine(
+        array_map(fn (LandingBrand $brand) => $brand->value, LandingBrand::cases()),
+        array_map(fn (LandingBrand $brand) => [$brand], LandingBrand::cases()),
+    ));
 
     it('é idempotente: repetir o mesmo tema mantém uma única linha', function () {
         $admin = createSuperAdmin();

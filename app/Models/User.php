@@ -20,7 +20,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements Auditable
 {
-    use HasFactory, Notifiable, HasApiTokens, BelongsToWorkspace, AuditableTrait;
+    use AuditableTrait, BelongsToWorkspace, HasApiTokens, HasFactory, Notifiable;
 
     protected array $auditExclude = [
         'password',
@@ -54,18 +54,19 @@ class User extends Authenticatable implements Auditable
             'created' => ['authentication', 'registration'],
             'updated' => ['authentication', 'account'],
             'deleted' => ['authentication', 'deletion'],
-            default   => ['authentication'],
+            default => ['authentication'],
         };
     }
 
     public function getAuditRepresentation(): string
     {
-        return $this->name . ' <' . $this->email . '>';
+        return $this->name.' <'.$this->email.'>';
     }
 
     // Constants
 
     public const TOKEN_EXPIRATION_HOURS = 2;
+
     private const TOKEN_DEVICE_NAME = 'web';
 
     protected string $workspaceRelation = 'accesses';
@@ -81,12 +82,17 @@ class User extends Authenticatable implements Auditable
         'remember_me',
         'is_super_admin',
         'access_id',
+        'phone',
+        'bio',
+        'timezone',
+        'avatar_path',
     ];
 
     protected $hidden = [
         'id',
         'password',
         'remember_token',
+        'avatar_path',
     ];
 
     public function getRouteKeyName(): string
@@ -96,7 +102,7 @@ class User extends Authenticatable implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($user) => $user->uuid = $user->uuid ?: (string)  Str::uuid());
+        static::creating(fn ($user) => $user->uuid = $user->uuid ?: (string) Str::uuid());
     }
 
     protected function casts(): array
@@ -157,9 +163,9 @@ class User extends Authenticatable implements Auditable
         $this->unsetRelation('currentAccess');
         $access = $this->currentAccess;
 
-        if (!$access) {
+        if (! $access) {
             $access = $this->accesses()
-                ->whereHas('workspace', fn($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
+                ->whereHas('workspace', fn ($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
                 ->first();
             $this->update(['access_id' => $access?->id]);
         }
@@ -180,6 +186,7 @@ class User extends Authenticatable implements Auditable
     {
         return DB::transaction(function () use ($rememberMe) {
             $this->update(['remember_me' => $rememberMe]);
+
             return match ($rememberMe) {
                 true => now()->addDays(intval(config('auth.token_expiration_days'))),
                 false => now()->addMinutes(intval(config('sanctum.expiration')))
@@ -215,7 +222,7 @@ class User extends Authenticatable implements Auditable
     public function hasAccessToWorkspace(string $uuid): bool
     {
         return $this->accesses()
-            ->whereHas('workspace', fn($q) => $q->where('uuid', $uuid))
+            ->whereHas('workspace', fn ($q) => $q->where('uuid', $uuid))
             ->exists();
     }
 }

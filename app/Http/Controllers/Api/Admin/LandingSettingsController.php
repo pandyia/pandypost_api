@@ -23,7 +23,7 @@ class LandingSettingsController extends Controller
     /**
      * Trocar o tema da landing
      *
-     * `brand` aceita `pop`, `violeta`, `coral` ou `bambu`. Repetir o mesmo valor não muda nada.
+     * `brand` aceita `pop`, `violeta`, `coral`, `bambu` ou `rose` (os valores de `App\Enums\LandingBrand`). Repetir o mesmo valor não muda nada.
      *
      * @bodyParam brand string required Tema da landing. Example: coral
      *

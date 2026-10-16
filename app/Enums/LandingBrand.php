@@ -15,6 +15,7 @@ enum LandingBrand: string
     case VIOLETA = 'violeta';
     case CORAL = 'coral';
     case BAMBU = 'bambu';
+    case ROSE = 'rose';
 
     public static function default(): self
     {

@@ -3,7 +3,7 @@
 **Status:** aprovada (2026-10-16; auditoria fora do escopo) · **Par no front:** `pandypost_ui/specs/008-landing-brand-admin`
 
 ## Contexto
-O front tem temas visuais (`pop`, `violeta`, `coral`, `bambu`). Cada usuário escolhe o tema da área logada, mas a **landing é pública e tem uma identidade só**, hoje fixa no código do front. Trocar essa identidade exige deploy. O super admin (equipe do Pandypost) precisa escolher o tema da landing sem mexer em código.
+O front tem temas visuais (`pop`, `violeta`, `coral`, `bambu`, `rose`). Cada usuário escolhe o tema da área logada, mas a **landing é pública e tem uma identidade só**, hoje fixa no código do front. Trocar essa identidade exige deploy. O super admin (equipe do Pandypost) precisa escolher o tema da landing sem mexer em código.
 
 ## Escopo
 - Guardar no banco o tema da landing.
@@ -26,7 +26,7 @@ O front tem temas visuais (`pop`, `violeta`, `coral`, `bambu`). Cada usuário es
 - 200 `{ "message": "Tema da landing atualizado.", "data": { "brand": "coral" } }`
 - 401 não autenticado · 403 não é super admin · 422 `brand` ausente ou fora da lista
 
-Valores aceitos: `pop`, `violeta`, `coral`, `bambu`. **Adicionar um tema no front exige adicionar o valor no enum da API** (registrar em ambos os specs).
+Valores aceitos: `pop`, `violeta`, `coral`, `bambu`, `rose`. **Adicionar um tema no front exige adicionar o valor no enum da API** (registrar em ambos os specs).
 
 ## Critérios de aceite
 - Banco vazio: `GET` devolve `pop`.

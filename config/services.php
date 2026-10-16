@@ -57,6 +57,10 @@ return [
     's3' => [
         'presigned_put_ttl' => (int) env('S3_PRESIGNED_PUT_TTL', 86400),
         'presigned_get_ttl' => (int) env('S3_PRESIGNED_GET_TTL', 1800),
+        // Foto de perfil: a URL assinada vai no GET /me e fica em tela; 6 dias (o teto do SigV4 é 7).
+        'presigned_avatar_ttl' => (int) env('S3_PRESIGNED_AVATAR_TTL', 518400),
+        // Validado de verdade depois do upload (o PUT pré-assinado não limita o tamanho).
+        'avatar_max_size' => (int) env('S3_AVATAR_MAX_SIZE', 5242880),
         // 5 GiB: teto de um PutObject de parte única na API S3-compatível do
         // Backblaze B2 (mesmo limite da AWS). Acima disso seria necessário
         // multipart upload, que o fluxo de presigned PUT atual não faz.

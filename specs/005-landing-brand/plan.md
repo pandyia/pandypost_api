@@ -2,7 +2,7 @@
 
 ## Decisões
 - **Armazenamento:** tabela `app_settings` (`key` único, `value` string, timestamps) e model `AppSetting` com a chave `landing.brand`. Serve também para as próximas configurações globais sem nova migration. *Descartado:* arquivo de config/`.env` (exige deploy, que é justamente o problema); tabela de uma linha só para a landing (rígida, uma migration por configuração nova).
-- **Valores aceitos:** enum `App\Enums\LandingBrand` (`pop`, `violeta`, `coral`, `bambu`) com `default()` = `pop` e `tryFrom` na leitura (valor inválido salvo cai no padrão). *Descartado:* validar contra lista em config (duas fontes da verdade).
+- **Valores aceitos:** enum `App\Enums\LandingBrand` (`pop`, `violeta`, `coral`, `bambu`, `rose`) com `default()` = `pop` e `tryFrom` na leitura (valor inválido salvo cai no padrão). *Descartado:* validar contra lista em config (duas fontes da verdade).
 - **Leitura pública sem cache.** Uma consulta por chave, protegida por `throttle:45,1`. Cache só se aparecer necessidade.
 - **Escrita** em `PUT` (substitui o valor), idempotente.
 
