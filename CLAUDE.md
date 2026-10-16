@@ -86,5 +86,6 @@ Branch `develop`, PR para `main`. Conventional Commits em pt-BR (`feat(billing):
 | `refactor` | Refatoração de `specs/NNN-refactor-*` sem mudar comportamento; caracterização antes | código |
 | `qa` | Valida contra os critérios de aceite | `tests/` |
 | `security` | Audita e prova falhas com teste; não corrige | `tests/` |
+| `docs` | Documenta os endpoints no Scribe (`/docs`) para o frontend; não muda comportamento | docblocks dos controllers |
 
-Fluxo de feature: spec/plan/tasks aprovados → `tdd` → `dev` → `qa` → `security` (obrigatório em área crítica). Refatoração: spec aprovada → `refactor` → `qa`. Agentes que só escrevem em `tests/` não corrigem bugs: reportam.
+Fluxo de feature: spec/plan/tasks aprovados → `tdd` → `dev` → `qa` → `security` (obrigatório em área crítica) → `docs`. Refatoração: spec aprovada → `refactor` → `qa`. Agentes que só escrevem em `tests/` não corrigem bugs: reportam.
