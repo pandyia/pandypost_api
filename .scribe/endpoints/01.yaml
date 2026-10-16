@@ -1,0 +1,494 @@
+name: 'Contas sociais'
+description: |-
+
+  Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+  **Como conectar uma conta (OAuth em popup):**
+  1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+  2. Abra `url` num popup. O usuário autoriza na plataforma.
+  3. A plataforma chama o callback da API, que redireciona o popup para
+     `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+  4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/social-accounts/{platform}/callback'
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: |-
+
+        Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+        **Como conectar uma conta (OAuth em popup):**
+        1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+        2. Abra `url` num popup. O usuário autoriza na plataforma.
+        3. A plataforma chama o callback da API, que redireciona o popup para
+           `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+        4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Callback do OAuth'
+      description: |-
+        **Não chame pelo frontend.** É a URL de retorno cadastrada na plataforma. A API conecta a conta e redireciona
+        o popup para `{FRONTEND_URL}/social-accounts/callback` com:
+
+        - `?success=1` → conta conectada;
+        - `?error=<mensagem>` → falha (mensagem pronta para exibir).
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      platform:
+        custom: []
+        name: platform
+        description: Plataforma.
+        required: true
+        example: youtube
+        type: string
+        enumValues:
+          - youtube
+          - instagram
+          - tiktok
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      platform: youtube
+    queryParameters:
+      code:
+        custom: []
+        name: code
+        description: 'Código de autorização enviado pela plataforma.'
+        required: true
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      state:
+        custom: []
+        name: state
+        description: 'Estado gerado no passo 1.'
+        required: true
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      code: null
+      state: null
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 302
+        content: '""'
+        headers: []
+        description: 'redireciona para o frontend'
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/social-accounts
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: |-
+
+        Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+        **Como conectar uma conta (OAuth em popup):**
+        1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+        2. Abra `url` num popup. O usuário autoriza na plataforma.
+        3. A plataforma chama o callback da API, que redireciona o popup para
+           `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+        4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar contas conectadas'
+      description: '**Permissão:** `social_accounts.view`'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Itens por página. Sem ele, vem tudo.'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: Página.
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      platform:
+        custom: []
+        name: platform
+        description: 'Filtra pela plataforma.'
+        required: false
+        example: youtube
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      per_page: 15
+      page: 1
+      platform: youtube
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [
+              {
+                "uuid": "5f0c2d1e-...",
+                "platform": "youtube",
+                "platform_id": "UCx9...",
+                "nickname": "Canal da Ana",
+                "avatar": "https://yt3.ggpht.com/...",
+                "expires_at": "2026-10-15T15:00:00-03:00",
+                "connected_at": "2026-10-01T10:00:00-03:00",
+                "is_stale": false,
+                "days_since_last_activity": 1
+              }
+            ],
+            "links": {"first": "...", "last": "...", "prev": null, "next": null},
+            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "social_accounts.view"}'
+        headers: []
+        description: 'sem permissão'
+    responseFields:
+      is_stale:
+        custom: []
+        name: is_stale
+        description: '`true` se a conta está 2+ dias sem postar ou nunca postou.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      days_since_last_activity:
+        custom: []
+        name: days_since_last_activity
+        description: 'Dias desde o último post (0 se há post agendado no futuro). `null` = nunca postou.'
+        required: false
+        example: null
+        type: integer|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/social-accounts/schedules
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: |-
+
+        Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+        **Como conectar uma conta (OAuth em popup):**
+        1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+        2. Abra `url` num popup. O usuário autoriza na plataforma.
+        3. A plataforma chama o callback da API, que redireciona o popup para
+           `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+        4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Contas com seus agendamentos'
+      description: 'Mesma lista de contas, cada uma com `scheduled_posts` (formato de [Agendamentos](#agendamentos)). Útil para o calendário.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Itens por página. Sem ele, vem tudo.'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: Página.
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      platform:
+        custom: []
+        name: platform
+        description: 'Filtra pela plataforma.'
+        required: false
+        example: instagram
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      per_page: 15
+      page: 1
+      platform: instagram
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [
+              {
+                "uuid": "5f0c2d1e-...",
+                "platform": "youtube",
+                "platform_id": "UCx9...",
+                "nickname": "Canal da Ana",
+                "avatar": "https://yt3.ggpht.com/...",
+                "expires_at": "2026-10-15T15:00:00-03:00",
+                "connected_at": "2026-10-01T10:00:00-03:00",
+                "is_stale": false,
+                "days_since_last_activity": 1,
+                "scheduled_posts": [{"uuid": "e1d2...", "platform": "youtube", "title": "Meu vídeo", "status": "pending", "scheduled_at": "2026-10-20T18:00:00-03:00"}]
+              }
+            ],
+            "links": {"first": "...", "last": "...", "prev": null, "next": null},
+            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/social-accounts/{platform}/auth'
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: |-
+
+        Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+        **Como conectar uma conta (OAuth em popup):**
+        1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+        2. Abra `url` num popup. O usuário autoriza na plataforma.
+        3. A plataforma chama o callback da API, que redireciona o popup para
+           `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+        4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Iniciar conexão (URL de OAuth)'
+      description: |-
+        Devolve a URL de autorização da plataforma. **Não redireciona**: abra a URL num popup (passo 1 do fluxo acima).
+
+        **Permissão:** `social_accounts.connect`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      platform:
+        custom: []
+        name: platform
+        description: Plataforma.
+        required: true
+        example: youtube
+        type: string
+        enumValues:
+          - youtube
+          - instagram
+          - tiktok
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      platform: youtube
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=..."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 400
+        content: '{"error": "platform_not_supported", "message": "Plataforma ''x'' não é suportada."}'
+        headers: []
+        description: 'plataforma inválida'
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "social_accounts.connect"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 500
+        content: '{"error": "oauth_initialization_failed", "message": "Falha ao iniciar o fluxo OAuth."}'
+        headers: []
+        description: 'credenciais da plataforma ausentes'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/social-accounts/{socialAccount}'
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: |-
+
+        Contas de YouTube, Instagram e TikTok conectadas ao workspace corrente.
+
+        **Como conectar uma conta (OAuth em popup):**
+        1. `GET /social-accounts/{platform}/auth` → recebe `url`.
+        2. Abra `url` num popup. O usuário autoriza na plataforma.
+        3. A plataforma chama o callback da API, que redireciona o popup para
+           `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
+        4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Desconectar conta'
+      description: |-
+        Remove a conta e **cancela os agendamentos pendentes** dela.
+
+        **Permissão:** `social_accounts.disconnect`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      socialAccount:
+        custom: []
+        name: socialAccount
+        description: 'UUID da conta.'
+        required: true
+        example: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      socialAccount: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Conta social desconectada com sucesso."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "social_accounts.disconnect"}'
+        headers: []
+        description: 'sem permissão'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

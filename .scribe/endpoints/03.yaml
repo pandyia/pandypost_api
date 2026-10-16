@@ -1,0 +1,934 @@
+name: 'Admin: planos e preços'
+description: |-
+
+  Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+  Para qualquer outro usuário a resposta é 403.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/admin/plans
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: |-
+
+        Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+        Para qualquer outro usuário a resposta é 403.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar planos'
+      description: 'Todos os planos, inclusive inativos e ocultos (sem `prices`).'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Itens por página. Sem ele, vem tudo.'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: Página.
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      name:
+        custom: []
+        name: name
+        description: 'Filtra por nome (parcial).'
+        required: false
+        example: pro
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: 'Filtra por ativo.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_visible:
+        custom: []
+        name: is_visible
+        description: 'Filtra por visível na vitrine.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      per_page: 15
+      page: 1
+      name: pro
+      is_active: true
+      is_visible: true
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [{
+              "id": "1a2b3c4d-...",
+              "name": "Pro",
+              "description": "Para criadores que postam toda semana",
+              "is_visible": true,
+              "is_active": true,
+              "gateway_product_id": "prod_Q1w2e3",
+              "created_at": "2026-10-01T10:00:00.000000Z",
+              "updated_at": "2026-10-01T10:00:00.000000Z"
+            }],
+            "links": {"first": "...", "last": "...", "prev": null, "next": null},
+            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso."}'
+        headers: []
+        description: 'não é super admin'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/admin/plans
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: |-
+
+        Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+        Para qualquer outro usuário a resposta é 403.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Criar plano'
+      description: 'Cria o produto no Stripe. Os preços são cadastrados depois.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Nome (máx. 255).'
+        required: true
+        example: Pro
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      description:
+        custom: []
+        name: description
+        description: 'Descrição (máx. 1000).'
+        required: false
+        example: 'Para criadores que postam toda semana'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_visible:
+        custom: []
+        name: is_visible
+        description: 'Aparece na vitrine pública.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: 'Disponível para assinatura.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: Pro
+      description: 'Para criadores que postam toda semana'
+      is_visible: true
+      is_active: true
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {"message": "Plano criado com sucesso.", "data": {
+              "id": "1a2b3c4d-...",
+              "name": "Pro",
+              "description": "Para criadores que postam toda semana",
+              "is_visible": true,
+              "is_active": true,
+              "gateway_product_id": "prod_Q1w2e3",
+              "created_at": "2026-10-01T10:00:00.000000Z",
+              "updated_at": "2026-10-01T10:00:00.000000Z",
+              "prices": []
+            }}
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso."}'
+        headers: []
+        description: 'não é super admin'
+      -
+        custom: []
+        status: 502
+        content: '{"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}'
+        headers: []
+        description: 'falha no Stripe'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/admin/plans/{plan}'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: |-
+
+        Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+        Para qualquer outro usuário a resposta é 403.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Ver plano'
+      description: 'Com todos os preços.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {"data": {
+              "id": "1a2b3c4d-...",
+              "name": "Pro",
+              "description": "Para criadores que postam toda semana",
+              "is_visible": true,
+              "is_active": true,
+              "gateway_product_id": "prod_Q1w2e3",
+              "created_at": "2026-10-01T10:00:00.000000Z",
+              "updated_at": "2026-10-01T10:00:00.000000Z",
+              "prices": [{"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "is_active": true, "created_at": "2026-10-01T10:00:00.000000Z", "updated_at": "2026-10-01T10:00:00.000000Z"}]
+            }}
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/admin/plans/{plan}'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: |-
+
+        Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+        Para qualquer outro usuário a resposta é 403.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Editar plano'
+      description: 'Envie só o que mudar.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Nome (máx. 255).'
+        required: false
+        example: Pro+
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      description:
+        custom: []
+        name: description
+        description: 'Descrição (máx. 1000).'
+        required: false
+        example: 'Nova descrição'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_visible:
+        custom: []
+        name: is_visible
+        description: 'Aparece na vitrine pública.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: 'Disponível para assinatura.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: Pro+
+      description: 'Nova descrição'
+      is_visible: false
+      is_active: true
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {"message": "Plano atualizado com sucesso.", "data": {
+              "id": "1a2b3c4d-...",
+              "name": "Pro",
+              "description": "Para criadores que postam toda semana",
+              "is_visible": true,
+              "is_active": true,
+              "gateway_product_id": "prod_Q1w2e3",
+              "created_at": "2026-10-01T10:00:00.000000Z",
+              "updated_at": "2026-10-01T10:00:00.000000Z",
+              "prices": [{"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "is_active": true, "created_at": "2026-10-01T10:00:00.000000Z", "updated_at": "2026-10-01T10:00:00.000000Z"}]
+            }}
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 409
+        content: '{"error": "plan_has_active_subscriptions", "message": "Não é possível concluir a operação: o plano possui assinaturas ativas."}'
+        headers: []
+        description: 'desativar plano com assinantes'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/admin/plans/{plan}'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: |-
+
+        Catálogo global de planos e preços, **só para o super admin** (dono do SaaS). Tudo é sincronizado com o Stripe.
+        Para qualquer outro usuário a resposta é 403.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remover plano'
+      description: 'Plano que já teve assinaturas é só desativado (some da vitrine, mas fica no histórico).'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Plano removido com sucesso."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 409
+        content: '{"error": "plan_has_active_subscriptions", "message": "Não é possível concluir a operação: o plano possui assinaturas ativas."}'
+        headers: []
+        description: 'assinaturas ativas'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/admin/plans/{plan}/prices'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar preços do plano'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": [{"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "is_active": true, "created_at": "2026-10-01T10:00:00.000000Z", "updated_at": "2026-10-01T10:00:00.000000Z"}]}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/admin/plans/{plan}/prices'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Adicionar preço'
+      description: 'Cria o preço no Stripe.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      amount:
+        custom: []
+        name: amount
+        description: 'Valor em centavos.'
+        required: true
+        example: 4990
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      currency:
+        custom: []
+        name: currency
+        description: Moeda.
+        required: true
+        example: brl
+        type: string
+        enumValues:
+          - brl
+          - usd
+          - eur
+          - gbp
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      frequency:
+        custom: []
+        name: frequency
+        description: Recorrência.
+        required: true
+        example: monthly
+        type: string
+        enumValues:
+          - monthly
+          - yearly
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      trial_period_days:
+        custom: []
+        name: trial_period_days
+        description: 'Dias de teste grátis (0 a 365).'
+        required: false
+        example: 7
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      amount: 4990
+      currency: brl
+      frequency: monthly
+      trial_period_days: 7
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"message": "Preço adicionado com sucesso.", "data": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "is_active": true, "created_at": "2026-10-01T10:00:00.000000Z", "updated_at": "2026-10-01T10:00:00.000000Z"}}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 502
+        content: '{"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}'
+        headers: []
+        description: 'falha no Stripe'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/admin/plans/{plan}/prices/{price}/versions'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Histórico do preço'
+      description: 'Versões anteriores, gravadas a cada edição, mais recentes primeiro.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      price:
+        custom: []
+        name: price
+        description: 'UUID do preço.'
+        required: true
+        example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+      price: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": [{"id": "7c6b5a4d-...", "amount": 3990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "reason": "Reajuste anual", "archived_at": "2026-10-01T10:00:00.000000Z", "created_at": "2026-10-01T10:00:00.000000Z"}]}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/admin/plans/{plan}/prices/{price}'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Editar preço'
+      description: 'No Stripe preço não se edita: é criado um novo e o anterior vai para o histórico. Quem já assina segue no valor antigo.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      price:
+        custom: []
+        name: price
+        description: 'UUID do preço.'
+        required: true
+        example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+      price: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      amount:
+        custom: []
+        name: amount
+        description: 'Valor em centavos.'
+        required: false
+        example: 5990
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      currency:
+        custom: []
+        name: currency
+        description: Moeda.
+        required: false
+        example: brl
+        type: string
+        enumValues:
+          - brl
+          - usd
+          - eur
+          - gbp
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      frequency:
+        custom: []
+        name: frequency
+        description: Recorrência.
+        required: false
+        example: monthly
+        type: string
+        enumValues:
+          - monthly
+          - yearly
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      trial_period_days:
+        custom: []
+        name: trial_period_days
+        description: 'Dias de teste grátis (0 a 365).'
+        required: false
+        example: 7
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      reason:
+        custom: []
+        name: reason
+        description: 'Motivo da mudança, fica no histórico (máx. 255).'
+        required: false
+        example: 'Reajuste anual'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      amount: 5990
+      currency: brl
+      frequency: monthly
+      trial_period_days: 7
+      reason: 'Reajuste anual'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Preço atualizado com sucesso.", "data": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly", "trial_period_days": 7, "is_active": true, "created_at": "2026-10-01T10:00:00.000000Z", "updated_at": "2026-10-01T10:00:00.000000Z"}}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: '{"error": "price_plan_mismatch", "message": "O preço informado não pertence a este plano."}'
+        headers: []
+        description: 'preço de outro plano'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/admin/plans/{plan}/prices/{price}'
+    metadata:
+      custom: []
+      groupName: 'Admin: planos e preços'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remover preço'
+      description: 'Preço já usado em assinatura é só desativado.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      plan:
+        custom: []
+        name: plan
+        description: 'UUID do plano.'
+        required: true
+        example: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      price:
+        custom: []
+        name: price
+        description: 'UUID do preço.'
+        required: true
+        example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      plan: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+      price: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Preço removido com sucesso."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 409
+        content: '{"error": "price_last_active_in_use", "message": "Este é o único preço ativo para a combinação de moeda e frequência; cadastre outro antes de removê-lo."}'
+        headers: []
+        description: 'único preço ativo da combinação'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

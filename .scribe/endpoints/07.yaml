@@ -1,0 +1,141 @@
+name: Auditoria
+description: |-
+
+  Histórico de alterações (quem mudou o quê) no workspace corrente.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/logs
+    metadata:
+      custom: []
+      groupName: Auditoria
+      groupDescription: |-
+
+        Histórico de alterações (quem mudou o quê) no workspace corrente.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar logs'
+      description: |-
+        Mais recentes primeiro. `old_values`/`new_values` trazem só os campos alterados.
+
+        **Permissão:** `logs.view`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Itens por página. Sem ele, vem tudo.'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: Página.
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      event:
+        custom: []
+        name: event
+        description: 'Filtra pela ação.'
+        required: false
+        example: updated
+        type: string
+        enumValues:
+          - created
+          - updated
+          - deleted
+          - restored
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      actor_uuid:
+        custom: []
+        name: actor_uuid
+        description: 'Filtra por quem fez a ação.'
+        required: false
+        example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      entity_type:
+        custom: []
+        name: entity_type
+        description: 'Filtra pelo tipo de registro (parcial, ex.: `role`, `workspace`).'
+        required: false
+        example: role
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      per_page: 15
+      page: 1
+      event: updated
+      actor_uuid: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+      entity_type: role
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [
+              {
+                "uuid": "aa11bb22-...",
+                "action": "updated",
+                "entity_type": "role",
+                "entity_uuid": "9b1c3e2a-6f7d-4a8b-9c0d-1e2f3a4b5c6d",
+                "entity_name": "Editor",
+                "actor_uuid": "2bd8fa57-724f-4cfb-ae33-875afedee0e6",
+                "actor_name": "Ana Souza",
+                "actor_email": "ana@exemplo.com",
+                "old_values": {"name": "Redator"},
+                "new_values": {"name": "Editor"},
+                "tags": [],
+                "created_at": "2026-10-15T10:00:00-03:00"
+              }
+            ],
+            "links": {"first": "...", "last": "...", "prev": null, "next": null},
+            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "logs.view"}'
+        headers: []
+        description: 'sem permissão'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

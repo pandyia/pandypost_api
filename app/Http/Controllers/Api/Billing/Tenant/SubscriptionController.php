@@ -12,15 +12,42 @@ use App\Services\Billing\Tenant\CheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Assinatura e pagamentos
+ *
+ * Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
+ *
+ * **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
+ * → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
+ */
 class SubscriptionController extends Controller
 {
     public function __construct(
         private readonly CheckoutService $checkout
-    ) {
-    }
+    ) {}
 
     /**
-     * Assinatura atual do workspace.
+     * Assinatura atual
+     *
+     * **Permissão:** `billing.view`
+     *
+     * @response 200 {
+     *   "data": {
+     *     "billing_status": "active",
+     *     "stripe_status": "active",
+     *     "on_trial": false,
+     *     "trial_ends_at": null,
+     *     "ends_at": null,
+     *     "plan": {"id": "1a2b3c4d-...", "name": "Pro"},
+     *     "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}
+     *   }
+     * }
+     *
+     * @responseField billing_status string Use este para a interface: `trialing` (em teste), `active` (em dia), `past_due` (pagamento pendente, acesso mantido) ou `blocked` (sem acesso).
+     * @responseField ends_at string|null Preenchido quando a assinatura foi cancelada e termina nessa data.
+     *
+     * @response 404 scenario="sem assinatura" {"error": "no_active_subscription", "message": "Nenhuma assinatura ativa para este workspace."}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.view"}
      */
     public function current(Request $request): JsonResponse
     {
@@ -34,7 +61,19 @@ class SubscriptionController extends Controller
     }
 
     /**
-     * Inicia o Stripe Checkout e retorna a URL hospedada.
+     * Iniciar checkout
+     *
+     * Cria a sessão do Stripe Checkout. Redirecione o usuário para `checkout_url`.
+     *
+     * **Permissão:** `billing.manage`
+     *
+     * @bodyParam price string required `id` de um preço ativo (de `GET /plans`). Example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+     *
+     * @response 200 {"checkout_url": "https://checkout.stripe.com/c/pay/cs_test_..."}
+     * @response 409 scenario="já assinante" {"error": "already_subscribed", "message": "Este workspace já possui uma assinatura ativa."}
+     * @response 422 scenario="preço não sincronizado" {"error": "price_not_synced", "message": "Este preço ainda não foi sincronizado com o gateway de pagamento."}
+     * @response 502 scenario="falha no Stripe" {"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}
      */
     public function checkout(Request $request): JsonResponse
     {

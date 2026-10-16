@@ -1,0 +1,489 @@
+name: Usuários
+description: |-
+
+  Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/users
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar usuários'
+      description: '**Permissão:** `users.view`'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Itens por página. Sem ele, vem tudo.'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      page:
+        custom: []
+        name: page
+        description: Página.
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      name:
+        custom: []
+        name: name
+        description: 'Filtra por nome (parcial).'
+        required: false
+        example: ana
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Filtra por email (parcial).'
+        required: false
+        example: '@exemplo.com'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      per_page: 15
+      page: 1
+      name: ana
+      email: '@exemplo.com'
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [
+              {
+                "uuid": "2bd8fa57-724f-4cfb-ae33-875afedee0e6",
+                "name": "Ana Souza",
+                "email": "ana@exemplo.com",
+                "email_verified_at": "2026-10-10 16:52:25",
+                "created_at": "2026-10-10 16:52:25",
+                "updated_at": "2026-10-15 21:39:45",
+                "is_active": true,
+                "remember_me": false,
+                "access_id": 2,
+                "current_workspace": {"uuid": "58d7d732-10a4-491d-9864-b4d85dfcf833", "name": "Agência Pandy"}
+              }
+            ],
+            "links": {"first": "...", "last": "...", "prev": null, "next": null},
+            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "users.view"}'
+        headers: []
+        description: 'sem permissão'
+    responseFields:
+      current_workspace:
+        custom: []
+        name: current_workspace
+        description: 'Workspace corrente **do usuário listado** (não o seu).'
+        required: false
+        example: null
+        type: object|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/users
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Criar usuário'
+      description: |-
+        Cria a conta de um usuário (com senha definida por quem cria).
+
+        **Permissão:** `users.create`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"message": "Registro inserido com sucesso."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "users.create"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "Este e-mail já está cadastrado em nossa plataforma.", "errors": {"email": ["Este e-mail já está cadastrado em nossa plataforma."]}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Ver usuário'
+      description: |-
+        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+
+        **Permissão:** `users.view`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'UUID do usuário.'
+        required: true
+        example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {"data": {
+                "uuid": "2bd8fa57-724f-4cfb-ae33-875afedee0e6",
+                "name": "Ana Souza",
+                "email": "ana@exemplo.com",
+                "email_verified_at": "2026-10-10 16:52:25",
+                "created_at": "2026-10-10 16:52:25",
+                "updated_at": "2026-10-15 21:39:45",
+                "is_active": true,
+                "remember_me": false,
+                "access_id": 2,
+                "current_workspace": {"uuid": "58d7d732-10a4-491d-9864-b4d85dfcf833", "name": "Agência Pandy"}
+              }}
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+      - PATCH
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Editar usuário'
+      description: |-
+        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+
+        **Permissão:** `users.update`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'UUID do usuário.'
+        required: true
+        example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: Nome.
+        required: false
+        example: 'Ana Souza'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      name: 'Ana Souza'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Registro atualizado com sucesso."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/users/{id}'
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remover usuário do workspace'
+      description: |-
+        Tira o usuário do workspace corrente (a conta dele continua existindo). Se ele estava usando esse workspace,
+        é deslogado e volta para o workspace pessoal.
+
+        **Permissão:** `users.delete`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'UUID do usuário.'
+        required: true
+        example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Usuário removido com sucesso"}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 400
+        content: '{"error": "cannot_remove_yourself", "message": "Você não pode remover a si mesmo do workspace."}'
+        headers: []
+        description: 'remover a si mesmo'
+      -
+        custom: []
+        status: 400
+        content: '{"error": "workspace_must_have_at_least_one_user", "message": "O workspace deve ter pelo menos um usuário."}'
+        headers: []
+        description: 'último membro'
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "users.delete"}'
+        headers: []
+        description: 'sem permissão'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/users/{user}/role'
+    metadata:
+      custom: []
+      groupName: Usuários
+      groupDescription: |-
+
+        Membros do workspace corrente. Para colocar alguém num workspace, prefira **convites**.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Trocar perfil do usuário'
+      description: |-
+        Muda o perfil (role) do usuário no workspace corrente.
+
+        **Permissão:** `users.change_role`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      user:
+        custom: []
+        name: user
+        description: 'UUID do usuário.'
+        required: true
+        example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      user: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role_uuid:
+        custom: []
+        name: role_uuid
+        description: 'UUID de um perfil do workspace corrente.'
+        required: true
+        example: 9b1c3e2a-6f7d-4a8b-9c0d-1e2f3a4b5c6d
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role_uuid: 9b1c3e2a-6f7d-4a8b-9c0d-1e2f3a4b5c6d
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Perfil do usuário atualizado com sucesso"}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "users.change_role"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 404
+        content: '{"error": "profile_not_found", "message": "Perfil não encontrado no workspace."}'
+        headers: []
+        description: 'perfil de outro workspace'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
