@@ -62,6 +62,42 @@ class UserSeeder extends Seeder
                 'is_super_admin' => false,
                 'role' => 'Admin',
             ],
+            [
+                'name' => 'João Victor Super Admin',
+                'email' => 'joao.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Arthur Vieira Super Admin',
+                'email' => 'arthur.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Antônio Neri Super Admin',
+                'email' => 'antonio.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Gabriel Moreira Super Admin',
+                'email' => 'gabriel.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Laís Nascimento Super Admin',
+                'email' => 'lais.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Letícia Super Admin',
+                'email' => 'leticia.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
         ];
 
         foreach ($users as $userData) {
