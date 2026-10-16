@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccessController;
+use App\Http\Controllers\Api\Admin\LandingSettingsController as AdminLandingSettingsController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\Billing\Tenant\PaymentMethodController as BillingPa
 use App\Http\Controllers\Api\Billing\Tenant\SubscriptionController as BillingSubscriptionController;
 use App\Http\Controllers\Api\ContentPipelineController;
 use App\Http\Controllers\Api\InviteController;
+use App\Http\Controllers\Api\LandingSettingsController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
@@ -48,11 +50,12 @@ Route::get('social-accounts/{platform}/callback', [SocialAccountController::clas
 
 /*
 |--------------------------------------------------------------------------
-| Planos (PÚBLICO)
+| Planos e tema da landing (PÚBLICO)
 |--------------------------------------------------------------------------
-| A landing page consome os planos ativos sem autenticação.
+| A landing page consome os planos ativos e o tema escolhido sem autenticação.
 */
 Route::get('plans', [PlanController::class, 'index'])->middleware('throttle:45,1');
+Route::get('landing-settings', [LandingSettingsController::class, 'show'])->middleware('throttle:45,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -84,6 +87,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function () {
     // Catálogo global de planos/preços: exclusivo do super admin (specs/002 D1).
     Route::prefix('admin')->middleware('super_admin')->group(function () {
+        // Tema da landing (leitura pública em GET /landing-settings)
+        Route::put('landing-settings', [AdminLandingSettingsController::class, 'update']);
         Route::get('plans', [AdminPlanController::class, 'index']);
         Route::post('plans', [AdminPlanController::class, 'store']);
         Route::get('plans/{plan}', [AdminPlanController::class, 'show']);
