@@ -43,6 +43,11 @@ class BillingException extends BaseException
         return static::make(BillingError::ALREADY_SUBSCRIBED);
     }
 
+    public static function checkoutSessionNotFound(): self
+    {
+        return static::make(BillingError::CHECKOUT_SESSION_NOT_FOUND);
+    }
+
     public static function noActiveSubscription(): self
     {
         return static::make(BillingError::NO_ACTIVE_SUBSCRIPTION);
