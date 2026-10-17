@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NotificationType;
 use App\Models\Traits\BelongsToWorkspace;
 use App\Observers\UserObserver;
 use DB;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -20,7 +22,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements Auditable
 {
-    use HasFactory, Notifiable, HasApiTokens, BelongsToWorkspace, AuditableTrait;
+    use AuditableTrait, BelongsToWorkspace, HasApiTokens, HasFactory, Notifiable;
 
     protected array $auditExclude = [
         'password',
@@ -54,18 +56,19 @@ class User extends Authenticatable implements Auditable
             'created' => ['authentication', 'registration'],
             'updated' => ['authentication', 'account'],
             'deleted' => ['authentication', 'deletion'],
-            default   => ['authentication'],
+            default => ['authentication'],
         };
     }
 
     public function getAuditRepresentation(): string
     {
-        return $this->name . ' <' . $this->email . '>';
+        return $this->name.' <'.$this->email.'>';
     }
 
     // Constants
 
     public const TOKEN_EXPIRATION_HOURS = 2;
+
     private const TOKEN_DEVICE_NAME = 'web';
 
     protected string $workspaceRelation = 'accesses';
@@ -81,12 +84,17 @@ class User extends Authenticatable implements Auditable
         'remember_me',
         'is_super_admin',
         'access_id',
+        'phone',
+        'bio',
+        'timezone',
+        'avatar_path',
     ];
 
     protected $hidden = [
         'id',
         'password',
         'remember_token',
+        'avatar_path',
     ];
 
     public function getRouteKeyName(): string
@@ -96,7 +104,7 @@ class User extends Authenticatable implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($user) => $user->uuid = $user->uuid ?: (string)  Str::uuid());
+        static::creating(fn ($user) => $user->uuid = $user->uuid ?: (string) Str::uuid());
     }
 
     protected function casts(): array
@@ -107,6 +115,7 @@ class User extends Authenticatable implements Auditable
             'is_super_admin' => 'boolean',
             'is_active' => 'boolean',
             'remember_me' => 'boolean',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -126,6 +135,12 @@ class User extends Authenticatable implements Auditable
     public function currentAccess(): BelongsTo
     {
         return $this->belongsTo(Access::class, 'access_id');
+    }
+
+    // Central de notificações (model próprio, com workspace_id)
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 
     public function verificationEmailToken(): HasOne
@@ -157,9 +172,9 @@ class User extends Authenticatable implements Auditable
         $this->unsetRelation('currentAccess');
         $access = $this->currentAccess;
 
-        if (!$access) {
+        if (! $access) {
             $access = $this->accesses()
-                ->whereHas('workspace', fn($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
+                ->whereHas('workspace', fn ($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
                 ->first();
             $this->update(['access_id' => $access?->id]);
         }
@@ -176,10 +191,57 @@ class User extends Authenticatable implements Auditable
             ->exists();
     }
 
+    /**
+     * Preferências de e-mail por família (ausente = ligado). Billing é sempre e-mail.
+     *
+     * @return array<string, bool>
+     */
+    public function emailPreferences(): array
+    {
+        $saved = $this->notification_preferences ?? [];
+
+        return collect(NotificationType::PREFERENCE_FAMILIES)
+            ->mapWithKeys(fn (string $family) => [$family => (bool) ($saved[$family] ?? true)])
+            ->all();
+    }
+
+    /**
+     * Preferências expostas na API: e-mail por família + opt-in in-app de post publicado (padrão desligado).
+     *
+     * @return array<string, bool>
+     */
+    public function notificationSettings(): array
+    {
+        return $this->emailPreferences() + [
+            'post_published' => (bool) (($this->notification_preferences ?? [])['post_published'] ?? false),
+        ];
+    }
+
+    public function wantsPostPublished(): bool
+    {
+        return $this->notificationSettings()['post_published'];
+    }
+
+    public function wantsEmailFor(NotificationType $type): bool
+    {
+        if ($type === NotificationType::POST_PUBLISHED) {
+            return false; // somente in-app
+        }
+
+        $family = $type->family();
+
+        return match (true) {
+            $family === null => true,
+            $family === 'billing' => true,
+            default => $this->emailPreferences()[$family] ?? true,
+        };
+    }
+
     public function loginExpiration(bool $rememberMe)
     {
         return DB::transaction(function () use ($rememberMe) {
             $this->update(['remember_me' => $rememberMe]);
+
             return match ($rememberMe) {
                 true => now()->addDays(intval(config('auth.token_expiration_days'))),
                 false => now()->addMinutes(intval(config('sanctum.expiration')))
@@ -215,7 +277,7 @@ class User extends Authenticatable implements Auditable
     public function hasAccessToWorkspace(string $uuid): bool
     {
         return $this->accesses()
-            ->whereHas('workspace', fn($q) => $q->where('uuid', $uuid))
+            ->whereHas('workspace', fn ($q) => $q->where('uuid', $uuid))
             ->exists();
     }
 }

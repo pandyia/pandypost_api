@@ -8,7 +8,7 @@ use Laravel\Cashier\Events\WebhookReceived;
 /**
  * Ponto de extensão dos webhooks: o Cashier já sincroniza nativamente a
  * Subscription (status/períodos/trial/cancelamento). Aqui apenas despachamos
- * um Job para os efeitos CUSTOM (tabela Payment) nos eventos de invoice/checkout.
+ * um Job para os efeitos CUSTOM (tabela Payment) nos eventos de invoice/checkout e no cancelamento da assinatura (só para avisar).
  */
 class HandleStripeWebhook
 {
@@ -21,6 +21,8 @@ class HandleStripeWebhook
         'invoice.payment_failed',
         'invoice.voided',
         'checkout.session.expired',
+        'customer.subscription.updated',
+        'customer.subscription.deleted',
     ];
 
     public function handle(WebhookReceived $event): void

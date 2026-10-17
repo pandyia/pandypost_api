@@ -14,7 +14,10 @@ use App\Http\Controllers\Api\Billing\Tenant\SubscriptionController as BillingSub
 use App\Http\Controllers\Api\ContentPipelineController;
 use App\Http\Controllers\Api\InviteController;
 use App\Http\Controllers\Api\LandingSettingsController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\NotificationPreferenceController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
 use App\Http\Controllers\Api\SocialAccountController;
@@ -76,6 +79,15 @@ Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+
+    // Meu perfil: dados, foto (URL pré-assinada) e senha do próprio usuário
+    Route::patch('me', [ProfileController::class, 'update']);
+    Route::prefix('me')->group(function () {
+        Route::post('avatar/upload-url', [ProfileController::class, 'avatarUploadUrl'])->middleware('throttle:20,1');
+        Route::put('avatar', [ProfileController::class, 'setAvatar']);
+        Route::delete('avatar', [ProfileController::class, 'removeAvatar']);
+        Route::put('password', [ProfileController::class, 'changePassword'])->middleware('throttle:5,1');
+    });
     Route::post('auth/resend-email-verification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,1');
 });
 
@@ -182,6 +194,15 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
         Route::patch('{invite}/accept', [InviteController::class, 'accept']);
         Route::patch('{invite}/decline', [InviteController::class, 'decline']);
     });
+
+    // Central de notificações (usuário logado, sem permissão de grupo)
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/unread', [NotificationController::class, 'unread']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'read']);
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
+    Route::patch('notification-preferences', [NotificationPreferenceController::class, 'update']);
 
     // Invites (gerenciamento de convites do workspace)
     Route::get('invites', [InviteController::class, 'index']);

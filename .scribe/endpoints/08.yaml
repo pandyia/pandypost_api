@@ -2,7 +2,7 @@ name: Workspaces
 description: |-
 
   Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-  que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+  que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
 endpoints:
   -
     custom: []
@@ -15,7 +15,7 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Listar workspaces'
@@ -113,12 +113,12 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Criar workspace'
       description: |-
-        O usuário logado vira Administrador do novo workspace. O workspace corrente **não** muda: use `switch` depois.
+        O usuário logado vira Admin do novo workspace. O workspace corrente **não** muda: use `switch` depois.
 
         **Permissão:** `workspaces.create`
       authenticated: true
@@ -184,7 +184,7 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Ver workspace'
@@ -255,7 +255,7 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Renomear workspace'
@@ -329,7 +329,7 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Excluir workspace'
@@ -400,7 +400,7 @@ endpoints:
       groupDescription: |-
 
         Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-        que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+        que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
       subgroup: ''
       subgroupDescription: ''
       title: 'Trocar workspace corrente'

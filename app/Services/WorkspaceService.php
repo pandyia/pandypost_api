@@ -45,7 +45,7 @@ class WorkspaceService extends BaseService
             ]);
 
             $role = Role::create([
-                'name' => $data['role_name'] ?? 'Administrador',
+                'name' => $data['role_name'] ?? 'Admin',
                 'workspace_id' => $workspace->id,
             ]);
 

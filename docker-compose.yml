@@ -108,25 +108,46 @@ services:
         networks:
             - pandypost-network
 
-    # Inicializador do Bucket Dev (play.minio) com protecao para Producao
+    # Storage S3 local (MinIO) para dev. O alias minio.localtest.me + a mesma porta (9100)
+    # dentro e fora do Docker fazem a URL pré-assinada valer para a API e para o navegador
+    # (curl trata *.localhost como loopback, por isso não usamos esse domínio).
+    minio:
+        # As imagens oficiais minio/minio saíram do Docker Hub; bitnamilegacy/minio é o MinIO congelado (suficiente para dev).
+        image: bitnamilegacy/minio:latest
+        container_name: pandypost-minio
+        restart: unless-stopped
+        environment:
+            MINIO_ROOT_USER: pandypost
+            MINIO_ROOT_PASSWORD: pandypost-secret
+            MINIO_API_PORT_NUMBER: "9100"
+            MINIO_CONSOLE_PORT_NUMBER: "9101"
+        ports:
+            - "127.0.0.1:9100:9100"
+            - "127.0.0.1:9101:9101"
+        volumes:
+            - minio_data:/bitnami/minio/data
+        networks:
+            pandypost-network:
+                aliases:
+                    - minio.localtest.me
+
+    # Cria o bucket de dev no MinIO local, com proteção para Produção
     bucket-init:
-        image: amazon/aws-cli:latest
+        image: bitnamilegacy/minio:latest
         container_name: pandypost-bucket-init
+        depends_on:
+            - minio
         environment:
             - APP_ENV=${APP_ENV:-local}
-            - AWS_ACCESS_KEY_ID=Q3AM3UQ867SPQQA43P2F
-            - AWS_SECRET_ACCESS_KEY=zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
-            - AWS_DEFAULT_REGION=us-east-1
         entrypoint: >
             /bin/sh -c "
-            if [ "\$$APP_ENV" = "production" ] || [ "\$$APP_ENV" = "prod" ]; then
+            if [ \"\$$APP_ENV\" = \"production\" ] || [ \"\$$APP_ENV\" = \"prod\" ]; then
                 echo '[AVISO] Ambiente de PRODUCAO detectado. Ignorando criacao automatica de bucket dev.';
                 exit 0;
-             fi;
-             echo 'Configurando bucket de dev no play.min.io...';
-            aws --endpoint-url https://play.min.io s3api head-bucket --bucket pandypost-dev 2>/dev/null ||
-            aws --endpoint-url https://play.min.io s3api create-bucket --bucket pandypost-dev;
-            aws --endpoint-url https://play.min.io s3api put-bucket-policy --bucket pandypost-dev --policy '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::pandypost-dev/*\"]}]}';
+            fi;
+            until mc alias set local http://minio.localtest.me:9100 pandypost pandypost-secret; do sleep 2; done;
+            mc mb --ignore-existing local/pandypost-dev &&
+            mc anonymous set download local/pandypost-dev &&
             echo '[SUCESSO] Bucket pandypost-dev pronto para uso!';
             exit 0;
             "
@@ -134,6 +155,7 @@ services:
             - pandypost-network
 
 volumes:
+    minio_data:
     redis_data:
     pgsql_data:
 

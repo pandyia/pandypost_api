@@ -3,10 +3,12 @@
 namespace App\Jobs;
 
 use App\Enums\Currency;
+use App\Enums\NotificationType;
 use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Workspace;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -46,11 +48,54 @@ class ProcessStripeWebhookJob implements ShouldQueue
         match ($type) {
             'invoice.created' => $this->upsertInvoicePayment($object, PaymentStatus::PENDING),
             'invoice.payment_succeeded' => $this->handlePaymentSucceeded($object),
-            'invoice.payment_failed' => $this->upsertInvoicePayment($object, PaymentStatus::FAILED),
+            'invoice.payment_failed' => $this->handlePaymentFailed($object),
             'invoice.voided' => $this->upsertInvoicePayment($object, PaymentStatus::VOID),
             'checkout.session.expired' => $this->handleCheckoutExpired($object),
+            'customer.subscription.updated' => $this->handleSubscriptionUpdated($object),
+            'customer.subscription.deleted' => $this->handleSubscriptionCanceled($object),
             default => null,
         };
+    }
+
+    private function handlePaymentFailed(array $invoice): void
+    {
+        $this->upsertInvoicePayment($invoice, PaymentStatus::FAILED);
+
+        $workspace = $this->resolveWorkspace($invoice);
+
+        if ($workspace && ! empty($invoice['id'])) {
+            app(NotificationService::class)->notifyBilling(NotificationType::PAYMENT_FAILED, $workspace, $invoice['id']);
+        }
+    }
+
+    /**
+     * Avisa o cancelamento no momento em que o usuário o pede (cancel_at_period_end
+     * passa de false para true). Qualquer outra atualização da assinatura é ignorada.
+     */
+    private function handleSubscriptionUpdated(array $subscription): void
+    {
+        $previous = $this->payload['data']['previous_attributes'] ?? [];
+
+        $justScheduledCancel = ! empty($subscription['cancel_at_period_end'])
+            && array_key_exists('cancel_at_period_end', $previous)
+            && empty($previous['cancel_at_period_end']);
+
+        if ($justScheduledCancel) {
+            $this->handleSubscriptionCanceled($subscription);
+        }
+    }
+
+    /**
+     * A chave de idempotência é o id da assinatura: o aviso do pedido de cancelamento
+     * e o do fim do período (subscription.deleted) viram uma única notificação.
+     */
+    private function handleSubscriptionCanceled(array $subscription): void
+    {
+        $workspace = $this->resolveWorkspace($subscription);
+
+        if ($workspace && ! empty($subscription['id'])) {
+            app(NotificationService::class)->notifyBilling(NotificationType::SUBSCRIPTION_CANCELED, $workspace, $subscription['id']);
+        }
     }
 
     private function handlePaymentSucceeded(array $invoice): void

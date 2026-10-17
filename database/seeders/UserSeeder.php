@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Permission;
-
 use App\Models\Access;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
@@ -62,6 +61,42 @@ class UserSeeder extends Seeder
                 'is_super_admin' => false,
                 'role' => 'Admin',
             ],
+            [
+                'name' => 'João Victor Super Admin',
+                'email' => 'joao.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Arthur Vieira Super Admin',
+                'email' => 'arthur.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Antônio Neri Super Admin',
+                'email' => 'antonio.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Gabriel Moreira Super Admin',
+                'email' => 'gabriel.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Laís Nascimento Super Admin',
+                'email' => 'lais.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
+            [
+                'name' => 'Letícia Super Admin',
+                'email' => 'leticia.superadmin@pandypost.com',
+                'is_super_admin' => true,
+                'role' => 'Super Admin',
+            ],
         ];
 
         foreach ($users as $userData) {
@@ -76,7 +111,7 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            $workspaceName = $userData['name'] === 'Super Admin' ? 'Super Admin Workspace' : $userData['name'] . ' Workspace';
+            $workspaceName = $userData['name'] === 'Super Admin' ? 'Super Admin Workspace' : $userData['name'].' Workspace';
 
             $workspace = Workspace::firstOrCreate(
                 ['name' => $workspaceName],
@@ -87,11 +122,13 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            $role = Role::firstOrCreate([
-                'uuid' => (string) Str::uuid(),
-                'name' => $userData['role'],
-                'workspace_id' => $workspace->id,
-            ]);
+            $role = Role::firstOrCreate(
+                [
+                    'name' => $userData['role'],
+                    'workspace_id' => $workspace->id,
+                ],
+                ['uuid' => (string) Str::uuid()]
+            );
 
             // Popula o front-end carregando as permissões para o banco
             if ($role->name === 'Admin') {

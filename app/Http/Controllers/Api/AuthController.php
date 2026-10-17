@@ -232,12 +232,17 @@ class AuthController extends Controller
      *     "email_verified_at": "10/10/2026 16:52:25",
      *     "is_super_admin": false,
      *     "current_workspace": {"uuid": "58d7d732-10a4-491d-9864-b4d85dfcf833", "name": "Workspace da Ana"},
-     *     "role": "Administrador",
+     *     "role": "Admin",
      *     "permissions": ["users.view", "users.create", "posts.view", "posts.create", "billing.view"]
      *   }
      * }
      *
-     * @responseField email_verified_at string|null Formato `d/m/Y H:i:s`. `null` = email não confirmado.
+     * @responseField email_verified_at string|null ISO 8601. `null` = email não confirmado.
+     * @responseField avatar string|null URL assinada da foto de perfil (muda a cada chamada), ou `null`.
+     * @responseField phone string|null Só dígitos (DDD + número).
+     * @responseField bio string|null Até 160 caracteres.
+     * @responseField timezone string Fuso horário IANA.
+     * @responseField created_at string ISO 8601.
      * @responseField current_workspace object Ausente se o usuário não tiver workspace.
      */
     public function me(Request $request)

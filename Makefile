@@ -1,6 +1,52 @@
 include .env
 exec = docker exec -it $(CONTAINER_NAME)
 
+.DEFAULT_GOAL := help
+
+help:
+	@echo "PANDYPOST - comandos do make (uso: make <comando>)"
+	@echo ""
+	@echo "SUBIR E DERRUBAR"
+	@echo "  up               Sobe os containers"
+	@echo "  down             Derruba os containers (dados são mantidos)"
+	@echo "  build            Reconstrói as imagens"
+	@echo "  buildup          Build + composer install + sobe tudo (primeira vez)"
+	@echo "  restart          Reinicia todos os containers"
+	@echo ""
+	@echo "RECARREGAR (escolha pelo que você mudou)"
+	@echo "  reload-code      Mudou código PHP: recarrega Octane e Horizon"
+	@echo "  reload-env       Mudou .env ou docker-compose.yml: recria php, horizon, reverb e nginx"
+	@echo "  reload-restart   Container travado: reinicia sem recriar (não relê o .env)"
+	@echo "  reload-all       Recria TODOS os serviços (não apaga dados)"
+	@echo "  optimize         Limpa os caches do Laravel"
+	@echo ""
+	@echo "BANCO DE DADOS"
+	@echo "  migrate          Roda as migrations pendentes"
+	@echo "  seed             Roda os seeders"
+	@echo "  rollback         Desfaz o último lote de migrations (cuidado)"
+	@echo "  ms               migrate:fresh --seed: APAGA tudo e recria (cuidado)"
+	@echo "  wipe             Apaga todas as tabelas (cuidado)"
+	@echo ""
+	@echo "DIA A DIA"
+	@echo "  test             Roda os testes (Pest)"
+	@echo "  tinker           Abre o console do Laravel"
+	@echo "  e                Abre um terminal dentro do container php"
+	@echo "  packages         composer install no container"
+	@echo ""
+	@echo "FILAS E AGENDADOR"
+	@echo "  horizon-status   Mostra se o Horizon está rodando"
+	@echo "  horizon-pause / horizon-continue / horizon-terminate"
+	@echo "  qw               queue:work    sw: schedule:work    sr: schedule:run"
+	@echo ""
+	@echo "LOGS"
+	@echo "  logs-octane | logs-horizon | logs-reverb"
+	@echo ""
+	@echo "OUTROS"
+	@echo "  restart-octane | restart-horizon | restart-reverb   Reinicia só um serviço"
+	@echo "  test-s3          Testa se o bucket S3 está funcionando"
+	@echo "  ngrok            Expõe a porta 9000 com ngrok"
+	@echo "  prod-up | prod-down | prod-pull | prod-logs   Produção (cuidado)"
+
 composer:
 	exec composer install
 
@@ -30,6 +76,23 @@ e:
 
 optimize: 
 	$(exec) php artisan optimize:clear
+
+# Mudou código PHP: recarrega workers do Octane e reinicia o Horizon (o supervisor o sobe de novo)
+reload-code:
+	$(exec) php artisan octane:reload
+	$(exec) php artisan horizon:terminate
+
+# Mudou .env ou docker-compose.yml: recria php, horizon, reverb e nginx (relê o env_file)
+reload-env:
+	docker compose up -d --force-recreate php horizon reverb nginx
+
+# Container travado ou estranho: reinicia sem recriar (não relê .env)
+reload-restart:
+	docker compose restart php horizon reverb nginx
+
+# Reload total: recria TODOS os serviços (não apaga volumes/dados)
+reload-all:
+	docker compose up -d --force-recreate
 
 rollback:
 	$(exec) php artisan migrate:rollback

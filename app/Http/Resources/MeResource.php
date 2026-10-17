@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\Access;
 use App\Models\Permission;
+use App\Services\Storage\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,15 +26,33 @@ class MeResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'is_active' => $this->is_active,
-            'email_verified_at' => $this->email_verified_at?->format('d/m/Y H:i:s'),
+            'email_verified_at' => $this->email_verified_at?->toIso8601String(),
+            'avatar' => $this->avatarUrl(),
+            'phone' => $this->phone,
+            'bio' => $this->bio,
+            'timezone' => $this->timezone,
+            'created_at' => $this->created_at?->toIso8601String(),
             'is_super_admin' => $this->is_super_admin,
-            'current_workspace' => $this->when($access, fn() => [
+            'current_workspace' => $this->when($access, fn () => [
                 'uuid' => $access->workspace?->uuid,
                 'name' => $access->workspace?->name,
             ]),
-            'role' => $this->when($access, fn() => $access->role?->name),
+            'role' => $this->when($access, fn () => $access->role?->name),
             'permissions' => $permissions,
         ];
+    }
+
+    /** URL assinada e longa da foto (muda a cada chamada); o caminho no S3 nunca sai. */
+    private function avatarUrl(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        return app(StorageService::class)->generateDownloadUrl(
+            $this->avatar_path,
+            (int) config('services.s3.presigned_avatar_ttl', 518400),
+        );
     }
 
     private function resolvePermissions(?Access $access): array
@@ -44,7 +63,7 @@ class MeResource extends JsonResource
                 ->all();
         }
 
-        if (!$access || !$access->role) {
+        if (! $access || ! $access->role) {
             return [];
         }
 
