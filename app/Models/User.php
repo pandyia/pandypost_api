@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NotificationType;
 use App\Models\Traits\BelongsToWorkspace;
 use App\Observers\UserObserver;
 use DB;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -113,6 +115,7 @@ class User extends Authenticatable implements Auditable
             'is_super_admin' => 'boolean',
             'is_active' => 'boolean',
             'remember_me' => 'boolean',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -132,6 +135,12 @@ class User extends Authenticatable implements Auditable
     public function currentAccess(): BelongsTo
     {
         return $this->belongsTo(Access::class, 'access_id');
+    }
+
+    // Central de notificações (model próprio, com workspace_id)
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
     }
 
     public function verificationEmailToken(): HasOne
@@ -180,6 +189,52 @@ class User extends Authenticatable implements Auditable
                 $query->where('name', $permissionName);
             })
             ->exists();
+    }
+
+    /**
+     * Preferências de e-mail por família (ausente = ligado). Billing é sempre e-mail.
+     *
+     * @return array<string, bool>
+     */
+    public function emailPreferences(): array
+    {
+        $saved = $this->notification_preferences ?? [];
+
+        return collect(NotificationType::PREFERENCE_FAMILIES)
+            ->mapWithKeys(fn (string $family) => [$family => (bool) ($saved[$family] ?? true)])
+            ->all();
+    }
+
+    /**
+     * Preferências expostas na API: e-mail por família + opt-in in-app de post publicado (padrão desligado).
+     *
+     * @return array<string, bool>
+     */
+    public function notificationSettings(): array
+    {
+        return $this->emailPreferences() + [
+            'post_published' => (bool) (($this->notification_preferences ?? [])['post_published'] ?? false),
+        ];
+    }
+
+    public function wantsPostPublished(): bool
+    {
+        return $this->notificationSettings()['post_published'];
+    }
+
+    public function wantsEmailFor(NotificationType $type): bool
+    {
+        if ($type === NotificationType::POST_PUBLISHED) {
+            return false; // somente in-app
+        }
+
+        $family = $type->family();
+
+        return match (true) {
+            $family === null => true,
+            $family === 'billing' => true,
+            default => $this->emailPreferences()[$family] ?? true,
+        };
     }
 
     public function loginExpiration(bool $rememberMe)

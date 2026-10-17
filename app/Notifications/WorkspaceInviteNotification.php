@@ -2,23 +2,27 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Notification;
+use App\Enums\NotificationType;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class WorkspaceInviteNotification extends Notification implements ShouldQueue
+class WorkspaceInviteNotification extends CentralNotification
 {
-    use Queueable;
-
     public function __construct(
         public string $workspaceName,
         public string $invitedByName,
-    ) {}
-
-    public function via($notifiable): array
-    {
-        return ['mail'];
+        array $context = [],
+        ?int $workspaceId = null,
+        ?string $dedupeKey = null,
+    ) {
+        parent::__construct(
+            NotificationType::WORKSPACE_INVITE,
+            'Convite para um workspace',
+            "{$invitedByName} convidou você para o workspace {$workspaceName}.",
+            '/settings/invites',
+            $context,
+            $workspaceId,
+            $dedupeKey,
+        );
     }
 
     public function toMail($notifiable): MailMessage

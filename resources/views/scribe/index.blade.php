@@ -1671,7 +1671,7 @@ fetch(url, {
             &quot;uuid&quot;: &quot;58d7d732-10a4-491d-9864-b4d85dfcf833&quot;,
             &quot;name&quot;: &quot;Workspace da Ana&quot;
         },
-        &quot;role&quot;: &quot;Administrador&quot;,
+        &quot;role&quot;: &quot;Admin&quot;quot;role&quot;role&quot;: &quot;Admin&quot;quot;: &quot;Admin&quot;,
         &quot;permissions&quot;: [
             &quot;users.view&quot;,
             &quot;users.create&quot;,
@@ -1933,7 +1933,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
                 <h1 id="workspaces">Workspaces</h1>
 
     <p>Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
-que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.</p>
+que não pode ser excluído. Quem cria um workspace vira "Admin" dele.</p>
 
                                 <h2 id="workspaces-GETapi-workspaces">Listar workspaces</h2>
 
@@ -2135,7 +2135,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>O usuário logado vira Administrador do novo workspace. O workspace corrente <strong>não</strong> muda: use <code>switch</code> depois.</p>
+<p>O usuário logado vira Admin do novo workspace. O workspace corrente <strong>não</strong> muda: use <code>switch</code> depois.</p>
 <p><strong>Permissão:</strong> <code>workspaces.create</code></p>
 
 <span id="example-requests-POSTapi-workspaces">

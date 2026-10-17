@@ -7,4 +7,33 @@ enum NotificationType: string
     case EMAIL_VERIFICATION = 'email_verification';
     case PASSWORD_RESET = 'password_reset';
     case WORKSPACE_INVITE = 'workspace_invite';
+    case POST_FAILED = 'post_failed';
+    case PAYMENT_FAILED = 'payment_failed';
+    case SUBSCRIPTION_CANCELED = 'subscription_canceled';
+    case SOCIAL_ACCOUNT_DISCONNECTED = 'social_account_disconnected';
+    case POST_PUBLISHED = 'post_published';
+
+    /** Famílias cujo e-mail o usuário pode ligar/desligar. */
+    public const PREFERENCE_FAMILIES = ['invite', 'posts', 'social_accounts'];
+
+    /**
+     * Família de preferência. `billing` é fixa (sempre e-mail); transacionais não têm família.
+     */
+    public function family(): ?string
+    {
+        return match ($this) {
+            self::WORKSPACE_INVITE => 'invite',
+            self::POST_FAILED => 'posts',
+            self::SOCIAL_ACCOUNT_DISCONNECTED => 'social_accounts',
+            self::POST_PUBLISHED => 'post_published',
+            self::PAYMENT_FAILED, self::SUBSCRIPTION_CANCELED => 'billing',
+            default => null,
+        };
+    }
+
+    /** Tipos que aparecem na central (exclui os transacionais só de e-mail). */
+    public function isCentral(): bool
+    {
+        return $this->family() !== null;
+    }
 }

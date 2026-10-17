@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @group Workspaces
  *
  * Workspaces (times) dos quais o usuário participa. Todo usuário tem um workspace pessoal, criado no cadastro,
- * que não pode ser excluído. Quem cria um workspace vira "Administrador" dele.
+ * que não pode ser excluído. Quem cria um workspace vira "Admin" dele.
  */
 class WorkspaceController extends BaseController
 {
@@ -36,7 +36,7 @@ class WorkspaceController extends BaseController
     /**
      * Criar workspace
      *
-     * O usuário logado vira Administrador do novo workspace. O workspace corrente **não** muda: use `switch` depois.
+     * O usuário logado vira Admin do novo workspace. O workspace corrente **não** muda: use `switch` depois.
      *
      * **Permissão:** `workspaces.create`
      *

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\NotificationType;
 use App\Exceptions\InviteException;
 use App\Models\Access;
 use App\Models\Invite;
@@ -13,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 class InviteService extends BaseService
 {
     protected array $with = ['recipient', 'role', 'invitedBy', 'workspaceSender'];
+
     protected array $normalFilter = [];
+
     protected array $whereHas = [
 
         // pode ser também assim: 'uuid' => 'user'
@@ -57,8 +58,9 @@ class InviteService extends BaseService
             throw InviteException::alreadyInvited();
         }
 
-        $invitedUser = User::findByEmail($data['email']);
-        
+        // Sem o escopo de workspace: o convidado ainda não é membro deste workspace.
+        $invitedUser = User::withoutGlobalScopes()->where('email', $data['email'])->first();
+
         if ($invitedUser) {
             $alreadyMember = Access::where('user_id', $invitedUser->id)
                 ->where('workspace_id', $workspaceId)
@@ -72,27 +74,27 @@ class InviteService extends BaseService
         DB::transaction(function () use ($data, $user, $access, $workspaceId, $invitedUser) {
             $role = Role::where('uuid', $data['role_uuid'])->firstOrFail();
 
-            Invite::create([
+            $invite = Invite::create([
                 'email' => $data['email'],
                 'workspace_id' => $workspaceId,
                 'invited_by' => $user->id,
                 'role_id' => $role->id,
                 'status' => 'PENDING',
-                'expires_at' => now()->addDays(config('app.invite_expiration_days', 3)), //ou invite expiration days
+                'expires_at' => now()->addDays(config('app.invite_expiration_days', 3)), // ou invite expiration days
             ]);
 
             if ($invitedUser) {
-                $this->notificationService->send(
+                $this->notificationService->notifyWorkspaceInvite(
                     $invitedUser,
-                    NotificationType::WORKSPACE_INVITE,
-                    [
-                        'workspace_name' => $access->workspace->name,
-                        'invited_by_name' => $user->name,
-                    ]
+                    $workspaceId,
+                    $access->workspace->name,
+                    $user->name,
+                    $invite->uuid,
                 );
             }
         });
     }
+
     public function accept(Invite $invite): void
     {
         $this->authorizeInvite($invite);

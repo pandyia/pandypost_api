@@ -1,6 +1,6 @@
 # Spec 007 — Central de notificações (adaptação da arquitetura do SRGA-Backend)
 
-**Status:** rascunho para aprovação (**somente spec** — implementação não autorizada) · **Front:** a definir
+**Status:** decisões aprovadas em 2026-10-17 — implementação autorizada (backend + frontend) · **Front:** a definir
 
 ## Contexto
 
@@ -39,6 +39,15 @@ O SRGA-Backend já resolveu isso com o mecanismo nativo do Laravel (`database` +
   - `PublishPostJob::failed()` só grava `status=failed` e `error_message`; sucesso na publicação não avisa ninguém.
   - `ProcessStripeWebhookJob` trata `invoice.payment_failed` apenas gravando o `Payment` como `FAILED`.
   - `YouTubeService` lança exceção quando o token expira sem `refresh_token`; a conta fica quebrada sem aviso.
+
+## Decisões (2026-10-17) — substituem RF/questões conflitantes
+
+- **D-1 Workspace manda:** a central é **por workspace**. `GET /api/notifications` lista só as do workspace corrente do usuário; notificação de um workspace nunca aparece em outro. `workspace_uuid` de outro workspace/que não é membro → lista vazia. Exceção única: `workspace_invite` (convidado ainda não é membro) é do usuário, `workspace_id` = workspace que convida, e fica visível em qualquer workspace.
+- **D-2 Destinatários por permissão:** `post_failed` vai para **todos os membros do workspace com permissão de ver/gerenciar posts**, independente de quem postou; o `context` informa o autor (`author_name`). Billing (`payment_failed`, `subscription_canceled`) vai para os membros com permissão de billing do workspace.
+- **D-3 Preferências entram na v1:** e-mail por família (`invite`, `posts`, `social_accounts`) ligável/desligável; `database` e `broadcast` sempre ligados. **Billing não é configurável**: sempre e-mail + database + broadcast.
+- **D-4 Eventos v1:** `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`, `social_account_disconnected`. `post_published` existe como **opt-in** (preferência `post_published`, padrão desligado; decide se a notificação é criada; só o autor do post, só in-app, sem e-mail). Fora da v1: `subscription_expiring`.
+- **D-5 Broadcast** só em `App.Models.User.{id}`. **Retenção:** lidas há mais de 30 dias são apagadas por comando agendado; não lidas nunca.
+- **D-6** `notifiable` sempre `User`. `EmailVerification`/`PasswordReset` ficam só e-mail, fora da central. Convidado sem conta: sem notificação na v1.
 
 ## Escopo
 
@@ -107,7 +116,7 @@ Todas as rotas são do **usuário logado** (escopo `notifiable = usuário`), sem
       "type": "post_failed",
       "title": "Falha ao publicar",
       "message": "Não foi possível publicar \"Meu vídeo\" no YouTube.",
-      "action_url": "/posts/6f1a....",
+      "action_url": "/pipeline",
       "context": { "post_uuid": "6f1a....", "platform": "youtube", "workspace_uuid": "58d7...." },
       "read_at": null,
       "created_at": "2026-10-16 10:00:00"

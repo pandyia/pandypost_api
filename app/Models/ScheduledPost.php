@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,6 +62,13 @@ class ScheduledPost extends Model implements Auditable
     protected static function booted(): void
     {
         static::creating(fn ($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
+
+        // Ponto central de sucesso: todas as redes marcam o post como publicado via update().
+        static::updated(function (self $post) {
+            if ($post->wasChanged('status') && $post->status === ScheduledPostStatus::PUBLISHED->value) {
+                app(NotificationService::class)->notifyPostPublished($post);
+            }
+        });
     }
 
     // Relationships

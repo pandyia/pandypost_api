@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\Billing\Tenant\SubscriptionController as BillingSub
 use App\Http\Controllers\Api\ContentPipelineController;
 use App\Http\Controllers\Api\InviteController;
 use App\Http\Controllers\Api\LandingSettingsController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\NotificationPreferenceController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
@@ -192,6 +194,15 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
         Route::patch('{invite}/accept', [InviteController::class, 'accept']);
         Route::patch('{invite}/decline', [InviteController::class, 'decline']);
     });
+
+    // Central de notificações (usuário logado, sem permissão de grupo)
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::get('notifications/unread', [NotificationController::class, 'unread']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'read']);
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
+    Route::patch('notification-preferences', [NotificationPreferenceController::class, 'update']);
 
     // Invites (gerenciamento de convites do workspace)
     Route::get('invites', [InviteController::class, 'index']);

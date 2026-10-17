@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Permission;
-
 use App\Models\Access;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
@@ -112,7 +111,7 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            $workspaceName = $userData['name'] === 'Super Admin' ? 'Super Admin Workspace' : $userData['name'] . ' Workspace';
+            $workspaceName = $userData['name'] === 'Super Admin' ? 'Super Admin Workspace' : $userData['name'].' Workspace';
 
             $workspace = Workspace::firstOrCreate(
                 ['name' => $workspaceName],
@@ -123,11 +122,13 @@ class UserSeeder extends Seeder
                 ]
             );
 
-            $role = Role::firstOrCreate([
-                'uuid' => (string) Str::uuid(),
-                'name' => $userData['role'],
-                'workspace_id' => $workspace->id,
-            ]);
+            $role = Role::firstOrCreate(
+                [
+                    'name' => $userData['role'],
+                    'workspace_id' => $workspace->id,
+                ],
+                ['uuid' => (string) Str::uuid()]
+            );
 
             // Popula o front-end carregando as permissões para o banco
             if ($role->name === 'Admin') {

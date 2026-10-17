@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ScheduledPost;
 use App\Services\Factories\SocialMediaFactory;
+use App\Services\NotificationService;
 use App\Services\Storage\StorageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,6 +19,7 @@ class PublishPostJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 180;
 
     public function __construct(public ScheduledPost $post)
@@ -29,14 +31,14 @@ class PublishPostJob implements ShouldQueue
     {
         // Verificação Tardinha: Se o usuário cancelou a assinatura entre a data do clique e a data do post, nós barramos.
         $user = $this->post->user;
-        if (!$user->hasValidSubscriptionForPublishing()) {
-            throw new \Exception("Assinatura Inativa ou Expirada no momento exato do agendamento.");
+        if (! $user->hasValidSubscriptionForPublishing()) {
+            throw new \Exception('Assinatura Inativa ou Expirada no momento exato do agendamento.');
         }
 
         $account = $this->post->socialAccount;
 
-        if (!$account || $account->user_id !== $user->id) {
-            throw new \Exception("Conta vinculada ao agendamento não encontrada.");
+        if (! $account || $account->user_id !== $user->id) {
+            throw new \Exception('Conta vinculada ao agendamento não encontrada.');
         }
 
         Log::info("Publicando post {$this->post->id} em {$this->post->platform->value} [queue: {$this->post->platform->value}]");
@@ -53,17 +55,20 @@ class PublishPostJob implements ShouldQueue
             'status' => 'failed',
             'error_message' => substr($exception->getMessage(), 0, 255),
         ]);
-        
+
         // Limpa os arquivos do S3 se o post falhou de vez e caiu no Failed Jobs
         $storageService = app(StorageService::class);
 
         $paths = [$this->post->media_path];
-        
+
         $payload = $this->post->payload ?? [];
-        if (!empty($payload['thumbnail_path'])) {
+        if (! empty($payload['thumbnail_path'])) {
             $paths[] = $payload['thumbnail_path'];
         }
 
         $storageService->deleteMany($paths);
+
+        // Avisa os membros com permissão de posts (falha ao notificar não afeta o fluxo).
+        app(NotificationService::class)->notifyPostFailed($this->post);
     }
 }

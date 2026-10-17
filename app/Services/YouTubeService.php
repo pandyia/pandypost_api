@@ -3,18 +3,18 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
-use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
+use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
+use Exception;
 use Google\Client;
 use Google\Http\MediaFileUpload;
 use Google\Service\YouTube;
 use Google\Service\YouTube\Video;
 use Google\Service\YouTube\VideoSnippet;
 use Google\Service\YouTube\VideoStatus;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
-use Exception;
+use Illuminate\Support\Facades\Log;
 
 class YouTubeService implements SocialMediaServiceInterface
 {
@@ -33,18 +33,18 @@ class YouTubeService implements SocialMediaServiceInterface
             $client = $this->getAuthenticatedClient($account);
             $youtube = new YouTube($client);
             $video = $this->createVideoMetadata($post);
-            
+
             $videoId = $this->streamVideoUpload($client, $youtube, $video, $post);
 
             $payload = $post->payload ?? [];
-            
+
             // O YouTube desqualifica Shorts e os transforma em Vídeos Normais se injetarmos uma Custom Thumbnail via API.
             // Portanto, bloqueamos o envio da thumb caso o post seja marcado como Short.
             $isShort = (bool) Arr::get($payload, 'is_short', false);
-            
+
             $thumbnailPath = Arr::get($payload, 'thumbnail_path');
 
-            if (!$isShort && $thumbnailPath) {
+            if (! $isShort && $thumbnailPath) {
                 $this->streamThumbnailUpload($client, $youtube, $videoId, $thumbnailPath);
             }
 
@@ -53,26 +53,29 @@ class YouTubeService implements SocialMediaServiceInterface
                 'platform_post_id' => $videoId,
                 'published_at' => now(),
             ]);
-            
+
             Log::info("Post {$post->id} enviado ao YouTube com sucesso! Removendo arquivo do S3...");
             $this->cleanupFiles($post, $payload);
-            
+
         } catch (Exception $e) {
-            Log::error("Erro no upload do YouTube para o Post {$post->id}: " . $e->getMessage());
+            Log::error("Erro no upload do YouTube para o Post {$post->id}: ".$e->getMessage());
             throw $e;
         }
     }
 
     private function getAuthenticatedClient(SocialAccount $account): Client
     {
-        $client = new Client();
+        $client = new Client;
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setAccessToken($account->access_token);
 
         if ($client->isAccessTokenExpired()) {
-            if (!$account->refresh_token) {
-                throw new Exception("Token expirado e sem refresh_token disponível.");
+            if (! $account->refresh_token) {
+                // Conta quebrada: avisa quem a conectou (sem expor o erro da plataforma).
+                app(NotificationService::class)->notifySocialAccountDisconnected($account);
+
+                throw new Exception('Token expirado e sem refresh_token disponível.');
             }
             $newTokens = $client->fetchAccessTokenWithRefreshToken($account->refresh_token);
             if (isset($newTokens['access_token'])) {
@@ -88,15 +91,15 @@ class YouTubeService implements SocialMediaServiceInterface
 
     private function createVideoMetadata(ScheduledPost $post): Video
     {
-        $video = new Video();
-        $snippet = new VideoSnippet();
+        $video = new Video;
+        $snippet = new VideoSnippet;
         $snippet->setTitle($post->title);
-        
+
         $description = $post->caption ?? '';
         $payload = $post->payload ?? [];
-        
+
         $snippet->setDescription($description);
-        
+
         // Categoria dinâmica (padrão 22 = People & Blogs)
         $snippet->setCategoryId((string) Arr::get($payload, 'youtube_category_id', '22'));
 
@@ -108,14 +111,14 @@ class YouTubeService implements SocialMediaServiceInterface
 
         $video->setSnippet($snippet);
 
-        $statusObj = new VideoStatus();
+        $statusObj = new VideoStatus;
         $privacy = (string) Arr::get($payload, 'youtube_privacy_status', 'public');
         $statusObj->setPrivacyStatus($privacy);
-        
+
         // Regra COPPA de conteúdo para crianças (padrão: false)
         $isForKids = (bool) Arr::get($payload, 'youtube_made_for_kids', false);
         $statusObj->setSelfDeclaredMadeForKids($isForKids);
-        
+
         $video->setStatus($statusObj);
 
         return $video;
@@ -130,19 +133,19 @@ class YouTubeService implements SocialMediaServiceInterface
         $client->setDefer(true);
         $insertRequest = $youtube->videos->insert('snippet,status', $video);
         $fileSize = $this->storageService->size($post->media_path);
-        
+
         $media = new MediaFileUpload($client, $insertRequest, 'video/*', null, true, self::CHUNK_SIZE);
         $media->setFileSize($fileSize);
 
         $handle = $this->storageService->readStream($post->media_path);
         $status = $this->processResumableStream($handle, $media);
-        
+
         $client->setDefer(false);
 
-        if (!$status || !isset($status->id)) {
-            throw new Exception("Falha ao fazer upload do vídeo para o YouTube.");
+        if (! $status || ! isset($status->id)) {
+            throw new Exception('Falha ao fazer upload do vídeo para o YouTube.');
         }
-        
+
         return $status->id;
     }
 
@@ -152,24 +155,24 @@ class YouTubeService implements SocialMediaServiceInterface
             $thumbSize = $this->storageService->size($thumbnailPath);
             $thumbMime = $this->storageService->mimeType($thumbnailPath);
             $thumbHandle = $this->storageService->readStream($thumbnailPath);
-            
+
             $client->setDefer(true);
             $thumbRequest = $youtube->thumbnails->set($videoId);
             $thumbMedia = new MediaFileUpload($client, $thumbRequest, $thumbMime, null, true, self::CHUNK_SIZE);
             $thumbMedia->setFileSize($thumbSize);
-            
+
             $this->processResumableStream($thumbHandle, $thumbMedia);
-            
+
             $client->setDefer(false);
         } catch (Exception $e) {
-            Log::warning("Falha ao subir thumbnail pro YouTube: " . $e->getMessage());
+            Log::warning('Falha ao subir thumbnail pro YouTube: '.$e->getMessage());
         }
     }
 
     private function cleanupFiles(ScheduledPost $post, array $payload): void
     {
         $paths = [$post->media_path];
-        
+
         $thumbnailPath = Arr::get($payload, 'thumbnail_path');
         if ($thumbnailPath) {
             $paths[] = $thumbnailPath;
@@ -180,20 +183,19 @@ class YouTubeService implements SocialMediaServiceInterface
 
     /**
      * Processa a leitura do Stream do S3 e envio em partes (Chunks) para a API.
-     * 
-     * @param resource $handle
-     * @param MediaFileUpload $media
-     * @return mixed 
+     *
+     * @param  resource  $handle
+     * @return mixed
      */
     private function processResumableStream($handle, MediaFileUpload $media)
     {
         $status = false;
-        while (!$status && !feof($handle)) {
+        while (! $status && ! feof($handle)) {
             $chunk = fread($handle, self::CHUNK_SIZE);
             $status = $media->nextChunk($chunk);
         }
         fclose($handle);
-        
+
         return $status;
     }
 }

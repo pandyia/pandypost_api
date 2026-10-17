@@ -10,15 +10,14 @@ class UserObserver
 {
     public function __construct(
         private WorkspaceService $workspaceService
-    ) {
-    }
+    ) {}
 
     public function updated(User $user): void
     {
         if ($user->wasChanged('email_verified_at') && $user->email_verified_at !== null) {
             $data = [
                 'name' => "{$user->name} Personal Team",
-                'role_name' => 'Administrador',
+                'role_name' => 'Admin',
                 'permissions' => Role::adminPermissions(),
                 'is_personal_team' => true,
             ];
