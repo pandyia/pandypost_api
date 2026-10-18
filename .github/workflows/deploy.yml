@@ -48,8 +48,11 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/pandypost-php:${{ steps.tag.outputs.version }}
             ${{ env.IMAGE_PREFIX }}/pandypost-php:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Um scope por imagem: sem isso as três gravam no mesmo cache e a
+          # última exportada (redis) apaga o da anterior, forçando o PHP a
+          # recompilar todas as extensões a cada deploy.
+          cache-from: type=gha,scope=php
+          cache-to: type=gha,scope=php,mode=max
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v6
@@ -61,8 +64,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/pandypost-nginx:${{ steps.tag.outputs.version }}
             ${{ env.IMAGE_PREFIX }}/pandypost-nginx:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,scope=nginx,mode=max
 
       - name: Build and push Redis image
         uses: docker/build-push-action@v6
@@ -73,8 +76,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/pandypost-redis:${{ steps.tag.outputs.version }}
             ${{ env.IMAGE_PREFIX }}/pandypost-redis:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=redis
+          cache-to: type=gha,scope=redis,mode=max
 
   deploy:
     runs-on: ubuntu-latest
@@ -156,7 +159,7 @@ jobs:
             echo "Starting datastores..."
             \${COMPOSE} up -d --wait redis redis-cache
 
-            echo "Starting PHP-FPM..."
+            echo "Starting Octane..."
             \${COMPOSE} up -d --no-deps --wait php
 
             echo "Running migrations..."
@@ -166,7 +169,7 @@ jobs:
             # container, então não há mais 'artisan optimize' aqui.
             # Horizon também não precisa de 'horizon:terminate': o container
             # é recriado pelo up e o stop_grace_period drena os jobs.
-            echo "Starting nginx, horizon and scheduler..."
+            echo "Starting reverb, nginx, horizon and scheduler..."
             \${COMPOSE} up -d --wait --remove-orphans
 
             echo "Cleaning old images..."
