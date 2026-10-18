@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -114,7 +115,7 @@ describe('remover usuário do workspace', function () {
 
         // Vincula ao workspace pessoal
         $personalRole = Role::withoutGlobalScopes()->create([
-            'name' => 'Personal Role ' . uniqid(),
+            'name' => 'Personal Role '.uniqid(),
             'workspace_id' => $personalWorkspace->id,
         ]);
         $personalAccess = Access::create([
@@ -152,7 +153,7 @@ describe('remover usuário do workspace', function () {
     });
 
     it('retorna 401 quando não está autenticado', function () {
-        $uuid = \Illuminate\Support\Str::uuid();
+        $uuid = Str::uuid();
 
         $this->deleteJson("/api/users/{$uuid}")
             ->assertUnauthorized();
@@ -184,7 +185,7 @@ describe('trocar perfil do usuário', function () {
         $targetUser = addUserToWorkspace($workspace);
 
         $newRole = Role::withoutGlobalScopes()->create([
-            'name' => 'Novo Perfil ' . uniqid(),
+            'name' => 'Novo Perfil '.uniqid(),
             'workspace_id' => $workspaceId,
         ]);
 
@@ -234,17 +235,34 @@ describe('trocar perfil do usuário', function () {
 
         $this->withToken($user->test_token)
             ->patchJson("/api/users/{$targetUser->uuid}/role", [
-                'role_uuid' => \Illuminate\Support\Str::uuid(),
+                'role_uuid' => Str::uuid(),
             ])
             ->assertStatus(404)
             ->assertJsonPath('error', 'profile_not_found');
     });
 
+    it('retorna 422 quando o role_uuid não é enviado ou é inválido', function () {
+        $user = createUserWithPermissions(['users.change_role']);
+        $workspace = Workspace::withoutGlobalScopes()->find($user->currentAccess->workspace_id);
+
+        $targetUser = addUserToWorkspace($workspace);
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/users/{$targetUser->uuid}/role", [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('role_uuid');
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/users/{$targetUser->uuid}/role", ['role_uuid' => 'abc'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('role_uuid');
+    });
+
     it('retorna 401 quando não está autenticado', function () {
-        $uuid = \Illuminate\Support\Str::uuid();
+        $uuid = Str::uuid();
 
         $this->patchJson("/api/users/{$uuid}/role", [
-            'role_uuid' => \Illuminate\Support\Str::uuid(),
+            'role_uuid' => Str::uuid(),
         ])->assertUnauthorized();
     });
 
@@ -256,7 +274,7 @@ describe('trocar perfil do usuário', function () {
 
         $this->withToken($user->test_token)
             ->patchJson("/api/users/{$targetUser->uuid}/role", [
-                'role_uuid' => \Illuminate\Support\Str::uuid(),
+                'role_uuid' => Str::uuid(),
             ])
             ->assertForbidden();
     });

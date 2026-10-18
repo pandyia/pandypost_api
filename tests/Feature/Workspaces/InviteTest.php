@@ -5,6 +5,7 @@ use App\Models\Invite;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Notification;
@@ -26,12 +27,12 @@ describe('enviar convite', function () {
     it('envia um convite com sucesso para um usuário existente', function () {
         $user = createUserWithPermissions(['invites.create']);
         $workspaceId = $user->currentAccess->workspace_id;
-        
+
         $role = Role::withoutGlobalScopes()->create([
             'name' => 'Cargo Teste',
             'workspace_id' => $workspaceId,
         ]);
-        
+
         $invitedUser = User::factory()->create(['email' => 'convidado@teste.com']);
 
         $this->withToken($user->test_token)
@@ -54,7 +55,7 @@ describe('enviar convite', function () {
     it('envia um convite com sucesso para um email não cadastrado no sistema', function () {
         $user = createUserWithPermissions(['invites.create']);
         $workspaceId = $user->currentAccess->workspace_id;
-        
+
         $role = Role::withoutGlobalScopes()->create([
             'name' => 'Cargo Teste',
             'workspace_id' => $workspaceId,
@@ -76,7 +77,7 @@ describe('enviar convite', function () {
     it('retorna 409 quando o usuário já possui um convite pendente para o mesmo workspace', function () {
         $user = createUserWithPermissions(['invites.create']);
         $workspaceId = $user->currentAccess->workspace_id;
-        
+
         $role = Role::withoutGlobalScopes()->create([
             'name' => 'Cargo',
             'workspace_id' => $workspaceId,
@@ -124,12 +125,12 @@ describe('enviar convite', function () {
     it('retorna 409 quando tenta enviar convite para um usuário que já é membro', function () {
         $user = createUserWithPermissions(['invites.create']);
         $workspaceId = $user->currentAccess->workspace_id;
-        
+
         $role = Role::withoutGlobalScopes()->create([
             'name' => 'Cargo Teste',
             'workspace_id' => $workspaceId,
         ]);
-        
+
         $existingMember = User::factory()->create(['email' => 'membro@teste.com']);
         Access::create([
             'user_id' => $existingMember->id,
@@ -156,7 +157,7 @@ describe('listar convites do workspace', function () {
     it('lista os convites enviados pelo workspace atual de forma paginada', function () {
         $user = createUserWithPermissions(['invites.view']);
         $workspaceId = $user->currentAccess->workspace_id;
-        
+
         $role = Role::withoutGlobalScopes()->create([
             'name' => 'Cargo',
             'workspace_id' => $workspaceId,
@@ -174,8 +175,8 @@ describe('listar convites do workspace', function () {
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['uuid', 'recipient' => ['email'], 'status', 'expires_at', 'role']
-                ]
+                    '*' => ['uuid', 'recipient' => ['email'], 'status', 'expires_at', 'role'],
+                ],
             ]);
 
         $uuids = collect($response->json('data'))->pluck('uuid');
@@ -215,8 +216,8 @@ describe('listar convites recebidos', function () {
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['uuid', 'status', 'workspace', 'role', 'invitedBy', 'created_at', 'expires_at']
-                ]
+                    '*' => ['uuid', 'status', 'workspace', 'role', 'invitedBy', 'created_at', 'expires_at'],
+                ],
             ]);
 
         $uuids = collect($response->json('data'))->pluck('uuid');
@@ -406,11 +407,59 @@ describe('rejeitar convite', function () {
             'id' => $invite->id,
             'status' => Invite::STATUS_DECLINED, // Deve ser DECLINED
         ]);
-        
+
         $this->assertDatabaseMissing('accesses', [
             'user_id' => $authUser->id,
             'workspace_id' => $workspace->id,
         ]);
+    });
+
+    it('rejeita um novo convite mesmo já existindo um convite recusado para o mesmo email e workspace', function () {
+        $authUser = User::factory()->create();
+        $authUser->test_token = $authUser->createToken('test')->plainTextToken;
+
+        $workspace = Workspace::withoutGlobalScopes()->create(['name' => 'Empresa', 'is_personal_team' => false]);
+        $inviter = User::factory()->create();
+        $role = Role::withoutGlobalScopes()->create(['name' => 'Membro', 'workspace_id' => $workspace->id]);
+
+        $attributes = [
+            'email' => $authUser->email,
+            'workspace_id' => $workspace->id,
+            'invited_by' => $inviter->id,
+            'role_id' => $role->id,
+        ];
+
+        $first = Invite::factory()->pending()->create($attributes);
+
+        $this->withToken($authUser->test_token)
+            ->patchJson("/api/me/invites/{$first->uuid}/decline")
+            ->assertOk();
+
+        $second = Invite::factory()->pending()->create($attributes);
+
+        $this->withToken($authUser->test_token)
+            ->patchJson("/api/me/invites/{$second->uuid}/decline")
+            ->assertOk();
+
+        expect(Invite::withoutGlobalScopes()->where('email', $authUser->email)->where('status', Invite::STATUS_DECLINED)->count())->toBe(2);
+    });
+
+    it('não permite dois convites pendentes para o mesmo email e workspace', function () {
+        $workspace = Workspace::withoutGlobalScopes()->create(['name' => 'Empresa', 'is_personal_team' => false]);
+        $inviter = User::factory()->create();
+        $role = Role::withoutGlobalScopes()->create(['name' => 'Membro', 'workspace_id' => $workspace->id]);
+
+        $attributes = [
+            'email' => 'convidado@exemplo.com',
+            'workspace_id' => $workspace->id,
+            'invited_by' => $inviter->id,
+            'role_id' => $role->id,
+        ];
+
+        Invite::factory()->pending()->create($attributes);
+
+        expect(fn () => Invite::factory()->pending()->create($attributes))
+            ->toThrow(QueryException::class);
     });
 
     it('retorna 403 quando tenta rejeitar o convite de email de outro usuário', function () {

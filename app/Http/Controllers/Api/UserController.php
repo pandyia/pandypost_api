@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\ChangeUserRoleRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
@@ -93,7 +94,9 @@ class UserController extends BaseController
      */
     public function changeRole(Request $request, string $userUuid): JsonResponse
     {
-        $this->userService->changeRole($userUuid, $request->input('role_uuid'));
+        $data = app(ChangeUserRoleRequest::class)->validated();
+
+        $this->userService->changeRole($userUuid, $data['role_uuid']);
 
         return response()->json(['message' => 'Perfil do usuário atualizado com sucesso'], 200);
     }
