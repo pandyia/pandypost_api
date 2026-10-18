@@ -15,7 +15,7 @@ help:
 	@echo ""
 	@echo "RECARREGAR (escolha pelo que você mudou)"
 	@echo "  reload-code      Mudou código PHP: recarrega Octane e Horizon"
-	@echo "  reload-env       Mudou .env ou docker-compose.yml: recria php, horizon, reverb e nginx"
+	@echo "  reload-env       Mudou .env ou docker compose.yml: recria php, horizon, reverb e nginx"
 	@echo "  reload-restart   Container travado: reinicia sem recriar (não relê o .env)"
 	@echo "  reload-all       Recria TODOS os serviços (não apaga dados)"
 	@echo "  optimize         Limpa os caches do Laravel"
@@ -82,17 +82,13 @@ reload-code:
 	$(exec) php artisan octane:reload
 	$(exec) php artisan horizon:terminate
 
-# Mudou .env ou docker-compose.yml: recria php, horizon, reverb e nginx (relê o env_file)
+# Mudou .env ou docker compose.yml: recria php, horizon, reverb e nginx (relê o env_file)
 reload-env:
 	docker compose up -d --force-recreate php horizon reverb nginx
 
 # Container travado ou estranho: reinicia sem recriar (não relê .env)
 reload-restart:
 	docker compose restart php horizon reverb nginx
-
-# Reload total: recria TODOS os serviços (não apaga volumes/dados)
-reload-all:
-	docker compose up -d --force-recreate
 
 rollback:
 	$(exec) php artisan migrate:rollback
@@ -157,7 +153,7 @@ restart-horizon:
 	docker compose restart horizon
 
 recreate:
-	docker-compose up -d --force-recreate
+	docker compose up -d --force-recreate
 
 ngrok:
 	ngrok http 9000
@@ -170,16 +166,16 @@ setup-ssl:
 	CF_API_TOKEN=$(CF_API_TOKEN) CF_HOSTNAMES=$(CF_HOSTNAMES) ./docker/scripts/setup-origin-cert.sh
 
 prod-up:
-	docker compose -f docker-compose.prod.yml up -d
+	docker compose -f docker compose.prod.yml up -d
 
 prod-down:
-	docker compose -f docker-compose.prod.yml down
+	docker compose -f docker compose.prod.yml down
 
 prod-pull:
-	docker compose -f docker-compose.prod.yml pull
+	docker compose -f docker compose.prod.yml pull
 
 prod-logs:
-	docker compose -f docker-compose.prod.yml logs -f
+	docker compose -f docker compose.prod.yml logs -f
 
 # BUCKET (play.min.io) é redundante, ja está configurado no docker compose.
 setup-bucket:

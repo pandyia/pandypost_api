@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Traits\BelongsToWorkspace;
+use App\Observers\InviteObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,9 +12,10 @@ use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
+#[ObservedBy(InviteObserver::class)]
 class Invite extends Model implements Auditable
 {
-    use BelongsToWorkspace, HasFactory, AuditableTrait;
+    use AuditableTrait, BelongsToWorkspace, HasFactory;
 
     public function generateTags(): array
     {
@@ -35,8 +38,11 @@ class Invite extends Model implements Auditable
     protected $hidden = ['id'];
 
     const STATUS_PENDING = 'PENDING';
+
     const STATUS_ACCEPTED = 'ACCEPTED';
+
     const STATUS_DECLINED = 'DECLINED';
+
     const STATUS_EXPIRED = 'EXPIRED';
 
     public function getRouteKeyName(): string
@@ -44,7 +50,7 @@ class Invite extends Model implements Auditable
         return 'uuid';
     }
 
-   //funciona AUTOMÁTICO apenas quando usado model como parametro no controller (Invite $invite, usado para accept e decline)
+    // funciona AUTOMÁTICO apenas quando usado model como parametro no controller (Invite $invite, usado para accept e decline)
     public function resolveRouteBinding($value, $field = null)
     {
         return $this->withoutGlobalScope('workspace')
@@ -54,7 +60,7 @@ class Invite extends Model implements Auditable
 
     protected static function booted(): void
     {
-        static::creating(fn($invite) => $invite->uuid = $invite->uuid ?: (string) Str::uuid());
+        static::creating(fn ($invite) => $invite->uuid = $invite->uuid ?: (string) Str::uuid());
     }
 
     // Relationships
@@ -111,6 +117,4 @@ class Invite extends Model implements Auditable
         return $query->where('status', self::STATUS_EXPIRED)
             ->where('expires_at', '<', now()->subDays(30));
     }
-    
-
 }

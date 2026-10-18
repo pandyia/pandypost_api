@@ -207,6 +207,24 @@ class NotificationService
         return $this->scopedQuery($user)->whereNull('read_at')->update(['read_at' => now()]);
     }
 
+    /** Convite respondido (por qualquer caminho): a notificação dele deixa de ser pendência. */
+    public function markInviteAsRead(User $user, string $inviteUuid): int
+    {
+        // `data` é coluna text: filtra o uuid em PHP (o operador JSON não existe no Postgres para text).
+        $ids = $user->notifications()
+            ->whereNull('read_at')
+            ->where('type', NotificationType::WORKSPACE_INVITE->value)
+            ->get()
+            ->filter(fn ($notification) => data_get($notification->data, 'context.invite_uuid') === $inviteUuid)
+            ->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        return $user->notifications()->whereIn('id', $ids)->update(['read_at' => now()]);
+    }
+
     public function delete(User $user, string $id): void
     {
         $this->findForUser($user, $id)->delete();

@@ -124,6 +124,8 @@ class InviteService extends BaseService
 
             $invite->update(['status' => Invite::STATUS_ACCEPTED]);
         });
+
+        $this->notificationService->markInviteAsRead(auth()->user(), $invite->uuid);
     }
 
     public function decline(Invite $invite): void
@@ -132,6 +134,8 @@ class InviteService extends BaseService
         $this->ensureInviteIsPending($invite);
 
         $invite->update(['status' => Invite::STATUS_DECLINED]);
+
+        $this->notificationService->markInviteAsRead(auth()->user(), $invite->uuid);
     }
 
     private function authorizeInvite(Invite $invite): void
