@@ -26,10 +26,11 @@ class UserResource extends JsonResource
             'is_active' => (bool) $this->is_active,
             'remember_me' => (bool) $this->remember_me,
             'access_id' => $this->access_id,
-            
+
             'current_workspace' => $currentWorkspace ? [
                 'uuid' => $currentWorkspace->uuid,
                 'name' => $currentWorkspace->name,
+                'avatar' => $currentWorkspace->avatar,
             ] : null,
         ];
     }

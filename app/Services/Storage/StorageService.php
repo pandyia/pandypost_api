@@ -44,6 +44,19 @@ class StorageService
         return $this->presignedPut($path, $contentType, (int) config('services.s3.avatar_max_size', 5242880));
     }
 
+    /**
+     * Foto do workspace: `workspaces/{uuid}/avatar/{uuid}.{ext}`.
+     *
+     * @return array{url: string, headers: array, path: string, content_type: string, max_size: int, expires_in: int}
+     */
+    public function generateWorkspaceAvatarUploadUrl(string $workspaceUuid, string $contentType, string $extension): array
+    {
+        $uuid = (string) Str::uuid();
+        $path = "workspaces/{$workspaceUuid}/avatar/{$uuid}.{$extension}";
+
+        return $this->presignedPut($path, $contentType, (int) config('services.s3.avatar_max_size', 5242880));
+    }
+
     private function presignedPut(string $path, string $contentType, int $maxSize): array
     {
         $ttl = (int) config('services.s3.presigned_put_ttl', 86400);
@@ -139,6 +152,11 @@ class StorageService
     /**
      * Valida se o path é uma foto de perfil do usuário informado.
      */
+    public function pathBelongsToWorkspaceAvatar(string $path, string $workspaceUuid): bool
+    {
+        return str_starts_with($path, "workspaces/{$workspaceUuid}/avatar/");
+    }
+
     public function pathBelongsToUserAvatars(string $path, string $userUuid): bool
     {
         return str_starts_with($path, "users/{$userUuid}/avatars/");

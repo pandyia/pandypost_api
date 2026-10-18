@@ -36,6 +36,7 @@ class MeResource extends JsonResource
             'current_workspace' => $this->when($access, fn () => [
                 'uuid' => $access->workspace?->uuid,
                 'name' => $access->workspace?->name,
+                'avatar' => $access->workspace?->avatar,
             ]),
             'role' => $this->when($access, fn () => $access->role?->name),
             'permissions' => $permissions,

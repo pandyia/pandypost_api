@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
                 'name' => 'Super Admin',
                 'email' => 'superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'João Victor',
@@ -65,37 +65,37 @@ class UserSeeder extends Seeder
                 'name' => 'João Victor Super Admin',
                 'email' => 'joao.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'Arthur Vieira Super Admin',
                 'email' => 'arthur.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'Antônio Neri Super Admin',
                 'email' => 'antonio.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'Gabriel Moreira Super Admin',
                 'email' => 'gabriel.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'Laís Nascimento Super Admin',
                 'email' => 'lais.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
             [
                 'name' => 'Letícia Super Admin',
                 'email' => 'leticia.superadmin@pandypost.com',
                 'is_super_admin' => true,
-                'role' => 'Super Admin',
+                'role' => 'Admin',
             ],
         ];
 

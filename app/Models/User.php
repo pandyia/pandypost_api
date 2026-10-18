@@ -192,6 +192,20 @@ class User extends Authenticatable implements Auditable
     }
 
     /**
+     * Permissão no workspace informado (e só nele), ao contrário de `hasPermission`, que vale
+     * para qualquer workspace do usuário.
+     */
+    public function hasPermissionInWorkspace(string $permissionName, int $workspaceId): bool
+    {
+        return $this->accesses()
+            ->where('workspace_id', $workspaceId)
+            // Sem o escopo de workspace do Role: ele filtraria pelo workspace corrente, não pelo informado.
+            ->whereHas('role', fn ($role) => $role->withoutGlobalScopes()
+                ->whereHas('permissions', fn ($query) => $query->where('name', $permissionName)))
+            ->exists();
+    }
+
+    /**
      * Preferências de e-mail por família (ausente = ligado). Billing é sempre e-mail.
      *
      * @return array<string, bool>

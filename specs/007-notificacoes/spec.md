@@ -49,6 +49,8 @@ O SRGA-Backend já resolveu isso com o mecanismo nativo do Laravel (`database` +
 - **D-5 Broadcast** só em `App.Models.User.{id}`. **Retenção:** lidas há mais de 30 dias são apagadas por comando agendado; não lidas nunca.
 - **D-6** `notifiable` sempre `User`. `EmailVerification`/`PasswordReset` ficam só e-mail, fora da central. Convidado sem conta: sem notificação na v1.
 
+> Nota (2026-10-18): o acesso à aba de preferências (`GET/PATCH /api/notification-preferences`) passou a exigir `notifications.view` / `notifications.update`; receber notificações segue livre. Ver [`specs/009-permissoes-notificacoes`](../009-permissoes-notificacoes/spec.md).
+
 ## Escopo
 
 1. Persistir notificações por usuário (tabela `notifications` do Laravel) e expô-las por API.

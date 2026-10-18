@@ -1,123 +1,39 @@
-name: 'Assinatura e pagamentos'
+name: 'Meu perfil'
 description: |-
 
-  Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
+  Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
 
-  **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
-  → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
+  **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+  1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+  2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+  3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+  O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
 endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/billing/subscription
+      - PATCH
+    uri: api/me
     metadata:
       custom: []
-      groupName: 'Assinatura e pagamentos'
+      groupName: 'Meu perfil'
       groupDescription: |-
 
-        Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
+        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
 
-        **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
-        → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
+        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Assinatura atual'
-      description: '**Permissão:** `billing.view`'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "data": {
-              "billing_status": "active",
-              "stripe_status": "active",
-              "on_trial": false,
-              "trial_ends_at": null,
-              "ends_at": null,
-              "plan": {"id": "1a2b3c4d-...", "name": "Pro"},
-              "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}
-            }
-          }
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.view"}'
-        headers: []
-        description: 'sem permissão'
-      -
-        custom: []
-        status: 404
-        content: '{"error": "no_active_subscription", "message": "Nenhuma assinatura ativa para este workspace."}'
-        headers: []
-        description: 'sem assinatura'
-    responseFields:
-      billing_status:
-        custom: []
-        name: billing_status
-        description: 'Use este para a interface: `trialing` (em teste), `active` (em dia), `past_due` (pagamento pendente, acesso mantido) ou `blocked` (sem acesso).'
-        required: false
-        example: null
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      ends_at:
-        custom: []
-        name: ends_at
-        description: 'Preenchido quando a assinatura foi cancelada e termina nessa data.'
-        required: false
-        example: null
-        type: string|null
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/billing/subscription/checkout
-    metadata:
-      custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: |-
-
-        Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
-
-        **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
-        → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Iniciar checkout'
+      title: 'Atualizar dados pessoais'
       description: |-
-        Cria a sessão do Stripe Checkout. Redirecione o usuário para `checkout_url`.
-
-        **Permissão:** `billing.manage`
+        O e-mail não é alterável por aqui. Envie `phone` e `bio` como `null` para apagá-los.
+        O telefone aceita máscara; é gravado só com dígitos (DDD + número).
       authenticated: true
       deprecated: false
     headers:
@@ -129,154 +45,69 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      price:
+      name:
         custom: []
-        name: price
-        description: '`id` de um preço ativo (de `GET /plans`).'
+        name: name
+        description: 'Nome completo (3 a 80 caracteres).'
         required: true
-        example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+        example: 'Maria Souza'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Telefone com DDD, 10 ou 11 dígitos, ou `null`.'
+        required: false
+        example: '11912345678'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      bio:
+        custom: []
+        name: bio
+        description: 'Até 160 caracteres, ou `null`.'
+        required: false
+        example: 'Crio conteúdo sobre receitas.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      timezone:
+        custom: []
+        name: timezone
+        description: 'Fuso horário IANA.'
+        required: true
+        example: America/Sao_Paulo
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      price: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+      name: 'Maria Souza'
+      phone: '11912345678'
+      bio: 'Crio conteúdo sobre receitas.'
+      timezone: America/Sao_Paulo
     fileParameters: []
     responses:
       -
         custom: []
         status: 200
-        content: '{"checkout_url": "https://checkout.stripe.com/c/pay/cs_test_..."}'
+        content: '{"data": {"id": 12, "name": "Maria Souza", "email": "maria@exemplo.com", "avatar": null, "phone": "11912345678", "bio": "Crio conteúdo sobre receitas.", "timezone": "America/Sao_Paulo", "created_at": "2026-03-02T14:20:00-03:00", "email_verified_at": "2026-03-02T14:25:10-03:00", "is_active": true, "is_super_admin": false, "permissions": []}}'
         headers: []
         description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
-        headers: []
-        description: 'sem permissão'
-      -
-        custom: []
-        status: 409
-        content: '{"error": "already_subscribed", "message": "Este workspace já possui uma assinatura ativa."}'
-        headers: []
-        description: 'já assinante'
       -
         custom: []
         status: 422
-        content: '{"error": "price_not_synced", "message": "Este preço ainda não foi sincronizado com o gateway de pagamento."}'
-        headers: []
-        description: 'preço não sincronizado'
-      -
-        custom: []
-        status: 502
-        content: '{"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}'
-        headers: []
-        description: 'falha no Stripe'
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: api/billing/setup-intent
-    metadata:
-      custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Preparar cadastro de cartão'
-      description: |-
-        Devolve o `client_secret` para o Stripe.js. Fluxo: chame este endpoint → `stripe.confirmCardSetup(client_secret, ...)`
-        → envie o `payment_method` resultante para `POST /billing/cards`.
-
-        **Permissão:** `billing.view`
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"client_secret": "seti_1Q2w3E_secret_abc"}'
+        content: '{"message": "Esse fuso horário não é válido.", "errors": {"timezone": ["Esse fuso horário não é válido."]}}'
         headers: []
         description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.view"}'
-        headers: []
-        description: 'sem permissão'
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: api/billing/cards
-    metadata:
-      custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Listar cartões'
-      description: '**Permissão:** `billing.view`'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {
-            "data": [
-              {"id": "pm_1Q2w3E4r5T6y", "brand": "visa", "last_digits": "4242", "exp_month": 12, "exp_year": 2028, "is_default": true}
-            ]
-          }
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.view"}'
-        headers: []
-        description: 'sem permissão'
     responseFields: []
     auth:
       - headers
@@ -289,15 +120,24 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/billing/cards
+    uri: api/me/avatar/upload-url
     metadata:
       custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
+      groupName: 'Meu perfil'
+      groupDescription: |-
+
+        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
+
+        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Adicionar cartão'
-      description: '**Permissão:** `billing.manage`'
+      title: 'Pedir URL de upload da foto'
+      description: 'Devolve uma URL pré-assinada de PUT. Depois do PUT, confirme com `PUT /me/avatar`.'
       authenticated: true
       deprecated: false
     headers:
@@ -309,45 +149,33 @@ endpoints:
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      payment_method:
+      content_type:
         custom: []
-        name: payment_method
-        description: 'ID do PaymentMethod criado pelo Stripe.js.'
+        name: content_type
+        description: '`image/jpeg`, `image/png` ou `image/webp`.'
         required: true
-        example: pm_1Q2w3E4r5T6y
+        example: image/jpeg
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-      is_default:
-        custom: []
-        name: is_default
-        description: 'Tornar o cartão padrão.'
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
     cleanBodyParameters:
-      payment_method: pm_1Q2w3E4r5T6y
-      is_default: true
+      content_type: image/jpeg
     fileParameters: []
     responses:
       -
         custom: []
-        status: 201
-        content: '{"message": "Cartão adicionado com sucesso."}'
+        status: 200
+        content: '{"url": "https://storage.exemplo.com/pandypost/users/5f0c.../avatars/a1b2....jpg?X-Amz-Signature=...", "headers": {}, "path": "users/5f0c.../avatars/a1b2....jpg", "content_type": "image/jpeg", "max_size": 5242880, "expires_in": 86400}'
         headers: []
         description: ''
       -
         custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
+        status: 422
+        content: '{"message": "Use uma imagem JPG, PNG ou WebP.", "errors": {"content_type": ["Use uma imagem JPG, PNG ou WebP."]}}'
         headers: []
-        description: 'sem permissão'
+        description: ''
     responseFields: []
     auth:
       - headers
@@ -359,54 +187,65 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - PATCH
-    uri: 'api/billing/cards/{paymentMethod}'
+      - PUT
+    uri: api/me/avatar
     metadata:
       custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
+      groupName: 'Meu perfil'
+      groupDescription: |-
+
+        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
+
+        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Definir cartão padrão'
-      description: '**Permissão:** `billing.manage`'
+      title: 'Confirmar a foto enviada'
+      description: |-
+        Confere que o arquivo é do próprio usuário, existe, é imagem JPG/PNG/WebP de até 5 MB, troca a foto
+        e apaga a anterior. Arquivo inválido é apagado do storage.
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters:
-      paymentMethod:
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      path:
         custom: []
-        name: paymentMethod
-        description: 'ID do cartão no Stripe (`id` da listagem).'
+        name: path
+        description: '`path` recebido em `POST /me/avatar/upload-url`.'
         required: true
-        example: pm_1Q2w3E4r5T6y
+        example: users/5f0c.../avatars/a1b2....jpg
         type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-    cleanUrlParameters:
-      paymentMethod: pm_1Q2w3E4r5T6y
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    cleanBodyParameters:
+      path: users/5f0c.../avatars/a1b2....jpg
     fileParameters: []
     responses:
       -
         custom: []
         status: 200
-        content: '{"message": "Cartão padrão atualizado com sucesso."}'
+        content: '{"data": {"id": 12, "name": "Maria Souza", "avatar": "https://storage.exemplo.com/...assinada...", "email": "maria@exemplo.com"}}'
         headers: []
         description: ''
       -
         custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
+        status: 422
+        content: '{"error": "profile_avatar_too_large", "message": "A foto é maior que o limite de 5 MB. Escolha uma imagem menor."}'
         headers: []
-        description: 'sem permissão'
+        description: ''
     responseFields: []
     auth:
       - headers
@@ -419,38 +258,32 @@ endpoints:
     custom: []
     httpMethods:
       - DELETE
-    uri: 'api/billing/cards/{paymentMethod}'
+    uri: api/me/avatar
     metadata:
       custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
+      groupName: 'Meu perfil'
+      groupDescription: |-
+
+        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
+
+        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Remover cartão'
-      description: |-
-        O cartão padrão não pode ser removido: defina outro como padrão antes.
-
-        **Permissão:** `billing.manage`
+      title: 'Remover a foto'
+      description: 'Apaga o arquivo e limpa o campo. Sem foto, responde 200 do mesmo jeito.'
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters:
-      paymentMethod:
-        custom: []
-        name: paymentMethod
-        description: 'ID do cartão no Stripe (`id` da listagem).'
-        required: true
-        example: pm_1Q2w3E4r5T6y
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      paymentMethod: pm_1Q2w3E4r5T6y
+    urlParameters: []
+    cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -460,21 +293,9 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"message": "Cartão removido com sucesso."}'
+        content: '{"data": {"id": 12, "name": "Maria Souza", "avatar": null, "email": "maria@exemplo.com"}}'
         headers: []
         description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
-        headers: []
-        description: 'sem permissão'
-      -
-        custom: []
-        status: 422
-        content: '{"error": "default_card_required", "message": "Não é possível remover o cartão padrão; defina outro como padrão antes."}'
-        headers: []
-        description: 'cartão padrão'
     responseFields: []
     auth:
       - headers
@@ -486,19 +307,29 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: api/billing/payments
+      - PUT
+    uri: api/me/password
     metadata:
       custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
+      groupName: 'Meu perfil'
+      groupDescription: |-
+
+        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
+
+        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
+        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
+        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
+        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
+
+        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Listar faturas'
+      title: 'Trocar a senha'
       description: |-
-        Histórico de cobranças do workspace, mais recentes primeiro. Os links levam para a fatura/recibo no Stripe.
+        Exige a senha atual. A nova precisa de 8+ caracteres, 1 maiúscula e 1 número, e ser diferente da atual.
+        As **outras** sessões (tokens) são encerradas; a sessão atual continua válida.
 
-        **Permissão:** `billing.view`
+        Limite: 5 requisições por minuto.
       authenticated: true
       deprecated: false
     headers:
@@ -507,166 +338,58 @@ endpoints:
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
-    queryParameters:
-      per_page:
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      current_password:
         custom: []
-        name: per_page
-        description: 'Itens por página. Sem ele, vem tudo.'
-        required: false
-        example: 15
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      page:
-        custom: []
-        name: page
-        description: Página.
-        required: false
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      status:
-        custom: []
-        name: status
-        description: 'Filtra pelo status.'
-        required: false
-        example: paid
+        name: current_password
+        description: 'Senha atual.'
+        required: true
+        example: SenhaAntiga1
         type: string
-        enumValues:
-          - pending
-          - processing
-          - paid
-          - failed
-          - expired
-          - void
+        enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-    cleanQueryParameters:
-      per_page: 15
-      page: 1
-      status: paid
-    bodyParameters: []
-    cleanBodyParameters: []
+      password:
+        custom: []
+        name: password
+        description: 'Nova senha.'
+        required: true
+        example: NovaSenha123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password_confirmation:
+        custom: []
+        name: password_confirmation
+        description: 'Repetir a nova senha.'
+        required: true
+        example: NovaSenha123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      current_password: SenhaAntiga1
+      password: NovaSenha123
+      password_confirmation: NovaSenha123
     fileParameters: []
     responses:
       -
         custom: []
         status: 200
-        content: |-
-          {
-            "data": [
-              {
-                "id": "4d5e6f7a-...",
-                "status": {"value": "paid", "label": "Pago"},
-                "method": "card",
-                "amount": 4990,
-                "amount_formatted": "R$ 49,90",
-                "currency": "brl",
-                "paid_at": "2026-10-01T10:00:00.000000Z",
-                "due_date": "2026-10-01T00:00:00.000000Z",
-                "period_start": "2026-10-01T00:00:00.000000Z",
-                "period_end": "2026-11-01T00:00:00.000000Z",
-                "hosted_invoice_url": "https://invoice.stripe.com/i/...",
-                "invoice_pdf": "https://pay.stripe.com/invoice/.../pdf",
-                "receipt_url": "https://pay.stripe.com/receipts/...",
-                "created_at": "2026-10-01T10:00:00.000000Z"
-              }
-            ],
-            "links": {"first": "...", "last": "...", "prev": null, "next": null},
-            "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
-          }
+        content: '{"message": "Senha atualizada com sucesso."}'
         headers: []
         description: ''
       -
         custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.view"}'
-        headers: []
-        description: 'sem permissão'
-    responseFields:
-      amount_formatted:
-        custom: []
-        name: amount_formatted
-        description: 'Valor pronto para exibir.'
-        required: false
-        example: null
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/billing/payments/{payment}'
-    metadata:
-      custom: []
-      groupName: 'Assinatura e pagamentos'
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Ver fatura'
-      description: '**Permissão:** `billing.view`'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      payment:
-        custom: []
-        name: payment
-        description: 'UUID da fatura (`id` da listagem).'
-        required: true
-        example: 4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f7a
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      payment: 4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f7a
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: |-
-          {"data": {
-                "id": "4d5e6f7a-...",
-                "status": {"value": "paid", "label": "Pago"},
-                "method": "card",
-                "amount": 4990,
-                "amount_formatted": "R$ 49,90",
-                "currency": "brl",
-                "paid_at": "2026-10-01T10:00:00.000000Z",
-                "due_date": "2026-10-01T00:00:00.000000Z",
-                "period_start": "2026-10-01T00:00:00.000000Z",
-                "period_end": "2026-11-01T00:00:00.000000Z",
-                "hosted_invoice_url": "https://invoice.stripe.com/i/...",
-                "invoice_pdf": "https://pay.stripe.com/invoice/.../pdf",
-                "receipt_url": "https://pay.stripe.com/receipts/...",
-                "created_at": "2026-10-01T10:00:00.000000Z"
-              }}
+        status: 422
+        content: '{"message": "A senha atual está incorreta.", "errors": {"current_password": ["A senha atual está incorreta."]}}'
         headers: []
         description: ''
     responseFields: []

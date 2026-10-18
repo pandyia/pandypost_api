@@ -1,0 +1,507 @@
+name: Notificações
+description: |-
+
+  Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+  mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+  Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+  Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+  `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+  evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/notifications
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+        mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+        Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+        Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+        `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+        evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar notificações'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      read:
+        custom: []
+        name: read
+        description: '`all` (padrão), `unread` ou `read`.'
+        required: false
+        example: unread
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      type:
+        custom: []
+        name: type
+        description: 'Tipo da notificação.'
+        required: false
+        example: post_failed
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'De 1 a 100 (padrão 15).'
+        required: false
+        example: 15
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      read: unread
+      type: post_failed
+      per_page: 15
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/notifications/unread
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+        mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+        Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+        Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+        `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+        evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar não lidas'
+      description: 'Até 50 mais recentes; `total_unread` traz o total real.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/notifications/read-all
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+        mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+        Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+        Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+        `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+        evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Marcar todas como lidas'
+      description: 'Vale para as notificações visíveis no workspace corrente.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/notifications/{notification}/read'
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+        mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+        Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+        Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+        `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+        evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Marcar como lida'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      notification:
+        custom: []
+        name: notification
+        description: 'The notification.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      notification: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/notifications/{notification}'
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+        mais os convites recebidos (`workspace_invite`), que aparecem em qualquer workspace.
+        Não exige permissão de grupo. Notificação de outro usuário responde 404.
+
+        Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
+        `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+        evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Remover notificação'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      notification:
+        custom: []
+        name: notification
+        description: 'The notification.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      notification: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/notification-preferences
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Duas escolhas independentes por família (`invite`, `posts`, `social_accounts`, `post_published`): **e-mail**
+        (campos soltos) e **no app** (`in_app`: central + tempo real). Cobrança (`billing`) é sempre
+        e-mail e no app, não configurável.
+
+        **Permissões:** as preferências exigem `notifications.view` (ler) e `notifications.update` (alterar); super admin ignora.
+        Receber notificações (`/api/notifications*`: listar, não lidas, marcar como lida, excluir) continua livre para
+        qualquer usuário logado, sem permissão. A permissão só controla a aba de preferências: quem não a tem
+        continua recebendo avisos conforme as preferências já salvas (ou o padrão).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Ler preferências'
+      description: |-
+        Retorna as preferências de e-mail e de aviso no app do usuário logado.
+
+        **Permissão:** `notifications.view`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"invite": true, "posts": true, "social_accounts": true, "post_published": true, "in_app": {"invite": true, "posts": true, "social_accounts": true, "post_published": false}}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/notification-preferences
+    metadata:
+      custom: []
+      groupName: Notificações
+      groupDescription: |-
+
+        Duas escolhas independentes por família (`invite`, `posts`, `social_accounts`, `post_published`): **e-mail**
+        (campos soltos) e **no app** (`in_app`: central + tempo real). Cobrança (`billing`) é sempre
+        e-mail e no app, não configurável.
+
+        **Permissões:** as preferências exigem `notifications.view` (ler) e `notifications.update` (alterar); super admin ignora.
+        Receber notificações (`/api/notifications*`: listar, não lidas, marcar como lida, excluir) continua livre para
+        qualquer usuário logado, sem permissão. A permissão só controla a aba de preferências: quem não a tem
+        continua recebendo avisos conforme as preferências já salvas (ou o padrão).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Alterar preferências'
+      description: |-
+        Envie só as famílias que quer mudar.
+
+        **Permissão:** `notifications.update`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      invite:
+        custom: []
+        name: invite
+        description: 'E-mail de convites.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      posts:
+        custom: []
+        name: posts
+        description: 'E-mail de falha de posts.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      social_accounts:
+        custom: []
+        name: social_accounts
+        description: 'E-mail de contas sociais.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      in_app:
+        custom: []
+        name: in_app
+        description: 'Aviso no app (sino + tempo real) por família; envie só o que muda.'
+        required: false
+        example:
+          posts: false
+        type: object
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      in_app.invite:
+        custom: []
+        name: in_app.invite
+        description: 'Aviso no app de convites.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      in_app.posts:
+        custom: []
+        name: in_app.posts
+        description: 'Aviso no app de falha de posts.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      in_app.social_accounts:
+        custom: []
+        name: in_app.social_accounts
+        description: 'Aviso no app de contas sociais.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      post_published:
+        custom: []
+        name: post_published
+        description: 'E-mail quando um post seu é publicado; padrão ligado.'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      in_app.post_published:
+        custom: []
+        name: in_app.post_published
+        description: 'Aviso no app quando um post seu é publicado; padrão desligado (opt-in).'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      invite: true
+      posts: false
+      social_accounts: true
+      in_app:
+        posts: false
+        invite: true
+        social_accounts: true
+        post_published: true
+      post_published: true
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "notifications.update"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "Os e-mails de cobrança não podem ser desativados.", "errors": {"billing": ["Os e-mails de cobrança não podem ser desativados."]}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

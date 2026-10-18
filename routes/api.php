@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
 use App\Http\Controllers\Api\SocialAccountController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WorkspaceAvatarController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Controllers\Api\YouTubeCategoryController;
 use App\Http\Controllers\Api\YouTubePrivacyStatusController;
@@ -165,6 +166,13 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/switch', [WorkspaceController::class, 'switchWorkspace']);
 
+    // Foto do workspace (URL pré-assinada, mesmo fluxo da foto do perfil)
+    Route::prefix('workspaces/{workspace}/avatar')->group(function () {
+        Route::post('upload-url', [WorkspaceAvatarController::class, 'uploadUrl'])->middleware('throttle:20,1');
+        Route::put('/', [WorkspaceAvatarController::class, 'set']);
+        Route::delete('/', [WorkspaceAvatarController::class, 'remove']);
+    });
+
     // Analytics
     Route::get('analytics/{socialAccount}/dashboard', [AnalyticsController::class, 'dashboard']);
     Route::get('analytics/{socialAccount}/best-times', [AnalyticsController::class, 'bestTimes']);
@@ -195,14 +203,17 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
         Route::patch('{invite}/decline', [InviteController::class, 'decline']);
     });
 
-    // Central de notificações (usuário logado, sem permissão de grupo)
+    // Central de notificações: recebimento livre (usuário logado, sem permissão);
+    // as preferências exigem permissão (notifications.view / notifications.update)
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::get('notifications/unread', [NotificationController::class, 'unread']);
     Route::patch('notifications/read-all', [NotificationController::class, 'readAll']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'read']);
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
-    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show']);
-    Route::patch('notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])
+        ->middleware('permission:notifications.view');
+    Route::patch('notification-preferences', [NotificationPreferenceController::class, 'update'])
+        ->middleware('permission:notifications.update');
 
     // Invites (gerenciamento de convites do workspace)
     Route::get('invites', [InviteController::class, 'index']);

@@ -166,7 +166,7 @@ describe('marcar como lida e remover', function () {
 
 describe('preferências de e-mail', function () {
     it('lê o padrão (tudo ligado) e altera por família', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->getJson('/api/notification-preferences')
             ->assertOk()->assertExactJson(['data' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => true, 'in_app' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => false]]]);
@@ -178,7 +178,7 @@ describe('preferências de e-mail', function () {
     });
 
     it('não permite desativar billing nem valores inválidos (422)', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['billing' => false])
             ->assertStatus(422)->assertJsonValidationErrors(['billing']);
@@ -187,7 +187,7 @@ describe('preferências de e-mail', function () {
     });
 
     it('não afeta as preferências de outro usuário', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
         $other = createUserWithoutPermissions();
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['invite' => false])->assertOk();
@@ -214,7 +214,7 @@ describe('retenção', function () {
 
 describe('preferências de aviso no app', function () {
     it('altera o aviso no app por família sem mexer no e-mail', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['posts' => false]])
             ->assertOk()
@@ -228,7 +228,7 @@ describe('preferências de aviso no app', function () {
     });
 
     it('alterar o e-mail preserva o aviso no app e vice-versa', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['invite' => false]])->assertOk();
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['invite' => false])
@@ -238,7 +238,7 @@ describe('preferências de aviso no app', function () {
     });
 
     it('rejeita billing e valores inválidos no aviso no app (422)', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['billing' => false]])
             ->assertStatus(422)->assertJsonValidationErrors(['in_app.billing']);

@@ -571,10 +571,65 @@ endpoints:
       email_verified_at:
         custom: []
         name: email_verified_at
-        description: 'Formato `d/m/Y H:i:s`. `null` = email não confirmado.'
+        description: 'ISO 8601. `null` = email não confirmado.'
         required: false
         example: null
         type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      avatar:
+        custom: []
+        name: avatar
+        description: 'URL assinada da foto de perfil (muda a cada chamada), ou `null`.'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Só dígitos (DDD + número).'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      bio:
+        custom: []
+        name: bio
+        description: 'Até 160 caracteres.'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      timezone:
+        custom: []
+        name: timezone
+        description: 'Fuso horário IANA.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      created_at:
+        custom: []
+        name: created_at
+        description: 'ISO 8601.'
+        required: false
+        example: null
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false

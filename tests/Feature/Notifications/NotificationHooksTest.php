@@ -578,7 +578,7 @@ describe('post_published (e-mail ligado e aviso no app opt-in)', function () {
     });
 
     it('valida e altera as duas preferências via API', function () {
-        $user = createUserWithoutPermissions();
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->getJson('/api/notification-preferences')
             ->assertJsonPath('data.post_published', true)->assertJsonPath('data.in_app.post_published', false);

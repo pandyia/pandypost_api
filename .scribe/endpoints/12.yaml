@@ -1,66 +1,112 @@
-name: Acessos
+name: Analytics
 description: |-
 
-  Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
+  Métricas das contas conectadas, no **mesmo formato** para YouTube, Instagram e TikTok.
+  Métrica que a plataforma não oferece simplesmente não aparece.
 
-  <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-  (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
+  **Permissão:** nenhuma além de ser membro do workspace (VULN-06 em `specs/002`, em aberto).
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/accesses
+    uri: 'api/analytics/{socialAccount_uuid}/dashboard'
     metadata:
       custom: []
-      groupName: Acessos
+      groupName: Analytics
       groupDescription: |-
 
-        Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
+        Métricas das contas conectadas, no **mesmo formato** para YouTube, Instagram e TikTok.
+        Métrica que a plataforma não oferece simplesmente não aparece.
 
-        <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-        (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
+        **Permissão:** nenhuma além de ser membro do workspace (VULN-06 em `specs/002`, em aberto).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Listar acessos'
+      title: 'Dashboard da conta'
       description: |-
-        **Permissão:** `accesses.view`
+        Monte a interface a partir da resposta:
 
-        <aside class="notice">Formato: paginador "cru" do Laravel (itens em <code>data</code>, paginação na raiz).</aside>
+        - **Filtros de período:** `capabilities.date_ranges` (o que a plataforma aceita) e `capabilities.max_range_days`.
+        - **Cards:** `overview`. `previous` e `trend` (variação %) podem ser `null` quando não há base de comparação.
+        - **Gráfico:** `time_series.dates` + `series[].current` / `series[].previous`.
+        - **Formato dos números:** campo `format` = `number` | `percent` | `duration` (segundos) | `hours` | `currency`.
+        - **Avisos:** `alerts` (`type`: `success`, `warning`, `danger`, `info`) e `notes` (textos fixos da plataforma).
+
+        Períodos por plataforma: YouTube `last_7_days`, `last_28_days`, `last_90_days`, `this_month`, `last_month`,
+        `last_365_days`, `lifetime`, `custom`; Instagram `last_7_days`, `last_28_days`, `custom` (máx. 30 dias);
+        TikTok `last_7_days`, `last_28_days`, `last_90_days`, `custom` (máx. 365 dias).
+
+        Resultado em cache (YouTube 6h, Instagram 3h, TikTok 1h).
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters:
-      per_page:
+    urlParameters:
+      socialAccount_uuid:
         custom: []
-        name: per_page
-        description: 'Itens por página. Sem ele, vem tudo.'
-        required: false
-        example: 15
-        type: integer
+        name: socialAccount_uuid
+        description: 'UUID da conta social.'
+        required: true
+        example: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+        type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
-      page:
+    cleanUrlParameters:
+      socialAccount_uuid: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+    queryParameters:
+      date_range:
         custom: []
-        name: page
-        description: Página.
+        name: date_range
+        description: 'Período. Padrão `last_28_days`.'
         required: false
-        example: 1
-        type: integer
+        example: last_28_days
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      start_date:
+        custom: []
+        name: start_date
+        description: 'Obrigatório com `date_range=custom` (`Y-m-d`).'
+        required: false
+        example: '2026-09-01'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      end_date:
+        custom: []
+        name: end_date
+        description: 'Obrigatório com `date_range=custom` (`Y-m-d`), até hoje.'
+        required: false
+        example: '2026-09-28'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      refresh:
+        custom: []
+        name: refresh
+        description: '`1` ignora o cache. No máximo 1 vez a cada 10 minutos por conta.'
+        required: false
+        example: false
+        type: boolean
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanQueryParameters:
-      per_page: 15
-      page: 1
+      date_range: last_28_days
+      start_date: '2026-09-01'
+      end_date: '2026-09-28'
+      refresh: false
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
@@ -68,101 +114,71 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"current_page": 1, "data": [{"id": 2, "user_id": 2, "role_id": 2, "workspace_id": 2, "created_at": "2026-10-10T16:52:25.000000Z", "updated_at": "2026-10-10T16:52:25.000000Z"}], "per_page": 1, "total": 1, "last_page": 1}'
+        content: |-
+          {
+            "data": {
+              "platform": "instagram",
+              "period": {"start": "2026-09-16", "end": "2026-10-13", "previous_start": "2026-08-19", "previous_end": "2026-09-15", "granularity": "day", "date_range": "last_28_days"},
+              "capabilities": {"date_ranges": ["last_7_days", "last_28_days", "custom"], "max_range_days": 30, "has_daily_series": true, "has_revenue": false, "has_watch_time": false},
+              "overview": [
+                {"key": "views", "label": "Visualizações", "format": "number", "value": 12034, "previous": 9800, "trend": 22.8, "description": "Total de visualizações no período."}
+              ],
+              "time_series": {
+                "dates": ["2026-09-16", "2026-09-17"],
+                "series": [{"key": "reach", "label": "Alcance", "format": "number", "type": "area", "current": [120, 98], "previous": [80, 101]}]
+              },
+              "breakdowns": [{"key": "content_type", "label": "Visualizações por formato", "items": [{"key": "REEL", "label": "Reels", "value": 900}]}],
+              "top_content": {
+                "columns": [{"key": "views", "label": "Visualizações", "format": "number"}],
+                "items": [{"id": "1789...", "title": "Bastidores", "thumbnail_url": "https://...", "permalink": "https://www.instagram.com/p/...", "published_at": "2026-09-20T18:00:00Z", "format": "reel", "metrics": {"views": 1000, "engagement_rate": 4.2}}]
+              },
+              "score": {"value": 72, "engagement": 40, "growth": 20, "frequency": 12},
+              "alerts": [{"type": "success", "title": "Visualizações em alta", "message": "Suas visualizações subiram 22,8% em relação ao período anterior."}],
+              "notes": ["Os dados do Instagram podem ter atraso de até 48 horas."],
+              "generated_at": "2026-10-14T18:00:00Z"
+            }
+          }
         headers: []
         description: ''
       -
         custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "accesses.view"}'
+        status: 409
+        content: '{"error": "analytics_reauth_required", "message": "Reconecte a conta do Instagram para liberar a leitura das métricas."}'
         headers: []
-        description: 'sem permissão'
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/accesses
-    metadata:
-      custom: []
-      groupName: Acessos
-      groupDescription: |-
-
-        Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
-
-        <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-        (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Criar acesso'
-      description: |-
-        Coloca um usuário no workspace corrente com um perfil.
-
-        **Permissão:** `accesses.create`
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      user_id:
-        custom: []
-        name: user_id
-        description: 'ID do usuário.'
-        required: true
-        example: 5
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      role_id:
-        custom: []
-        name: role_id
-        description: 'ID de um perfil do workspace corrente.'
-        required: true
-        example: 2
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      user_id: 5
-      role_id: 2
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 201
-        content: '{"message": "Registro inserido com sucesso."}'
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 403
-        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "accesses.create"}'
-        headers: []
-        description: 'sem permissão'
+        description: 'reconectar conta'
       -
         custom: []
         status: 422
-        content: '{"message": "O perfil informado não existe neste workspace.", "errors": {"role_id": ["O perfil informado não existe neste workspace."]}}'
+        content: |-
+          {"message": "Período não disponível para esta plataforma.", "errors": {"date_range": ["Período não disponível para esta plataforma."]}}
+
+          No 409, mostre o botão "Reconectar conta" (fluxo de [Contas sociais](#contas-sociais)).
         headers: []
-        description: ''
-    responseFields: []
+        description: 'período inválido'
+      -
+        custom: []
+        status: 429
+        content: '{"error": "analytics_refresh_too_soon", "message": "Você já atualizou os dados recentemente. Tente novamente em 7 minutos."}'
+        headers: []
+        description: 'refresh repetido'
+      -
+        custom: []
+        status: 502
+        content: '{"error": "analytics_provider_unavailable", "message": "Não foi possível carregar as métricas do Instagram agora. Tente novamente em alguns minutos."}'
+        headers: []
+        description: 'plataforma fora do ar'
+    responseFields:
+      score:
+        custom: []
+        name: score
+        description: 'Nota da conta (0–100) = `engagement` (até 50) + `growth` (até 30) + `frequency` (até 20).'
+        required: false
+        example: null
+        type: object
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
     auth:
       - headers
       - Authorization
@@ -174,82 +190,22 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: 'api/accesses/{id}'
+    uri: 'api/analytics/{socialAccount_uuid}/best-times'
     metadata:
       custom: []
-      groupName: Acessos
+      groupName: Analytics
       groupDescription: |-
 
-        Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
+        Métricas das contas conectadas, no **mesmo formato** para YouTube, Instagram e TikTok.
+        Métrica que a plataforma não oferece simplesmente não aparece.
 
-        <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-        (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
+        **Permissão:** nenhuma além de ser membro do workspace (VULN-06 em `specs/002`, em aberto).
       subgroup: ''
       subgroupDescription: ''
-      title: 'Ver acesso'
-      description: '**Permissão:** `accesses.view`'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'ID do acesso.'
-        required: true
-        example: 2
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 2
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"id": 2, "user_id": 2, "role_id": 2, "workspace_id": 2, "created_at": "2026-10-10T16:52:25.000000Z", "updated_at": "2026-10-10T16:52:25.000000Z"}'
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PUT
-      - PATCH
-    uri: 'api/accesses/{id}'
-    metadata:
-      custom: []
-      groupName: Acessos
-      groupDescription: |-
-
-        Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
-
-        <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-        (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Editar acesso'
+      title: 'Melhores horários para postar'
       description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-
-        **Permissão:** `accesses.update`
+        Média de visualizações por hora de publicação dos últimos conteúdos (até 50), no fuso `America/Sao_Paulo`.
+        Com menos de 5 conteúdos, `best_hours` é uma sugestão padrão e `is_fallback` vem `true`.
       authenticated: true
       deprecated: false
     headers:
@@ -257,71 +213,19 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      id:
+      socialAccount_uuid:
         custom: []
-        name: id
-        description: 'ID do acesso.'
+        name: socialAccount_uuid
+        description: 'UUID da conta social.'
         required: true
-        example: 2
-        type: integer
+        example: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+        type: string
         enumValues: []
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      id: 2
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/accesses/{id}'
-    metadata:
-      custom: []
-      groupName: Acessos
-      groupDescription: |-
-
-        Vínculo bruto usuário ↔ perfil no workspace corrente. **Usa IDs numéricos**, não uuid.
-
-        <aside class="notice">Para o fluxo normal, use convites (<code>/invites</code>) e troca de perfil
-        (<code>PATCH /users/{user}/role</code>). A permanência destas rotas está em discussão em <code>specs/002</code> (Q2).</aside>
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Excluir acesso'
-      description: '**Permissão:** `accesses.delete`'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'ID do acesso.'
-        required: true
-        example: 2
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 2
+      socialAccount_uuid: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -331,10 +235,31 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"message": "Registro deletado com sucesso."}'
+        content: |-
+          {
+            "data": {
+              "best_hours": [18, 20, 12],
+              "by_hour": [{"hour": 0, "average": 0, "posts": 0}, {"hour": 18, "average": 1520.5, "posts": 6}],
+              "metric": "views",
+              "sample_size": 37,
+              "is_fallback": false,
+              "timezone": "America/Sao_Paulo"
+            }
+          }
         headers: []
         description: ''
-    responseFields: []
+    responseFields:
+      by_hour:
+        custom: []
+        name: by_hour
+        description: 'Sempre 24 posições (horas 0 a 23).'
+        required: false
+        example: null
+        type: 'object[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
     auth:
       - headers
       - Authorization

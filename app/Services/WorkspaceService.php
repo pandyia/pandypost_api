@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Events\WorkspaceEvent;
 use App\Exceptions\WorkspaceException;
 use App\Models\Access;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Storage\StorageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -14,9 +16,68 @@ class WorkspaceService extends BaseService
 {
     // protected array $with = ['accesses'];
 
-    public function __construct(Workspace $workspace)
+    private const AVATAR_MIME_TYPES = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    public function __construct(Workspace $workspace, private readonly StorageService $storage)
     {
         parent::__construct($workspace);
+    }
+
+    /**
+     * @return array{url: string, headers: array, path: string, content_type: string, max_size: int, expires_in: int}
+     */
+    public function generateAvatarUploadUrl(Workspace $workspace, string $contentType): array
+    {
+        return $this->storage->generateWorkspaceAvatarUploadUrl(
+            $workspace->uuid,
+            $contentType,
+            self::AVATAR_MIME_TYPES[$contentType],
+        );
+    }
+
+    /**
+     * Confirma o upload da foto: confere o arquivo de verdade (o PUT pré-assinado não limita
+     * tipo nem tamanho), troca a foto, apaga a anterior e avisa os membros.
+     */
+    public function setAvatar(Workspace $workspace, string $path): Workspace
+    {
+        $maxSize = (int) config('services.s3.avatar_max_size', 5242880);
+
+        if (! array_key_exists($this->storage->mimeType($path), self::AVATAR_MIME_TYPES)) {
+            $this->storage->delete($path);
+
+            throw WorkspaceException::invalidAvatarFile();
+        }
+
+        if ($this->storage->size($path) > $maxSize) {
+            $this->storage->delete($path);
+
+            throw WorkspaceException::avatarTooLarge($maxSize);
+        }
+
+        $workspace->update([
+            'avatar_path' => $this->storage->replaceFile($workspace->avatar_path, $path),
+        ]);
+
+        event(new WorkspaceEvent($workspace->refresh()));
+
+        return $workspace;
+    }
+
+    public function removeAvatar(Workspace $workspace): Workspace
+    {
+        if ($workspace->avatar_path) {
+            $this->storage->delete($workspace->avatar_path);
+            $workspace->update(['avatar_path' => null]);
+
+            event(new WorkspaceEvent($workspace->refresh()));
+        }
+
+        return $workspace->refresh();
     }
 
     public function store(array $data): Model

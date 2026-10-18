@@ -137,6 +137,15 @@
                                                                                 <li class="tocify-item level-2" data-unique="workspaces-POSTapi-workspaces--workspace--switch">
                                 <a href="#workspaces-POSTapi-workspaces--workspace--switch">Trocar workspace corrente</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="workspaces-POSTapi-workspaces--workspace_uuid--avatar-upload-url">
+                                <a href="#workspaces-POSTapi-workspaces--workspace_uuid--avatar-upload-url">Pedir URL de upload da foto</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="workspaces-PUTapi-workspaces--workspace_uuid--avatar">
+                                <a href="#workspaces-PUTapi-workspaces--workspace_uuid--avatar">Confirmar a foto enviada</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="workspaces-DELETEapi-workspaces--workspace_uuid--avatar">
+                                <a href="#workspaces-DELETEapi-workspaces--workspace_uuid--avatar">Remover a foto</a>
+                            </li>
                                                                         </ul>
                             </ul>
                     <ul id="tocify-header-usuarios" class="tocify-header">
@@ -355,6 +364,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-POSTapi-billing-subscription-checkout">
                                 <a href="#assinatura-e-pagamentos-POSTapi-billing-subscription-checkout">Iniciar checkout</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-POSTapi-billing-subscription-checkout-confirm">
+                                <a href="#assinatura-e-pagamentos-POSTapi-billing-subscription-checkout-confirm">Confirmar checkout</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-GETapi-billing-setup-intent">
                                 <a href="#assinatura-e-pagamentos-GETapi-billing-setup-intent">Preparar cadastro de cartão</a>
                             </li>
@@ -415,6 +427,76 @@
                             </li>
                                                                         </ul>
                             </ul>
+                    <ul id="tocify-header-admin-landing" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="admin-landing">
+                    <a href="#admin-landing">Admin: landing</a>
+                </li>
+                                    <ul id="tocify-subheader-admin-landing" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="admin-landing-PUTapi-admin-landing-settings">
+                                <a href="#admin-landing-PUTapi-admin-landing-settings">Trocar o tema da landing</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-landing-publico" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="landing-publico">
+                    <a href="#landing-publico">Landing (público)</a>
+                </li>
+                                    <ul id="tocify-subheader-landing-publico" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="landing-publico-GETapi-landing-settings">
+                                <a href="#landing-publico-GETapi-landing-settings">Tema da landing</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-meu-perfil" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="meu-perfil">
+                    <a href="#meu-perfil">Meu perfil</a>
+                </li>
+                                    <ul id="tocify-subheader-meu-perfil" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="meu-perfil-PATCHapi-me">
+                                <a href="#meu-perfil-PATCHapi-me">Atualizar dados pessoais</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="meu-perfil-POSTapi-me-avatar-upload-url">
+                                <a href="#meu-perfil-POSTapi-me-avatar-upload-url">Pedir URL de upload da foto</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="meu-perfil-PUTapi-me-avatar">
+                                <a href="#meu-perfil-PUTapi-me-avatar">Confirmar a foto enviada</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="meu-perfil-DELETEapi-me-avatar">
+                                <a href="#meu-perfil-DELETEapi-me-avatar">Remover a foto</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="meu-perfil-PUTapi-me-password">
+                                <a href="#meu-perfil-PUTapi-me-password">Trocar a senha</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
+                    <ul id="tocify-header-notificacoes" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="notificacoes">
+                    <a href="#notificacoes">Notificações</a>
+                </li>
+                                    <ul id="tocify-subheader-notificacoes" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="notificacoes-GETapi-notifications">
+                                <a href="#notificacoes-GETapi-notifications">Listar notificações</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-GETapi-notifications-unread">
+                                <a href="#notificacoes-GETapi-notifications-unread">Listar não lidas</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-PATCHapi-notifications-read-all">
+                                <a href="#notificacoes-PATCHapi-notifications-read-all">Marcar todas como lidas</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-PATCHapi-notifications--notification--read">
+                                <a href="#notificacoes-PATCHapi-notifications--notification--read">Marcar como lida</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-DELETEapi-notifications--notification-">
+                                <a href="#notificacoes-DELETEapi-notifications--notification-">Remover notificação</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-GETapi-notification-preferences">
+                                <a href="#notificacoes-GETapi-notification-preferences">Ler preferências</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="notificacoes-PATCHapi-notification-preferences">
+                                <a href="#notificacoes-PATCHapi-notification-preferences">Alterar preferências</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
             </div>
 
     <ul class="toc-footer" id="toc-footer">
@@ -424,7 +506,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Atualizado em 15/10/2026 (be75105)</li>
+        <li>Atualizado em 18/10/2026 (73da4fc)</li>
     </ul>
 </div>
 
@@ -1671,7 +1753,7 @@ fetch(url, {
             &quot;uuid&quot;: &quot;58d7d732-10a4-491d-9864-b4d85dfcf833&quot;,
             &quot;name&quot;: &quot;Workspace da Ana&quot;
         },
-        &quot;role&quot;: &quot;Admin&quot;quot;role&quot;role&quot;: &quot;Admin&quot;quot;: &quot;Admin&quot;,
+        &quot;role&quot;: &quot;Admin&quot;,
         &quot;permissions&quot;: [
             &quot;users.view&quot;,
             &quot;users.create&quot;,
@@ -1775,7 +1857,47 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
  &nbsp;
 <br>
-<p>Formato <code>d/m/Y H:i:s</code>. <code>null</code> = email não confirmado.</p>
+<p>ISO 8601. <code>null</code> = email não confirmado.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>avatar</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>URL assinada da foto de perfil (muda a cada chamada), ou <code>null</code>.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>phone</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Só dígitos (DDD + número).</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>bio</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Até 160 caracteres.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>timezone</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Fuso horário IANA.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>created_at</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>ISO 8601.</p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>current_workspace</code></b>&nbsp;&nbsp;
@@ -2974,6 +3096,558 @@ Os detalhes aparecem no console do navegador.</code></pre>
                data-component="url">
     <br>
 <p>UUID do workspace de destino. Example: <code>58d7d732-10a4-491d-9864-b4d85dfcf833</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="workspaces-POSTapi-workspaces--workspace_uuid--avatar-upload-url">Pedir URL de upload da foto</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-POSTapi-workspaces--workspace_uuid--avatar-upload-url">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar/upload-url"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "content_type": "image\/jpeg"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar/upload-url" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"content_type\": \"image\\/jpeg\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-workspaces--workspace_uuid--avatar-upload-url">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;url&quot;: &quot;https://storage.exemplo.com/pandypost/workspaces/7f3c.../avatar/a1b2....jpg?X-Amz-Signature=...&quot;,
+    &quot;headers&quot;: {},
+    &quot;path&quot;: &quot;workspaces/7f3c.../avatar/a1b2....jpg&quot;,
+    &quot;content_type&quot;: &quot;image/jpeg&quot;,
+    &quot;max_size&quot;: 5242880,
+    &quot;expires_in&quot;: 86400
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão neste workspace):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;workspaces.update&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-workspaces--workspace_uuid--avatar-upload-url" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-workspaces--workspace_uuid--avatar-upload-url"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-workspaces--workspace_uuid--avatar-upload-url" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-workspaces--workspace_uuid--avatar-upload-url">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-workspaces--workspace_uuid--avatar-upload-url" data-method="POST"
+      data-path="api/workspaces/{workspace_uuid}/avatar/upload-url"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-workspaces--workspace_uuid--avatar-upload-url', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+                    onclick="tryItOut('POSTapi-workspaces--workspace_uuid--avatar-upload-url');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+                    onclick="cancelTryOut('POSTapi-workspaces--workspace_uuid--avatar-upload-url');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/workspaces/{workspace_uuid}/avatar/upload-url</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace_uuid</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace_uuid"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               data-component="url">
+    <br>
+<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c"
+               data-component="url">
+    <br>
+<p>UUID do workspace. Example: <code>7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>content_type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="content_type"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
+               value="image/jpeg"
+               data-component="body">
+    <br>
+<p><code>image/jpeg</code>, <code>image/png</code> ou <code>image/webp</code>. Example: <code>image/jpeg</code></p>
+        </div>
+        </form>
+
+                    <h2 id="workspaces-PUTapi-workspaces--workspace_uuid--avatar">Confirmar a foto enviada</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-PUTapi-workspaces--workspace_uuid--avatar">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "path": "workspaces\/7f3c...\/avatar\/a1b2....jpg"
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"path\": \"workspaces\\/7f3c...\\/avatar\\/a1b2....jpg\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-workspaces--workspace_uuid--avatar">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;uuid&quot;: &quot;7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c&quot;,
+        &quot;name&quot;: &quot;Ag&ecirc;ncia Aurora&quot;,
+        &quot;avatar&quot;: &quot;https://storage.exemplo.com/...assinada...&quot;
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;workspace_avatar_too_large&quot;,
+    &quot;message&quot;: &quot;A foto &eacute; maior que o limite de 5 MB. Escolha uma imagem menor.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PUTapi-workspaces--workspace_uuid--avatar" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PUTapi-workspaces--workspace_uuid--avatar"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-workspaces--workspace_uuid--avatar"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-workspaces--workspace_uuid--avatar" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-workspaces--workspace_uuid--avatar">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PUTapi-workspaces--workspace_uuid--avatar" data-method="PUT"
+      data-path="api/workspaces/{workspace_uuid}/avatar"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-workspaces--workspace_uuid--avatar', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-workspaces--workspace_uuid--avatar"
+                    onclick="tryItOut('PUTapi-workspaces--workspace_uuid--avatar');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-workspaces--workspace_uuid--avatar"
+                    onclick="cancelTryOut('PUTapi-workspaces--workspace_uuid--avatar');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-workspaces--workspace_uuid--avatar"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/workspaces/{workspace_uuid}/avatar</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace_uuid</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace_uuid"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               data-component="url">
+    <br>
+<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c"
+               data-component="url">
+    <br>
+<p>UUID do workspace. Example: <code>7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>path</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="path"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
+               value="workspaces/7f3c.../avatar/a1b2....jpg"
+               data-component="body">
+    <br>
+<p><code>path</code> recebido em <code>upload-url</code>. Example: <code>workspaces/7f3c.../avatar/a1b2....jpg</code></p>
+        </div>
+        </form>
+
+                    <h2 id="workspaces-DELETEapi-workspaces--workspace_uuid--avatar">Remover a foto</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Idempotente: sem foto, responde 200 do mesmo jeito.</p>
+
+<span id="example-requests-DELETEapi-workspaces--workspace_uuid--avatar">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-workspaces--workspace_uuid--avatar">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;uuid&quot;: &quot;7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c&quot;,
+        &quot;name&quot;: &quot;Ag&ecirc;ncia Aurora&quot;,
+        &quot;avatar&quot;: null
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-DELETEapi-workspaces--workspace_uuid--avatar" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-DELETEapi-workspaces--workspace_uuid--avatar"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-workspaces--workspace_uuid--avatar"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-workspaces--workspace_uuid--avatar" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-workspaces--workspace_uuid--avatar">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-DELETEapi-workspaces--workspace_uuid--avatar" data-method="DELETE"
+      data-path="api/workspaces/{workspace_uuid}/avatar"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-workspaces--workspace_uuid--avatar', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-workspaces--workspace_uuid--avatar"
+                    onclick="tryItOut('DELETEapi-workspaces--workspace_uuid--avatar');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-workspaces--workspace_uuid--avatar"
+                    onclick="cancelTryOut('DELETEapi-workspaces--workspace_uuid--avatar');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-workspaces--workspace_uuid--avatar"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/workspaces/{workspace_uuid}/avatar</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace_uuid</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace_uuid"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
+               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               data-component="url">
+    <br>
+<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+            </div>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="workspace"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
+               value="7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c"
+               data-component="url">
+    <br>
+<p>UUID do workspace. Example: <code>7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c</code></p>
             </div>
                     </form>
 
@@ -12217,6 +12891,209 @@ Os detalhes aparecem no console do navegador.</code></pre>
         </div>
         </form>
 
+                    <h2 id="assinatura-e-pagamentos-POSTapi-billing-subscription-checkout-confirm">Confirmar checkout</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Chame ao voltar do Stripe, com o <code>session_id</code> recebido na URL de sucesso. A API confirma a sessão direto no Stripe
+e cria a assinatura sem esperar o webhook. É idempotente.</p>
+<p><strong>Permissão:</strong> <code>billing.manage</code></p>
+
+<span id="example-requests-POSTapi-billing-subscription-checkout-confirm">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/billing/subscription/checkout/confirm"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "session_id": "cs_test_a1b2c3"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/billing/subscription/checkout/confirm" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"session_id\": \"cs_test_a1b2c3\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-billing-subscription-checkout-confirm">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;billing_status&quot;: &quot;active&quot;,
+        &quot;stripe_status&quot;: &quot;active&quot;,
+        &quot;on_trial&quot;: false,
+        &quot;trial_ends_at&quot;: null,
+        &quot;ends_at&quot;: null,
+        &quot;plan&quot;: {
+            &quot;id&quot;: &quot;1a2b3c4d-...&quot;,
+            &quot;name&quot;: &quot;Pro&quot;
+        },
+        &quot;price&quot;: {
+            &quot;id&quot;: &quot;9f8e7d6c-...&quot;,
+            &quot;amount&quot;: 4990,
+            &quot;currency&quot;: &quot;brl&quot;,
+            &quot;frequency&quot;: &quot;monthly&quot;
+        }
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, sessão de outro workspace):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;checkout_session_not_found&quot;,
+    &quot;message&quot;: &quot;Sess&atilde;o de checkout n&atilde;o encontrada para este workspace.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, checkout não concluído):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;no_active_subscription&quot;,
+    &quot;message&quot;: &quot;Nenhuma assinatura ativa para este workspace.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (502, falha no Stripe):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;gateway_error&quot;,
+    &quot;message&quot;: &quot;Falha ao comunicar com o gateway de pagamento. Tente novamente.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-billing-subscription-checkout-confirm" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-billing-subscription-checkout-confirm"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-billing-subscription-checkout-confirm"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-billing-subscription-checkout-confirm" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-billing-subscription-checkout-confirm">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-billing-subscription-checkout-confirm" data-method="POST"
+      data-path="api/billing/subscription/checkout/confirm"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-billing-subscription-checkout-confirm', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-billing-subscription-checkout-confirm"
+                    onclick="tryItOut('POSTapi-billing-subscription-checkout-confirm');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-billing-subscription-checkout-confirm"
+                    onclick="cancelTryOut('POSTapi-billing-subscription-checkout-confirm');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-billing-subscription-checkout-confirm"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/billing/subscription/checkout/confirm</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-billing-subscription-checkout-confirm"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-billing-subscription-checkout-confirm"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-billing-subscription-checkout-confirm"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>session_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="session_id"                data-endpoint="POSTapi-billing-subscription-checkout-confirm"
+               value="cs_test_a1b2c3"
+               data-component="body">
+    <br>
+<p><code>session_id</code> devolvido pelo Stripe na URL de sucesso. Example: <code>cs_test_a1b2c3</code></p>
+        </div>
+        </form>
+
                     <h2 id="assinatura-e-pagamentos-GETapi-billing-setup-intent">Preparar cadastro de cartão</h2>
 
 <p>
@@ -15515,6 +16392,2452 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <p>UUID do preço. Example: <code>9f8e7d6c-5b4a-4321-8fed-cba987654321</code></p>
             </div>
                     </form>
+
+                <h1 id="admin-landing">Admin: landing</h1>
+
+    <p>Tema da landing page, <strong>só para o super admin</strong> (dono do SaaS). Para qualquer outro usuário a resposta é 403.</p>
+
+                                <h2 id="admin-landing-PUTapi-admin-landing-settings">Trocar o tema da landing</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p><code>brand</code> aceita <code>pop</code>, <code>violeta</code>, <code>coral</code>, <code>bambu</code> ou <code>rose</code> (os valores de <code>App\Enums\LandingBrand</code>). Repetir o mesmo valor não muda nada.</p>
+
+<span id="example-requests-PUTapi-admin-landing-settings">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/admin/landing-settings"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "brand": "coral"
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:9000/api/admin/landing-settings" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"brand\": \"coral\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-admin-landing-settings">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Tema da landing atualizado.&quot;,
+    &quot;data&quot;: {
+        &quot;brand&quot;: &quot;coral&quot;
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Esse tema n&atilde;o est&aacute; dispon&iacute;vel para a landing.&quot;,
+    &quot;errors&quot;: {
+        &quot;brand&quot;: [
+            &quot;Esse tema n&atilde;o est&aacute; dispon&iacute;vel para a landing.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PUTapi-admin-landing-settings" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PUTapi-admin-landing-settings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-admin-landing-settings"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-admin-landing-settings" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-admin-landing-settings">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PUTapi-admin-landing-settings" data-method="PUT"
+      data-path="api/admin/landing-settings"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-admin-landing-settings', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-admin-landing-settings"
+                    onclick="tryItOut('PUTapi-admin-landing-settings');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-admin-landing-settings"
+                    onclick="cancelTryOut('PUTapi-admin-landing-settings');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-admin-landing-settings"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/admin/landing-settings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-admin-landing-settings"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-admin-landing-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-admin-landing-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>brand</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="brand"                data-endpoint="PUTapi-admin-landing-settings"
+               value="coral"
+               data-component="body">
+    <br>
+<p>Tema da landing. Example: <code>coral</code></p>
+        </div>
+        </form>
+
+                <h1 id="landing-publico">Landing (público)</h1>
+
+    <p>Configuração visual da landing page, definida pelo super admin.</p>
+
+                                <h2 id="landing-publico-GETapi-landing-settings">Tema da landing</h2>
+
+<p>
+</p>
+
+<p>Tema que a landing deve usar. Não precisa de login. Sem configuração salva, devolve <code>pop</code>.</p>
+<p>Limite: 45 requisições por minuto.</p>
+
+<span id="example-requests-GETapi-landing-settings">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/landing-settings"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:9000/api/landing-settings" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-landing-settings">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;brand&quot;: &quot;pop&quot;
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-landing-settings" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-GETapi-landing-settings"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-landing-settings"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-landing-settings" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-GETapi-landing-settings">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-GETapi-landing-settings" data-method="GET"
+      data-path="api/landing-settings"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-landing-settings', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-landing-settings"
+                    onclick="tryItOut('GETapi-landing-settings');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-landing-settings"
+                    onclick="cancelTryOut('GETapi-landing-settings');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-landing-settings"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/landing-settings</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-landing-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-landing-settings"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                <h1 id="meu-perfil">Meu perfil</h1>
+
+    <p>Dados, foto e senha do <strong>próprio</strong> usuário autenticado. Não exigem e-mail verificado.</p>
+<p><strong>Foto de perfil (3 passos, mesmo padrão dos uploads de post):</strong></p>
+<ol>
+<li><code>POST /me/avatar/upload-url</code> com o <code>content_type</code> → recebe <code>url</code>, <code>headers</code> e <code>path</code>.</li>
+<li><code>PUT</code> do arquivo direto na <code>url</code> (envie os <code>headers</code> e o mesmo <code>Content-Type</code>; sem token da API).</li>
+<li><code>PUT /me/avatar</code> com o <code>path</code> → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.</li>
+</ol>
+<p>O campo <code>avatar</code> do usuário é uma URL assinada que <strong>muda a cada <code>GET /me</code></strong> (válida por ~6 dias).</p>
+
+                                <h2 id="meu-perfil-PATCHapi-me">Atualizar dados pessoais</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>O e-mail não é alterável por aqui. Envie <code>phone</code> e <code>bio</code> como <code>null</code> para apagá-los.
+O telefone aceita máscara; é gravado só com dígitos (DDD + número).</p>
+
+<span id="example-requests-PATCHapi-me">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/me"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "name": "Maria Souza",
+    "phone": "11912345678",
+    "bio": "Crio conteúdo sobre receitas.",
+    "timezone": "America\/Sao_Paulo"
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:9000/api/me" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"name\": \"Maria Souza\",
+    \"phone\": \"11912345678\",
+    \"bio\": \"Crio conteúdo sobre receitas.\",
+    \"timezone\": \"America\\/Sao_Paulo\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-me">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;id&quot;: 12,
+        &quot;name&quot;: &quot;Maria Souza&quot;,
+        &quot;email&quot;: &quot;maria@exemplo.com&quot;,
+        &quot;avatar&quot;: null,
+        &quot;phone&quot;: &quot;11912345678&quot;,
+        &quot;bio&quot;: &quot;Crio conte&uacute;do sobre receitas.&quot;,
+        &quot;timezone&quot;: &quot;America/Sao_Paulo&quot;,
+        &quot;created_at&quot;: &quot;2026-03-02T14:20:00-03:00&quot;,
+        &quot;email_verified_at&quot;: &quot;2026-03-02T14:25:10-03:00&quot;,
+        &quot;is_active&quot;: true,
+        &quot;is_super_admin&quot;: false,
+        &quot;permissions&quot;: []
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Esse fuso hor&aacute;rio n&atilde;o &eacute; v&aacute;lido.&quot;,
+    &quot;errors&quot;: {
+        &quot;timezone&quot;: [
+            &quot;Esse fuso hor&aacute;rio n&atilde;o &eacute; v&aacute;lido.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PATCHapi-me" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PATCHapi-me"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-me"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-me" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-me">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PATCHapi-me" data-method="PATCH"
+      data-path="api/me"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-me', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-me"
+                    onclick="tryItOut('PATCHapi-me');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-me"
+                    onclick="cancelTryOut('PATCHapi-me');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-me"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/me</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PATCHapi-me"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-me"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-me"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="name"                data-endpoint="PATCHapi-me"
+               value="Maria Souza"
+               data-component="body">
+    <br>
+<p>Nome completo (3 a 80 caracteres). Example: <code>Maria Souza</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>phone</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="phone"                data-endpoint="PATCHapi-me"
+               value="11912345678"
+               data-component="body">
+    <br>
+<p>Telefone com DDD, 10 ou 11 dígitos, ou <code>null</code>. Example: <code>11912345678</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>bio</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="bio"                data-endpoint="PATCHapi-me"
+               value="Crio conteúdo sobre receitas."
+               data-component="body">
+    <br>
+<p>Até 160 caracteres, ou <code>null</code>. Example: <code>Crio conteúdo sobre receitas.</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>timezone</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="timezone"                data-endpoint="PATCHapi-me"
+               value="America/Sao_Paulo"
+               data-component="body">
+    <br>
+<p>Fuso horário IANA. Example: <code>America/Sao_Paulo</code></p>
+        </div>
+        </form>
+
+                    <h2 id="meu-perfil-POSTapi-me-avatar-upload-url">Pedir URL de upload da foto</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Devolve uma URL pré-assinada de PUT. Depois do PUT, confirme com <code>PUT /me/avatar</code>.</p>
+
+<span id="example-requests-POSTapi-me-avatar-upload-url">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/me/avatar/upload-url"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "content_type": "image\/jpeg"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/me/avatar/upload-url" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"content_type\": \"image\\/jpeg\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-me-avatar-upload-url">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;url&quot;: &quot;https://storage.exemplo.com/pandypost/users/5f0c.../avatars/a1b2....jpg?X-Amz-Signature=...&quot;,
+    &quot;headers&quot;: {},
+    &quot;path&quot;: &quot;users/5f0c.../avatars/a1b2....jpg&quot;,
+    &quot;content_type&quot;: &quot;image/jpeg&quot;,
+    &quot;max_size&quot;: 5242880,
+    &quot;expires_in&quot;: 86400
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Use uma imagem JPG, PNG ou WebP.&quot;,
+    &quot;errors&quot;: {
+        &quot;content_type&quot;: [
+            &quot;Use uma imagem JPG, PNG ou WebP.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-me-avatar-upload-url" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-me-avatar-upload-url"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-me-avatar-upload-url"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-me-avatar-upload-url" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-me-avatar-upload-url">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-me-avatar-upload-url" data-method="POST"
+      data-path="api/me/avatar/upload-url"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-me-avatar-upload-url', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-me-avatar-upload-url"
+                    onclick="tryItOut('POSTapi-me-avatar-upload-url');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-me-avatar-upload-url"
+                    onclick="cancelTryOut('POSTapi-me-avatar-upload-url');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-me-avatar-upload-url"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/me/avatar/upload-url</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-me-avatar-upload-url"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-me-avatar-upload-url"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-me-avatar-upload-url"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>content_type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="content_type"                data-endpoint="POSTapi-me-avatar-upload-url"
+               value="image/jpeg"
+               data-component="body">
+    <br>
+<p><code>image/jpeg</code>, <code>image/png</code> ou <code>image/webp</code>. Example: <code>image/jpeg</code></p>
+        </div>
+        </form>
+
+                    <h2 id="meu-perfil-PUTapi-me-avatar">Confirmar a foto enviada</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Confere que o arquivo é do próprio usuário, existe, é imagem JPG/PNG/WebP de até 5 MB, troca a foto
+e apaga a anterior. Arquivo inválido é apagado do storage.</p>
+
+<span id="example-requests-PUTapi-me-avatar">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/me/avatar"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "path": "users\/5f0c...\/avatars\/a1b2....jpg"
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:9000/api/me/avatar" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"path\": \"users\\/5f0c...\\/avatars\\/a1b2....jpg\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-me-avatar">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;id&quot;: 12,
+        &quot;name&quot;: &quot;Maria Souza&quot;,
+        &quot;avatar&quot;: &quot;https://storage.exemplo.com/...assinada...&quot;,
+        &quot;email&quot;: &quot;maria@exemplo.com&quot;
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;profile_avatar_too_large&quot;,
+    &quot;message&quot;: &quot;A foto &eacute; maior que o limite de 5 MB. Escolha uma imagem menor.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PUTapi-me-avatar" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PUTapi-me-avatar"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-me-avatar"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-me-avatar" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-me-avatar">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PUTapi-me-avatar" data-method="PUT"
+      data-path="api/me/avatar"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-me-avatar', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-me-avatar"
+                    onclick="tryItOut('PUTapi-me-avatar');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-me-avatar"
+                    onclick="cancelTryOut('PUTapi-me-avatar');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-me-avatar"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/me/avatar</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-me-avatar"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-me-avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-me-avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>path</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="path"                data-endpoint="PUTapi-me-avatar"
+               value="users/5f0c.../avatars/a1b2....jpg"
+               data-component="body">
+    <br>
+<p><code>path</code> recebido em <code>POST /me/avatar/upload-url</code>. Example: <code>users/5f0c.../avatars/a1b2....jpg</code></p>
+        </div>
+        </form>
+
+                    <h2 id="meu-perfil-DELETEapi-me-avatar">Remover a foto</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Apaga o arquivo e limpa o campo. Sem foto, responde 200 do mesmo jeito.</p>
+
+<span id="example-requests-DELETEapi-me-avatar">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/me/avatar"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:9000/api/me/avatar" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-me-avatar">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;id&quot;: 12,
+        &quot;name&quot;: &quot;Maria Souza&quot;,
+        &quot;avatar&quot;: null,
+        &quot;email&quot;: &quot;maria@exemplo.com&quot;
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-DELETEapi-me-avatar" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-DELETEapi-me-avatar"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-me-avatar"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-me-avatar" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-me-avatar">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-DELETEapi-me-avatar" data-method="DELETE"
+      data-path="api/me/avatar"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-me-avatar', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-me-avatar"
+                    onclick="tryItOut('DELETEapi-me-avatar');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-me-avatar"
+                    onclick="cancelTryOut('DELETEapi-me-avatar');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-me-avatar"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/me/avatar</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="DELETEapi-me-avatar"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-me-avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-me-avatar"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="meu-perfil-PUTapi-me-password">Trocar a senha</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Exige a senha atual. A nova precisa de 8+ caracteres, 1 maiúscula e 1 número, e ser diferente da atual.
+As <strong>outras</strong> sessões (tokens) são encerradas; a sessão atual continua válida.</p>
+<p>Limite: 5 requisições por minuto.</p>
+
+<span id="example-requests-PUTapi-me-password">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/me/password"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "current_password": "SenhaAntiga1",
+    "password": "NovaSenha123",
+    "password_confirmation": "NovaSenha123"
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:9000/api/me/password" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"current_password\": \"SenhaAntiga1\",
+    \"password\": \"NovaSenha123\",
+    \"password_confirmation\": \"NovaSenha123\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-me-password">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Senha atualizada com sucesso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;A senha atual est&aacute; incorreta.&quot;,
+    &quot;errors&quot;: {
+        &quot;current_password&quot;: [
+            &quot;A senha atual est&aacute; incorreta.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PUTapi-me-password" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PUTapi-me-password"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-me-password"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-me-password" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-me-password">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PUTapi-me-password" data-method="PUT"
+      data-path="api/me/password"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-me-password', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-me-password"
+                    onclick="tryItOut('PUTapi-me-password');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-me-password"
+                    onclick="cancelTryOut('PUTapi-me-password');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-me-password"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/me/password</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-me-password"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-me-password"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-me-password"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>current_password</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="current_password"                data-endpoint="PUTapi-me-password"
+               value="SenhaAntiga1"
+               data-component="body">
+    <br>
+<p>Senha atual. Example: <code>SenhaAntiga1</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>password</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="password"                data-endpoint="PUTapi-me-password"
+               value="NovaSenha123"
+               data-component="body">
+    <br>
+<p>Nova senha. Example: <code>NovaSenha123</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>password_confirmation</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="password_confirmation"                data-endpoint="PUTapi-me-password"
+               value="NovaSenha123"
+               data-component="body">
+    <br>
+<p>Repetir a nova senha. Example: <code>NovaSenha123</code></p>
+        </div>
+        </form>
+
+                <h1 id="notificacoes">Notificações</h1>
+
+    <p>Central de notificações do usuário logado, por workspace: lista as do workspace corrente
+mais os convites recebidos (<code>workspace_invite</code>), que aparecem em qualquer workspace.
+Não exige permissão de grupo. Notificação de outro usuário responde 404.</p>
+<p>Tipos: <code>workspace_invite</code>, <code>post_failed</code>, <code>payment_failed</code>, <code>subscription_canceled</code>,
+<code>social_account_disconnected</code>. Em tempo real: canal privado <code>App.Models.User.{id}</code>,
+evento <code>Illuminate\Notifications\Events\BroadcastNotificationCreated</code>.</p>
+
+                                <h2 id="notificacoes-GETapi-notifications">Listar notificações</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-GETapi-notifications">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notifications"
+);
+
+const params = {
+    "read": "unread",
+    "type": "post_failed",
+    "per_page": "15",
+};
+Object.keys(params)
+    .forEach(key =&gt; url.searchParams.append(key, params[key]));
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:9000/api/notifications?read=unread&amp;type=post_failed&amp;per_page=15" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-notifications">
+    </span>
+<span id="execution-results-GETapi-notifications" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-GETapi-notifications"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-notifications"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-notifications" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-GETapi-notifications">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-GETapi-notifications" data-method="GET"
+      data-path="api/notifications"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-notifications', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-notifications"
+                    onclick="tryItOut('GETapi-notifications');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-notifications"
+                    onclick="cancelTryOut('GETapi-notifications');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-notifications"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/notifications</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-notifications"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-notifications"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-notifications"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Parâmetros de query</b></h4>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>read</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="read"                data-endpoint="GETapi-notifications"
+               value="unread"
+               data-component="query">
+    <br>
+<p><code>all</code> (padrão), <code>unread</code> ou <code>read</code>. Example: <code>unread</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="type"                data-endpoint="GETapi-notifications"
+               value="post_failed"
+               data-component="query">
+    <br>
+<p>Tipo da notificação. Example: <code>post_failed</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>per_page</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="per_page"                data-endpoint="GETapi-notifications"
+               value="15"
+               data-component="query">
+    <br>
+<p>De 1 a 100 (padrão 15). Example: <code>15</code></p>
+            </div>
+                </form>
+
+                    <h2 id="notificacoes-GETapi-notifications-unread">Listar não lidas</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Até 50 mais recentes; <code>total_unread</code> traz o total real.</p>
+
+<span id="example-requests-GETapi-notifications-unread">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notifications/unread"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:9000/api/notifications/unread" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-notifications-unread">
+    </span>
+<span id="execution-results-GETapi-notifications-unread" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-GETapi-notifications-unread"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-notifications-unread"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-notifications-unread" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-GETapi-notifications-unread">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-GETapi-notifications-unread" data-method="GET"
+      data-path="api/notifications/unread"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-notifications-unread', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-notifications-unread"
+                    onclick="tryItOut('GETapi-notifications-unread');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-notifications-unread"
+                    onclick="cancelTryOut('GETapi-notifications-unread');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-notifications-unread"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/notifications/unread</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-notifications-unread"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-notifications-unread"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-notifications-unread"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notificacoes-PATCHapi-notifications-read-all">Marcar todas como lidas</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Vale para as notificações visíveis no workspace corrente.</p>
+
+<span id="example-requests-PATCHapi-notifications-read-all">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notifications/read-all"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:9000/api/notifications/read-all" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-notifications-read-all">
+</span>
+<span id="execution-results-PATCHapi-notifications-read-all" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PATCHapi-notifications-read-all"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-notifications-read-all"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-notifications-read-all" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-notifications-read-all">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PATCHapi-notifications-read-all" data-method="PATCH"
+      data-path="api/notifications/read-all"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-notifications-read-all', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-notifications-read-all"
+                    onclick="tryItOut('PATCHapi-notifications-read-all');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-notifications-read-all"
+                    onclick="cancelTryOut('PATCHapi-notifications-read-all');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-notifications-read-all"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/notifications/read-all</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PATCHapi-notifications-read-all"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-notifications-read-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-notifications-read-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notificacoes-PATCHapi-notifications--notification--read">Marcar como lida</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-PATCHapi-notifications--notification--read">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notifications/architecto/read"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:9000/api/notifications/architecto/read" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-notifications--notification--read">
+</span>
+<span id="execution-results-PATCHapi-notifications--notification--read" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PATCHapi-notifications--notification--read"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-notifications--notification--read"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-notifications--notification--read" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-notifications--notification--read">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PATCHapi-notifications--notification--read" data-method="PATCH"
+      data-path="api/notifications/{notification}/read"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-notifications--notification--read', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-notifications--notification--read"
+                    onclick="tryItOut('PATCHapi-notifications--notification--read');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-notifications--notification--read"
+                    onclick="cancelTryOut('PATCHapi-notifications--notification--read');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-notifications--notification--read"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/notifications/{notification}/read</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PATCHapi-notifications--notification--read"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-notifications--notification--read"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-notifications--notification--read"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>notification</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="notification"                data-endpoint="PATCHapi-notifications--notification--read"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>The notification. Example: <code>architecto</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="notificacoes-DELETEapi-notifications--notification-">Remover notificação</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+
+
+<span id="example-requests-DELETEapi-notifications--notification-">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notifications/architecto"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:9000/api/notifications/architecto" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-notifications--notification-">
+</span>
+<span id="execution-results-DELETEapi-notifications--notification-" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-DELETEapi-notifications--notification-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-notifications--notification-"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-notifications--notification-" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-notifications--notification-">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-DELETEapi-notifications--notification-" data-method="DELETE"
+      data-path="api/notifications/{notification}"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-notifications--notification-', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-notifications--notification-"
+                    onclick="tryItOut('DELETEapi-notifications--notification-');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-notifications--notification-"
+                    onclick="cancelTryOut('DELETEapi-notifications--notification-');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-notifications--notification-"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/notifications/{notification}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="DELETEapi-notifications--notification-"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-notifications--notification-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-notifications--notification-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>notification</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="notification"                data-endpoint="DELETEapi-notifications--notification-"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>The notification. Example: <code>architecto</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="notificacoes-GETapi-notification-preferences">Ler preferências</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Retorna as preferências de e-mail e de aviso no app do usuário logado.</p>
+<p><strong>Permissão:</strong> <code>notifications.view</code></p>
+
+<span id="example-requests-GETapi-notification-preferences">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notification-preferences"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:9000/api/notification-preferences" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-notification-preferences">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;invite&quot;: true,
+        &quot;posts&quot;: true,
+        &quot;social_accounts&quot;: true,
+        &quot;post_published&quot;: true,
+        &quot;in_app&quot;: {
+            &quot;invite&quot;: true,
+            &quot;posts&quot;: true,
+            &quot;social_accounts&quot;: true,
+            &quot;post_published&quot;: false
+        }
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-notification-preferences" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-GETapi-notification-preferences"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-notification-preferences"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-notification-preferences" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-GETapi-notification-preferences">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-GETapi-notification-preferences" data-method="GET"
+      data-path="api/notification-preferences"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-notification-preferences', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-notification-preferences"
+                    onclick="tryItOut('GETapi-notification-preferences');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-notification-preferences"
+                    onclick="cancelTryOut('GETapi-notification-preferences');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-notification-preferences"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/notification-preferences</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-notification-preferences"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-notification-preferences"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-notification-preferences"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="notificacoes-PATCHapi-notification-preferences">Alterar preferências</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Envie só as famílias que quer mudar.</p>
+<p><strong>Permissão:</strong> <code>notifications.update</code></p>
+
+<span id="example-requests-PATCHapi-notification-preferences">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/notification-preferences"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "invite": true,
+    "posts": false,
+    "social_accounts": true,
+    "in_app": {
+        "posts": false,
+        "invite": true,
+        "social_accounts": true,
+        "post_published": true
+    },
+    "post_published": true
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:9000/api/notification-preferences" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"invite\": true,
+    \"posts\": false,
+    \"social_accounts\": true,
+    \"in_app\": {
+        \"posts\": false,
+        \"invite\": true,
+        \"social_accounts\": true,
+        \"post_published\": true
+    },
+    \"post_published\": true
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-notification-preferences">
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;notifications.update&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Os e-mails de cobran&ccedil;a n&atilde;o podem ser desativados.&quot;,
+    &quot;errors&quot;: {
+        &quot;billing&quot;: [
+            &quot;Os e-mails de cobran&ccedil;a n&atilde;o podem ser desativados.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-PATCHapi-notification-preferences" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-PATCHapi-notification-preferences"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-notification-preferences"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-notification-preferences" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-notification-preferences">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-PATCHapi-notification-preferences" data-method="PATCH"
+      data-path="api/notification-preferences"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-notification-preferences', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-notification-preferences"
+                    onclick="tryItOut('PATCHapi-notification-preferences');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-notification-preferences"
+                    onclick="cancelTryOut('PATCHapi-notification-preferences');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-notification-preferences"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/notification-preferences</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="PATCHapi-notification-preferences"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-notification-preferences"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-notification-preferences"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>invite</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="invite"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="invite"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>E-mail de convites. Example: <code>true</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>posts</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="posts"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="posts"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>E-mail de falha de posts. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>social_accounts</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="social_accounts"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="social_accounts"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>E-mail de contas sociais. Example: <code>true</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+        <details>
+            <summary style="padding-bottom: 10px;">
+                <b style="line-height: 2;"><code>in_app</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+<br>
+<p>Aviso no app (sino + tempo real) por família; envie só o que muda.</p>
+            </summary>
+                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>invite</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.invite"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.invite"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Aviso no app de convites. Example: <code>true</code></p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>posts</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.posts"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.posts"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Aviso no app de falha de posts. Example: <code>false</code></p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>social_accounts</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.social_accounts"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.social_accounts"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Aviso no app de contas sociais. Example: <code>true</code></p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>post_published</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.post_published"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="in_app.post_published"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Aviso no app quando um post seu é publicado; padrão desligado (opt-in). Example: <code>true</code></p>
+                    </div>
+                                    </details>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>post_published</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="post_published"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="post_published"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>E-mail quando um post seu é publicado; padrão ligado. Example: <code>true</code></p>
+        </div>
+        </form>
 
             
 

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Observers\WorkspaceObserver;
+use App\Services\Storage\StorageService;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
@@ -15,7 +17,7 @@ class Workspace extends Model implements Auditable
 {
     use AuditableTrait, Billable;
 
-    protected $fillable = ['name', 'is_personal_team', 'uuid'];
+    protected $fillable = ['name', 'is_personal_team', 'uuid', 'avatar_path'];
 
     public function getAuditRepresentation(): string
     {
@@ -30,7 +32,11 @@ class Workspace extends Model implements Auditable
 
     protected $hidden = [
         'id',
+        'avatar_path',
     ];
+
+    /** `avatar` (URL assinada) sai em toda serialização do model; o caminho no storage nunca. */
+    protected $appends = ['avatar'];
 
     protected $casts = [
         'is_personal_team' => 'boolean',
@@ -70,6 +76,16 @@ class Workspace extends Model implements Auditable
             ?? config('cashier.currency');
     }
 
+    protected function avatar(): Attribute
+    {
+        return Attribute::get(fn () => $this->avatar_path
+            ? app(StorageService::class)->generateDownloadUrl(
+                $this->avatar_path,
+                (int) config('services.s3.presigned_avatar_ttl', 518400),
+            )
+            : null);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';
@@ -77,14 +93,14 @@ class Workspace extends Model implements Auditable
 
     protected static function booted()
     {
-        // sempre que for buscar workspaces, buscar apenas os que o usuário tem acesso  
+        // sempre que for buscar workspaces, buscar apenas os que o usuário tem acesso
         static::addGlobalScope('member', function ($builder) {
             if (auth()->hasUser()) {
-                $builder->whereHas('accesses', fn($q) => $q->where('user_id', auth()->id()));
+                $builder->whereHas('accesses', fn ($q) => $q->where('user_id', auth()->id()));
             }
         });
         // ao criar um workspace, gerar um uuid
-        static::creating(fn($workspace) => $workspace->uuid = $workspace->uuid ?: (string) Str::uuid());
+        static::creating(fn ($workspace) => $workspace->uuid = $workspace->uuid ?: (string) Str::uuid());
     }
 
     // Relationships

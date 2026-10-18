@@ -18,6 +18,7 @@ class SwitchWorkspaceResource extends JsonResource
             'current_workspace' => [
                 'uuid' => $this->workspace->uuid,
                 'name' => $this->workspace->name,
+                'avatar' => $this->workspace->avatar,
             ],
             'role' => $this->role->name,
             'permissions' => $this->role->permissions->pluck('name')->all(),

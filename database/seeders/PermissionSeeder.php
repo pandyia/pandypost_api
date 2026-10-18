@@ -62,6 +62,10 @@ class PermissionSeeder extends Seeder
             ['name' => 'invites.view', 'description' => 'Visualizar convites', 'group' => 'invites'],
             ['name' => 'invites.delete', 'description' => 'Excluir convites', 'group' => 'invites'],
 
+            // Notificações (preferências; receber notificações é livre)
+            ['name' => 'notifications.view', 'description' => 'Visualizar preferências de notificações', 'group' => 'notifications'],
+            ['name' => 'notifications.update', 'description' => 'Alterar preferências de notificações', 'group' => 'notifications'],
+
             // Auditoria
             ['name' => 'logs.view', 'description' => 'Visualizar logs de auditoria', 'group' => 'logs'],
         ];

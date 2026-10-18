@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Invite;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,16 +16,17 @@ class ReceivedInviteResource extends JsonResource
     {
         return [
             'uuid' => $this->uuid,
-            'invitedBy' => $this->when($this->relationLoaded('invitedBy') && $this->invitedBy, fn() => [
+            'invitedBy' => $this->when($this->relationLoaded('invitedBy') && $this->invitedBy, fn () => [
                 'uuid' => $this->invitedBy->uuid,
                 'name' => $this->invitedBy->name,
                 'email' => $this->invitedBy->email,
             ]),
-            'workspace' => $this->when($this->relationLoaded('workspaceSender') && $this->workspaceSender, fn() => [
+            'workspace' => $this->when($this->relationLoaded('workspaceSender') && $this->workspaceSender, fn () => [
                 'uuid' => $this->workspaceSender->uuid,
                 'name' => $this->workspaceSender->name,
+                'avatar' => $this->workspaceSender->avatar,
             ]),
-            'role' => $this->when($this->relationLoaded('roleSender') && $this->roleSender, fn() => [
+            'role' => $this->when($this->relationLoaded('roleSender') && $this->roleSender, fn () => [
                 'uuid' => $this->roleSender->uuid,
                 'name' => $this->roleSender->name,
             ]),
