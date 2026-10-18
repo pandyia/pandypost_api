@@ -29,6 +29,7 @@ help:
 	@echo ""
 	@echo "DIA A DIA"
 	@echo "  test             Roda os testes (Pest)"
+	@echo "  docs             Gera a documentação Scribe (/docs) e recarrega o Octane"
 	@echo "  tinker           Abre o console do Laravel"
 	@echo "  e                Abre um terminal dentro do container php"
 	@echo "  packages         composer install no container"
@@ -160,6 +161,11 @@ ngrok:
 
 test:
 	$(exec) php artisan test
+
+# Gera a documentação Scribe (/docs) e recarrega o Octane para servir a versão nova
+docs:
+	$(exec) php artisan scribe:generate --no-interaction
+	$(exec) php artisan octane:reload
 
 # PROD
 setup-ssl:
