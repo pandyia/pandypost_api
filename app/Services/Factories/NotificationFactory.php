@@ -6,6 +6,8 @@ use App\Enums\NotificationType;
 use App\Notifications\CentralNotification;
 use App\Notifications\EmailVerificationNotification;
 use App\Notifications\PasswordResetNotification;
+use App\Notifications\WorkspaceInviteAcceptedNotification;
+use App\Notifications\WorkspaceInviteDeclinedNotification;
 use App\Notifications\WorkspaceInviteNotification;
 use Illuminate\Notifications\Notification;
 
@@ -24,6 +26,26 @@ class NotificationFactory
                 $payload['workspace_name'],
                 $payload['invited_by_name'],
                 $workspaceContext + ['invite_uuid' => $payload['resource'] ?? null],
+                $workspaceId,
+                $dedupeKey,
+            ),
+            NotificationType::WORKSPACE_INVITE_ACCEPTED => new WorkspaceInviteAcceptedNotification(
+                $payload['workspace_name'],
+                $payload['accepted_by_name'],
+                $workspaceContext + [
+                    'invite_uuid' => $payload['resource'] ?? null,
+                    'accepted_by_uuid' => $payload['accepted_by_uuid'],
+                ],
+                $workspaceId,
+                $dedupeKey,
+            ),
+            NotificationType::WORKSPACE_INVITE_DECLINED => new WorkspaceInviteDeclinedNotification(
+                $payload['workspace_name'],
+                $payload['declined_by_name'],
+                $workspaceContext + [
+                    'invite_uuid' => $payload['resource'] ?? null,
+                    'declined_by_uuid' => $payload['declined_by_uuid'],
+                ],
                 $workspaceId,
                 $dedupeKey,
             ),

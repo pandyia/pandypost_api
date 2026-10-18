@@ -3,11 +3,13 @@
 use App\Events\InviteEvent;
 use App\Models\Invite;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Event;
+use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
@@ -62,6 +64,25 @@ describe('broadcast de convites', function () {
 
         $invite->update(['status' => Invite::STATUS_DECLINED]);
         Event::assertDispatched(InviteEvent::class, fn ($e) => $e->action === 'declined');
+    });
+
+    it('emite accepted e declined pelos endpoints reais', function () {
+        $sender = createUserWithoutPermissions();
+        $invitee = User::factory()->create();
+        $workspaceId = $sender->currentAccess->workspace_id;
+        $other = User::factory()->create();
+        $accept = makeInvite($workspaceId, $sender->id, $invitee->email);
+        $decline = makeInvite($workspaceId, $sender->id, $other->email);
+
+        Event::fake([InviteEvent::class]);
+
+        Sanctum::actingAs($other);
+        $this->patchJson("/api/me/invites/{$decline->uuid}/decline")->assertOk();
+        Event::assertDispatched(InviteEvent::class, fn ($e) => $e->action === 'declined' && $e->invite->is($decline));
+
+        Sanctum::actingAs($invitee);
+        $this->patchJson("/api/me/invites/{$accept->uuid}/accept")->assertOk();
+        Event::assertDispatched(InviteEvent::class, fn ($e) => $e->action === 'accepted' && $e->invite->is($accept));
     });
 
     it('não emite quando o status não muda', function () {

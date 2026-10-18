@@ -12,6 +12,8 @@ enum NotificationType: string
     case SUBSCRIPTION_CANCELED = 'subscription_canceled';
     case SOCIAL_ACCOUNT_DISCONNECTED = 'social_account_disconnected';
     case POST_PUBLISHED = 'post_published';
+    case WORKSPACE_INVITE_ACCEPTED = 'workspace_invite_accepted';
+    case WORKSPACE_INVITE_DECLINED = 'workspace_invite_declined';
 
     /** Famílias cujo e-mail o usuário pode ligar/desligar. */
     public const PREFERENCE_FAMILIES = ['invite', 'posts', 'social_accounts'];
@@ -22,7 +24,7 @@ enum NotificationType: string
     public function family(): ?string
     {
         return match ($this) {
-            self::WORKSPACE_INVITE => 'invite',
+            self::WORKSPACE_INVITE, self::WORKSPACE_INVITE_ACCEPTED, self::WORKSPACE_INVITE_DECLINED => 'invite',
             self::POST_FAILED => 'posts',
             self::SOCIAL_ACCOUNT_DISCONNECTED => 'social_accounts',
             self::POST_PUBLISHED => 'post_published',

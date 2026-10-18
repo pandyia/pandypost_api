@@ -76,6 +76,8 @@ O SRGA-Backend já resolveu isso com o mecanismo nativo do Laravel (`database` +
 | Tipo (`NotificationType`) | Quando | Destinatário (proposto) | `action_url` |
 |---|---|---|---|
 | `workspace_invite` (já existe) | convite criado para usuário **com conta** | convidado | tela de convites |
+| `workspace_invite_accepted` | convite aceito (`InviteService::accept`) | quem enviou o convite (se ainda for membro); família `invite`, in-app + e-mail com layout próprio | `/settings/invites` |
+| `workspace_invite_declined` | convite recusado (`InviteService::decline`) | quem enviou o convite (se ainda for membro); família `invite`, in-app + e-mail com layout próprio | `/settings/invites` |
 | `post_published` | `PublishPostJob`/serviço da rede conclui com sucesso | autor do post (`user_id`) | detalhe do post |
 | `post_failed` | `PublishPostJob::failed()` | autor do post e membros com permissão de gerenciar posts no workspace (a confirmar) | detalhe do post |
 | `payment_failed` | `invoice.payment_failed` | dono do workspace (a confirmar) | tela de assinatura |

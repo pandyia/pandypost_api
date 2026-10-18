@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessStripeWebhookJob;
 use App\Jobs\PublishPostJob;
+use App\Models\Access;
 use App\Models\Invite;
 use App\Models\Notification;
 use App\Models\Role;
@@ -9,7 +10,10 @@ use App\Models\ScheduledPost;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\CentralNotification;
+use App\Notifications\WorkspaceInviteAcceptedNotification;
+use App\Notifications\WorkspaceInviteDeclinedNotification;
 use App\Notifications\WorkspaceInviteNotification;
+use App\Services\NotificationService;
 use App\Services\Storage\StorageService;
 use App\Services\YouTubeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -291,6 +295,206 @@ describe('workspace_invite', function () {
             ->assertOk();
 
         $this->assertDatabaseHas('invites', ['email' => 'convidado@teste.com']);
+    });
+});
+
+function notifPendingInvite(User $inviter, User $invitee): Invite
+{
+    $role = Role::withoutGlobalScopes()->create(['name' => 'Cargo', 'workspace_id' => $inviter->currentAccess->workspace_id]);
+
+    return Invite::withoutGlobalScopes()->create([
+        'email' => $invitee->email,
+        'workspace_id' => $inviter->currentAccess->workspace_id,
+        'invited_by' => $inviter->id,
+        'role_id' => $role->id,
+        'status' => Invite::STATUS_PENDING,
+        'expires_at' => now()->addDays(3),
+    ]);
+}
+
+describe('workspace_invite_accepted', function () {
+    it('notifica quem convidou, com o contrato esperado, sem duplicar e sem vazar segredo', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create(['name' => 'Maria Souza']);
+        $invite = notifPendingInvite($inviter, $invitee);
+        $workspace = Workspace::allAccess()->find($inviter->currentAccess->workspace_id);
+
+        $this->withToken($invitee->test_token ?? $invitee->createToken('t')->plainTextToken)
+            ->patchJson("/api/me/invites/{$invite->uuid}/accept")->assertOk();
+
+        $n = Notification::where('type', 'workspace_invite_accepted')->get();
+        expect($n)->toHaveCount(1)
+            ->and($n[0]->notifiable_id)->toBe($inviter->id)
+            ->and($n[0]->workspace_id)->toBe($workspace->id)
+            ->and($n[0]->data)->toBe([
+                'type' => 'workspace_invite_accepted',
+                'title' => 'Convite aceito',
+                'message' => "Maria Souza aceitou seu convite para o workspace {$workspace->name}.",
+                'action_url' => '/settings/invites',
+                'context' => [
+                    'workspace_uuid' => $workspace->uuid,
+                    'invite_uuid' => $invite->uuid,
+                    'accepted_by_uuid' => $invitee->uuid,
+                ],
+            ]);
+
+        // segunda chamada não duplica
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite, $invitee);
+        expect(Notification::where('type', 'workspace_invite_accepted')->count())->toBe(1)
+            ->and(json_encode($n[0]->data))->not->toContain($invitee->email);
+    });
+
+    it('não notifica o convidado nem outros membros', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $other = addUserToWorkspace(Workspace::allAccess()->find($inviter->currentAccess->workspace_id));
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite, $invitee);
+
+        expect(Notification::where('type', 'workspace_invite_accepted')->pluck('notifiable_id')->all())->toBe([$inviter->id])
+            ->and($other->notifications()->count())->toBe(0);
+    });
+
+    it('não notifica se o remetente saiu do workspace ou não existe mais', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+        Access::where('user_id', $inviter->id)->where('workspace_id', $invite->workspace_id)->delete();
+
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite, $invitee);
+        $invite->invited_by = 999999;
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite, $invitee);
+
+        expect(Notification::where('type', 'workspace_invite_accepted')->count())->toBe(0);
+    });
+
+    it('respeita a preferência da família invite e renderiza o e-mail com o link', function () {
+        NotificationFacade::fake();
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create(['name' => 'Maria <b>Souza</b>']);
+        $invite = notifPendingInvite($inviter, $invitee);
+
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite, $invitee);
+        NotificationFacade::assertSentTo($inviter, WorkspaceInviteAcceptedNotification::class, function ($n, $channels) use ($inviter) {
+            $html = $n->toMail($inviter)->render();
+
+            return in_array('mail', $channels, true)
+                && str_contains($html, '/settings/invites')
+                && str_contains($html, 'Maria &lt;b&gt;Souza&lt;/b&gt;');
+        });
+
+        $other = createUserWithPermissions(['invites.create']);
+        notifSetPrefs($other, ['invite' => false]);
+        $invite2 = notifPendingInvite($other, $invitee);
+        app(NotificationService::class)->notifyWorkspaceInviteAccepted($invite2, $invitee);
+        NotificationFacade::assertSentTo($other, WorkspaceInviteAcceptedNotification::class, fn ($n, $channels) => ! in_array('mail', $channels, true) && in_array('broadcast', $channels, true));
+    });
+
+    it('falha ao notificar não impede o aceite', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+        NotificationFacade::shouldReceive('send')->andThrow(new RuntimeException('broker fora'));
+        NotificationFacade::shouldReceive('sendNow')->andThrow(new RuntimeException('broker fora'));
+
+        $this->withToken($invitee->createToken('t')->plainTextToken)
+            ->patchJson("/api/me/invites/{$invite->uuid}/accept")->assertOk();
+
+        expect($invite->fresh()->status)->toBe(Invite::STATUS_ACCEPTED);
+    });
+});
+
+describe('workspace_invite_declined', function () {
+    it('notifica quem convidou, com o contrato esperado, sem duplicar e sem vazar segredo', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create(['name' => 'Maria Souza']);
+        $invite = notifPendingInvite($inviter, $invitee);
+        $workspace = Workspace::allAccess()->find($inviter->currentAccess->workspace_id);
+
+        $this->withToken($invitee->test_token ?? $invitee->createToken('t')->plainTextToken)
+            ->patchJson("/api/me/invites/{$invite->uuid}/decline")->assertOk();
+
+        $n = Notification::where('type', 'workspace_invite_declined')->get();
+        expect($n)->toHaveCount(1)
+            ->and($n[0]->notifiable_id)->toBe($inviter->id)
+            ->and($n[0]->workspace_id)->toBe($workspace->id)
+            ->and($n[0]->data)->toBe([
+                'type' => 'workspace_invite_declined',
+                'title' => 'Convite recusado',
+                'message' => "Maria Souza recusou seu convite para o workspace {$workspace->name}.",
+                'action_url' => '/settings/invites',
+                'context' => [
+                    'workspace_uuid' => $workspace->uuid,
+                    'invite_uuid' => $invite->uuid,
+                    'declined_by_uuid' => $invitee->uuid,
+                ],
+            ]);
+
+        // segunda chamada não duplica
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite, $invitee);
+        expect(Notification::where('type', 'workspace_invite_declined')->count())->toBe(1)
+            ->and(json_encode($n[0]->data))->not->toContain($invitee->email);
+    });
+
+    it('não notifica o convidado nem outros membros', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $other = addUserToWorkspace(Workspace::allAccess()->find($inviter->currentAccess->workspace_id));
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite, $invitee);
+
+        expect(Notification::where('type', 'workspace_invite_declined')->pluck('notifiable_id')->all())->toBe([$inviter->id])
+            ->and($other->notifications()->count())->toBe(0);
+    });
+
+    it('não notifica se o remetente saiu do workspace ou não existe mais', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+        Access::where('user_id', $inviter->id)->where('workspace_id', $invite->workspace_id)->delete();
+
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite, $invitee);
+        $invite->invited_by = 999999;
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite, $invitee);
+
+        expect(Notification::where('type', 'workspace_invite_declined')->count())->toBe(0);
+    });
+
+    it('respeita a preferência da família invite e renderiza o e-mail com o link', function () {
+        NotificationFacade::fake();
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create(['name' => 'Maria <b>Souza</b>']);
+        $invite = notifPendingInvite($inviter, $invitee);
+
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite, $invitee);
+        NotificationFacade::assertSentTo($inviter, WorkspaceInviteDeclinedNotification::class, function ($n, $channels) use ($inviter) {
+            $html = $n->toMail($inviter)->render();
+
+            return in_array('mail', $channels, true)
+                && str_contains($html, '/settings/invites')
+                && str_contains($html, 'Maria &lt;b&gt;Souza&lt;/b&gt;');
+        });
+
+        $other = createUserWithPermissions(['invites.create']);
+        notifSetPrefs($other, ['invite' => false]);
+        $invite2 = notifPendingInvite($other, $invitee);
+        app(NotificationService::class)->notifyWorkspaceInviteDeclined($invite2, $invitee);
+        NotificationFacade::assertSentTo($other, WorkspaceInviteDeclinedNotification::class, fn ($n, $channels) => ! in_array('mail', $channels, true) && in_array('broadcast', $channels, true));
+    });
+
+    it('falha ao notificar não impede a recusa', function () {
+        $inviter = createUserWithPermissions(['invites.create']);
+        $invitee = User::factory()->create();
+        $invite = notifPendingInvite($inviter, $invitee);
+        NotificationFacade::shouldReceive('send')->andThrow(new RuntimeException('broker fora'));
+        NotificationFacade::shouldReceive('sendNow')->andThrow(new RuntimeException('broker fora'));
+
+        $this->withToken($invitee->createToken('t')->plainTextToken)
+            ->patchJson("/api/me/invites/{$invite->uuid}/decline")->assertOk();
+
+        expect($invite->fresh()->status)->toBe(Invite::STATUS_DECLINED);
     });
 });
 

@@ -6,6 +6,7 @@ use App\Enums\NotificationType;
 use App\Enums\Platform;
 use App\Exceptions\NotificationException;
 use App\Models\Access;
+use App\Models\Invite;
 use App\Models\Notification;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
@@ -61,6 +62,72 @@ class NotificationService
                 'workspace_id' => $workspaceId,
                 'workspace_uuid' => Workspace::allAccess()->whereKey($workspaceId)->value('uuid'),
                 'resource' => $inviteUuid,
+            ]);
+        });
+    }
+
+    /**
+     * Avisa quem enviou o convite que ele foi aceito. Só se o remetente ainda é membro do workspace.
+     */
+    public function notifyWorkspaceInviteAccepted(Invite $invite, User $acceptedBy): void
+    {
+        $this->safely(function () use ($invite, $acceptedBy) {
+            $inviter = $invite->invited_by ? User::withoutGlobalScopes()->find($invite->invited_by) : null;
+
+            if (! $inviter) {
+                return;
+            }
+
+            $stillMember = Access::where('user_id', $inviter->id)
+                ->where('workspace_id', $invite->workspace_id)
+                ->exists();
+
+            if (! $stillMember) {
+                return;
+            }
+
+            $workspace = Workspace::allAccess()->find($invite->workspace_id);
+
+            $this->send($inviter, NotificationType::WORKSPACE_INVITE_ACCEPTED, [
+                'workspace_name' => (string) $workspace?->name,
+                'accepted_by_name' => $acceptedBy->name,
+                'accepted_by_uuid' => $acceptedBy->uuid,
+                'workspace_id' => $invite->workspace_id,
+                'workspace_uuid' => $workspace?->uuid,
+                'resource' => $invite->uuid,
+            ]);
+        });
+    }
+
+    /**
+     * Avisa quem enviou o convite que ele foi recusado. Só se o remetente ainda é membro do workspace.
+     */
+    public function notifyWorkspaceInviteDeclined(Invite $invite, User $declinedBy): void
+    {
+        $this->safely(function () use ($invite, $declinedBy) {
+            $inviter = $invite->invited_by ? User::withoutGlobalScopes()->find($invite->invited_by) : null;
+
+            if (! $inviter) {
+                return;
+            }
+
+            $stillMember = Access::where('user_id', $inviter->id)
+                ->where('workspace_id', $invite->workspace_id)
+                ->exists();
+
+            if (! $stillMember) {
+                return;
+            }
+
+            $workspace = Workspace::allAccess()->find($invite->workspace_id);
+
+            $this->send($inviter, NotificationType::WORKSPACE_INVITE_DECLINED, [
+                'workspace_name' => (string) $workspace?->name,
+                'declined_by_name' => $declinedBy->name,
+                'declined_by_uuid' => $declinedBy->uuid,
+                'workspace_id' => $invite->workspace_id,
+                'workspace_uuid' => $workspace?->uuid,
+                'resource' => $invite->uuid,
             ]);
         });
     }

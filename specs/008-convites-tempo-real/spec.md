@@ -23,3 +23,7 @@ Teste Pest `tests/Feature/Invites/InviteBroadcastTest.php` cobre RF-1 a RF-4.
 
 ## Adendo — leitura da notificação
 - RF-5: `accept` e `decline` marcam como lidas as notificações `workspace_invite` do usuário com aquele `context.invite_uuid` (`NotificationService::markInviteAsRead`). Teste: `tests/Feature/Invites/InviteNotificationReadTest.php`.
+
+
+## Adendo — remetente notificado
+- Além do evento em tempo real, quem enviou o convite recebe notificação na central (`workspace_invite_accepted` / `workspace_invite_declined`, spec 007) com `action_url` `/settings/invites`.
