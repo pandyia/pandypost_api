@@ -1,5 +1,35 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Origens permitidas no WebSocket
+|--------------------------------------------------------------------------
+|
+| Sem restrição, qualquer site pode abrir conexão com o Reverb a partir do
+| navegador de um usuário. A lista vem de REVERB_ALLOWED_ORIGINS (separada
+| por vírgula) e, sem ela, do FRONTEND_URL — pandy.pro em produção,
+| localhost em dev.
+|
+| O Reverb compara só o HOST do header Origin (sem esquema nem porta), com
+| Str::is. Por isso cada entrada vira host puro, e qualquer entrada com '*'
+| é descartada: um curinga liberaria tudo ('*') ou mais do que se pretende.
+| Lista vazia recusa toda conexão — falha fechada.
+|
+| Apex e www são hosts diferentes: pandy.pro e www.pandy.pro precisam ser
+| listados separadamente.
+|
+*/
+
+$allowedOrigins = collect(explode(',', (string) env('REVERB_ALLOWED_ORIGINS', env('FRONTEND_URL'))))
+    ->map(fn ($origin) => trim($origin))
+    ->filter()
+    ->map(fn ($origin) => parse_url(str_contains($origin, '://') ? $origin : 'https://'.$origin, PHP_URL_HOST))
+    ->filter(fn ($host) => is_string($host) && $host !== '' && ! str_contains($host, '*'))
+    ->map(fn ($host) => strtolower($host))
+    ->unique()
+    ->values()
+    ->all();
+
 return [
 
     /*
@@ -78,7 +108,7 @@ return [
                     'scheme' => env('REVERB_SCHEME', 'https'),
                     'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
                 ],
-                'allowed_origins' => ['*'],
+                'allowed_origins' => $allowedOrigins,
                 'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),
                 'max_message_size' => env('REVERB_APP_MAX_MESSAGE_SIZE', 10000),
             ],
