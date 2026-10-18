@@ -27,3 +27,6 @@ Teste Pest `tests/Feature/Invites/InviteBroadcastTest.php` cobre RF-1 a RF-4.
 
 ## Adendo — remetente notificado
 - Além do evento em tempo real, quem enviou o convite recebe notificação na central (`workspace_invite_accepted` / `workspace_invite_declined`, spec 007) com `action_url` `/settings/invites`.
+
+## Adendo — grid independente do aviso no sino
+- RF-6: o `InviteUpdated` também é emitido no canal pessoal do convidado (`private App.Models.User.{id}`, quando ele já tem conta). Assim a grid de recebidos atualiza mesmo com o "No app" de Convites desligado (spec 009): o aviso no sino e a atualização da tela são caminhos paralelos. Testes em `InviteBroadcastTest`.

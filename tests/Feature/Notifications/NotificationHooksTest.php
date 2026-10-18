@@ -498,35 +498,58 @@ describe('workspace_invite_declined', function () {
     });
 });
 
-describe('post_published (opt-in)', function () {
-    it('desligado por padrão não cria notificação', function () {
+describe('post_published (e-mail ligado e aviso no app opt-in)', function () {
+    it('por padrão avisa só por e-mail, sem gravar na central', function () {
+        NotificationFacade::fake();
         $author = createUserWithPermissions(['posts.create']);
         $post = notifPost($author);
 
         $post->update(['status' => 'published']);
 
+        NotificationFacade::assertSentTo($author, CentralNotification::class, fn ($n, $channels) => $channels === ['mail']);
         expect(Notification::where('type', 'post_published')->count())->toBe(0);
     });
 
-    it('ligado cria só para o autor, in-app, sem duplicar', function () {
+    it('com o aviso no app ligado entrega no sino e por e-mail, só para o autor', function () {
         NotificationFacade::fake();
         $author = createUserWithPermissions(['posts.create']);
         $manager = addUserToWorkspace(Workspace::withoutGlobalScopes()->find($author->currentAccess->workspace_id));
         $manager->currentAccess->role->permissions()->sync([permission('posts.view')->id]);
-        notifSetPrefs($author, ['post_published' => true]);
-        notifSetPrefs($manager, ['post_published' => true]);
+        notifSetPrefs($author, ['in_app' => ['post_published' => true]]);
+        notifSetPrefs($manager, ['in_app' => ['post_published' => true]]);
         $post = notifPost($author);
 
         $post->update(['status' => 'published']);
 
-        NotificationFacade::assertSentTo($author, CentralNotification::class, fn ($n, $channels) => ! in_array('mail', $channels, true)
+        NotificationFacade::assertSentTo($author, CentralNotification::class, fn ($n, $channels) => in_array('mail', $channels, true)
             && in_array('broadcast', $channels, true));
         NotificationFacade::assertNotSentTo($manager, CentralNotification::class);
     });
 
+    it('só no app (e-mail desligado) não envia e-mail', function () {
+        NotificationFacade::fake();
+        $author = createUserWithPermissions(['posts.create']);
+        notifSetPrefs($author, ['post_published' => false, 'in_app' => ['post_published' => true]]);
+
+        notifPost($author)->update(['status' => 'published']);
+
+        NotificationFacade::assertSentTo($author, CentralNotification::class, fn ($n, $channels) => ! in_array('mail', $channels, true)
+            && in_array('broadcast', $channels, true));
+    });
+
+    it('com os dois canais desligados não envia nada', function () {
+        NotificationFacade::fake();
+        $author = createUserWithPermissions(['posts.create']);
+        notifSetPrefs($author, ['post_published' => false, 'in_app' => ['post_published' => false]]);
+
+        notifPost($author)->update(['status' => 'published']);
+
+        NotificationFacade::assertNothingSent();
+    });
+
     it('persiste com o contrato e não duplica em novas atualizações', function () {
         $author = createUserWithPermissions(['posts.create']);
-        notifSetPrefs($author, ['post_published' => true]);
+        notifSetPrefs($author, ['in_app' => ['post_published' => true]]);
         $post = notifPost($author);
 
         $post->update(['status' => 'published']);
@@ -544,7 +567,7 @@ describe('post_published (opt-in)', function () {
 
     it('falha ao notificar não derruba a publicação', function () {
         $author = createUserWithPermissions(['posts.create']);
-        notifSetPrefs($author, ['post_published' => true]);
+        notifSetPrefs($author, ['in_app' => ['post_published' => true]]);
         $post = notifPost($author);
         NotificationFacade::shouldReceive('send')->andThrow(new RuntimeException('broker fora'));
         NotificationFacade::shouldReceive('sendNow')->andThrow(new RuntimeException('broker fora'));
@@ -554,14 +577,18 @@ describe('post_published (opt-in)', function () {
         expect($post->fresh()->status)->toBe('published');
     });
 
-    it('valida e altera a preferência via API', function () {
+    it('valida e altera as duas preferências via API', function () {
         $user = createUserWithoutPermissions();
 
+        $this->withToken($user->test_token)->getJson('/api/notification-preferences')
+            ->assertJsonPath('data.post_published', true)->assertJsonPath('data.in_app.post_published', false);
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['post_published' => 'x'])
             ->assertStatus(422)->assertJsonValidationErrors(['post_published']);
-        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['post_published' => true])
-            ->assertOk()->assertJsonPath('data.post_published', true);
-        $this->withToken($user->test_token)->getJson('/api/notification-preferences')
-            ->assertJsonPath('data.post_published', true)->assertJsonPath('data.posts', true);
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['post_published' => 'x']])
+            ->assertStatus(422)->assertJsonValidationErrors(['in_app.post_published']);
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['post_published' => true]])
+            ->assertOk()->assertJsonPath('data.in_app.post_published', true)->assertJsonPath('data.post_published', true);
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['post_published' => false])
+            ->assertOk()->assertJsonPath('data.post_published', false)->assertJsonPath('data.in_app.post_published', true);
     });
 });

@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\Invite;
+use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -23,9 +24,19 @@ class InviteEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
     {
         $uuid = $this->invite->workspaceSender()->withoutGlobalScopes()->value('uuid');
 
-        return [
+        $channels = [
             new PrivateChannel('workspaces.'.$uuid),
         ];
+
+        // Canal pessoal do convidado (se já tem conta): a grid de recebidos atualiza mesmo com o
+        // aviso no sino desligado, porque este evento não depende da preferência de notificação.
+        $inviteeId = User::withoutGlobalScopes()->where('email', $this->invite->email)->value('id');
+
+        if ($inviteeId) {
+            $channels[] = new PrivateChannel('App.Models.User.'.$inviteeId);
+        }
+
+        return $channels;
     }
 
     public function broadcastAs(): string
@@ -33,7 +44,7 @@ class InviteEvent implements ShouldBroadcastNow, ShouldDispatchAfterCommit
         return 'InviteUpdated';
     }
 
-    /** Sem e-mail: o canal é liberado a qualquer membro do workspace. */
+    /** Sem e-mail: o canal do workspace é liberado a qualquer membro. */
     public function broadcastWith(): array
     {
         return [

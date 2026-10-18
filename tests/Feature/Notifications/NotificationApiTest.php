@@ -1,9 +1,13 @@
 <?php
 
 use App\Console\Commands\PruneNotificationsCommand;
+use App\Enums\NotificationType;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Notifications\CentralNotification;
+use App\Notifications\Channels\WorkspaceDatabaseChannel;
+use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Str;
@@ -165,7 +169,7 @@ describe('preferências de e-mail', function () {
         $user = createUserWithoutPermissions();
 
         $this->withToken($user->test_token)->getJson('/api/notification-preferences')
-            ->assertOk()->assertExactJson(['data' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => false]]);
+            ->assertOk()->assertExactJson(['data' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => true, 'in_app' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => false]]]);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['posts' => false])
             ->assertOk()->assertJsonPath('data.posts', false)->assertJsonPath('data.invite', true);
@@ -205,5 +209,72 @@ describe('retenção', function () {
         $this->assertDatabaseHas('notifications', ['id' => $recentRead->id]);
         $this->assertDatabaseHas('notifications', ['id' => $oldUnread->id]);
         expect(PruneNotificationsCommand::RETENTION_DAYS)->toBe(30);
+    });
+});
+
+describe('preferências de aviso no app', function () {
+    it('altera o aviso no app por família sem mexer no e-mail', function () {
+        $user = createUserWithoutPermissions();
+
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['posts' => false]])
+            ->assertOk()
+            ->assertJsonPath('data.in_app.posts', false)
+            ->assertJsonPath('data.in_app.invite', true)
+            ->assertJsonPath('data.posts', true);
+
+        $fresh = $user->fresh();
+        expect($fresh->inAppPreferences()['posts'])->toBeFalse()
+            ->and($fresh->emailPreferences()['posts'])->toBeTrue();
+    });
+
+    it('alterar o e-mail preserva o aviso no app e vice-versa', function () {
+        $user = createUserWithoutPermissions();
+
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['invite' => false]])->assertOk();
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['invite' => false])
+            ->assertOk()->assertJsonPath('data.in_app.invite', false)->assertJsonPath('data.invite', false);
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['social_accounts' => false]])
+            ->assertOk()->assertJsonPath('data.invite', false)->assertJsonPath('data.in_app.invite', false);
+    });
+
+    it('rejeita billing e valores inválidos no aviso no app (422)', function () {
+        $user = createUserWithoutPermissions();
+
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['billing' => false]])
+            ->assertStatus(422)->assertJsonValidationErrors(['in_app.billing']);
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['posts' => 'talvez']])
+            ->assertStatus(422)->assertJsonValidationErrors(['in_app.posts']);
+    });
+
+    it('define os canais de entrega pela preferência (app × e-mail)', function () {
+        $user = createUserWithoutPermissions();
+        $invite = new CentralNotification(NotificationType::POST_FAILED, 't', 'm', '/x');
+        $billing = new CentralNotification(NotificationType::PAYMENT_FAILED, 't', 'm', '/x');
+
+        expect($invite->via($user))->toBe([WorkspaceDatabaseChannel::class, 'broadcast', 'mail']);
+
+        notifSetPrefs($user, ['in_app' => ['posts' => false]]);
+        expect($invite->via($user->fresh()))->toBe(['mail']);
+
+        notifSetPrefs($user, ['posts' => false, 'in_app' => ['posts' => false]]);
+        expect($invite->via($user->fresh()))->toBe([]);
+
+        notifSetPrefs($user, ['posts' => false]);
+        expect($invite->via($user->fresh()))->toBe([WorkspaceDatabaseChannel::class, 'broadcast']);
+
+        notifSetPrefs($user, ['in_app' => ['posts' => false, 'invite' => false]]);
+        expect($billing->via($user->fresh()))->toBe([WorkspaceDatabaseChannel::class, 'broadcast', 'mail']);
+    });
+
+    it('não grava a notificação quando o aviso no app está desligado', function () {
+        $user = createUserWithoutPermissions();
+        notifSetPrefs($user, ['posts' => false, 'in_app' => ['posts' => false]]);
+
+        app(NotificationService::class)->send($user->fresh(), NotificationType::POST_FAILED, [
+            'post_title' => 'Meu vídeo', 'platform_label' => 'YouTube', 'platform' => 'youtube',
+            'author_name' => 'Ana', 'resource' => 'abc', 'workspace_id' => $user->currentAccess->workspace_id,
+        ]);
+
+        expect($user->notifications()->count())->toBe(0);
     });
 });

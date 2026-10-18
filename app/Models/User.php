@@ -206,28 +206,48 @@ class User extends Authenticatable implements Auditable
     }
 
     /**
-     * Preferências expostas na API: e-mail por família + opt-in in-app de post publicado (padrão desligado).
+     * Aviso no app (central + tempo real) por família. Ausente = ligado, exceto as de
+     * `NotificationType::IN_APP_OFF_BY_DEFAULT` (opt-in). Billing é sempre ligado.
      *
      * @return array<string, bool>
+     */
+    public function inAppPreferences(): array
+    {
+        $saved = ($this->notification_preferences ?? [])['in_app'] ?? [];
+
+        return collect(NotificationType::PREFERENCE_FAMILIES)
+            ->mapWithKeys(fn (string $family) => [
+                $family => (bool) ($saved[$family] ?? ! in_array($family, NotificationType::IN_APP_OFF_BY_DEFAULT, true)),
+            ])
+            ->all();
+    }
+
+    /**
+     * Preferências expostas na API: e-mail por família (campos soltos, padrão ligado) e o aviso
+     * no app por família em `in_app`.
+     *
+     * @return array<string, bool|array<string, bool>>
      */
     public function notificationSettings(): array
     {
         return $this->emailPreferences() + [
-            'post_published' => (bool) (($this->notification_preferences ?? [])['post_published'] ?? false),
+            'in_app' => $this->inAppPreferences(),
         ];
     }
 
-    public function wantsPostPublished(): bool
+    public function wantsInAppFor(NotificationType $type): bool
     {
-        return $this->notificationSettings()['post_published'];
+        $family = $type->family();
+
+        return match (true) {
+            $family === null => true,
+            $family === 'billing' => true,
+            default => $this->inAppPreferences()[$family] ?? true,
+        };
     }
 
     public function wantsEmailFor(NotificationType $type): bool
     {
-        if ($type === NotificationType::POST_PUBLISHED) {
-            return false; // somente in-app
-        }
-
         $family = $type->family();
 
         return match (true) {

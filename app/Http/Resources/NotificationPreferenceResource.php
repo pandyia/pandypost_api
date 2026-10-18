@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Preferências de e-mail do usuário (`$this->resource` é o array por família).
+ * Preferências de notificação do usuário (`$this->resource` é o array por família): campos soltos = e-mail, `in_app` = aviso no app.
  */
 class NotificationPreferenceResource extends JsonResource
 {
@@ -17,6 +17,7 @@ class NotificationPreferenceResource extends JsonResource
             'posts' => $this->resource['posts'],
             'social_accounts' => $this->resource['social_accounts'],
             'post_published' => $this->resource['post_published'],
+            'in_app' => $this->resource['in_app'],
         ];
     }
 }

@@ -95,4 +95,30 @@ describe('broadcast de convites', function () {
 
         Event::assertNotDispatched(InviteEvent::class);
     });
+
+    it('também emite no canal pessoal do convidado, independente do aviso no sino', function () {
+        $sender = createUserWithoutPermissions();
+        $invitee = User::factory()->create();
+        User::whereKey($invitee->id)->update(['notification_preferences' => json_encode(['in_app' => ['invite' => false]])]);
+
+        Event::fake([InviteEvent::class]);
+
+        makeInvite($sender->currentAccess->workspace_id, $sender->id, $invitee->email);
+
+        Event::assertDispatched(InviteEvent::class, function (InviteEvent $event) use ($invitee) {
+            $names = array_map(fn ($channel) => $channel->name, $event->broadcastOn());
+
+            return in_array('private-App.Models.User.'.$invitee->id, $names, true) && count($names) === 2;
+        });
+    });
+
+    it('sem conta do convidado, só o canal do workspace', function () {
+        $user = createUserWithoutPermissions();
+
+        Event::fake([InviteEvent::class]);
+
+        makeInvite($user->currentAccess->workspace_id, $user->id, 'sem-conta@example.com');
+
+        Event::assertDispatched(InviteEvent::class, fn (InviteEvent $event) => count($event->broadcastOn()) === 1);
+    });
 });

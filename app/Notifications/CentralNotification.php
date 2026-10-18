@@ -12,7 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Notificação da central: database + broadcast sempre; e-mail conforme preferência.
+ * Notificação da central: database + broadcast conforme a preferência "no app"; e-mail conforme a preferência de e-mail.
  * `data` tem chaves fixas e nunca carrega tokens nem mensagens cruas de terceiros.
  */
 class CentralNotification extends Notification implements ShouldQueue
@@ -31,7 +31,11 @@ class CentralNotification extends Notification implements ShouldQueue
 
     public function via($notifiable): array
     {
-        $channels = [WorkspaceDatabaseChannel::class, 'broadcast'];
+        $channels = [];
+
+        if (! ($notifiable instanceof User) || $notifiable->wantsInAppFor($this->type)) {
+            $channels = [WorkspaceDatabaseChannel::class, 'broadcast'];
+        }
 
         if ($notifiable instanceof User && $notifiable->wantsEmailFor($this->type)) {
             $channels[] = 'mail';

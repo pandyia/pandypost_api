@@ -165,7 +165,7 @@ class NotificationService
         $this->safely(function () use ($post) {
             $author = User::withoutGlobalScopes()->find($post->user_id);
 
-            if (! $author || ! $author->wantsPostPublished()) {
+            if (! $author || (! $author->wantsInAppFor(NotificationType::POST_PUBLISHED) && ! $author->wantsEmailFor(NotificationType::POST_PUBLISHED))) {
                 return;
             }
 
@@ -309,15 +309,21 @@ class NotificationService
     }
 
     // ---------------------------------------------------------------
-    // Preferências de e-mail
+    // Preferências de notificação (e-mail e no app)
     // ---------------------------------------------------------------
 
     public function updatePreferences(User $user, array $data): array
     {
-        $allowed = array_flip([...NotificationType::PREFERENCE_FAMILIES, 'post_published']);
-        $merged = array_merge($user->notificationSettings(), array_intersect_key($data, $allowed));
+        $allowed = array_flip(NotificationType::PREFERENCE_FAMILIES);
+        $current = $user->notificationSettings();
+        $inApp = array_merge($current['in_app'], array_map('boolval', array_intersect_key($data['in_app'] ?? [], array_flip(NotificationType::PREFERENCE_FAMILIES))));
 
-        $user->forceFill(['notification_preferences' => array_map('boolval', $merged)])->save();
+        $merged = array_map('boolval', array_merge(
+            array_diff_key($current, ['in_app' => 1]),
+            array_intersect_key($data, $allowed),
+        ));
+
+        $user->forceFill(['notification_preferences' => $merged + ['in_app' => $inApp]])->save();
 
         return $user->notificationSettings();
     }
