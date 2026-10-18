@@ -12,6 +12,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
@@ -24,6 +25,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(false);
+        // Octane fica atrás do nginx: sem confiar nele, $request->ip() seria o
+        // IP do container (rate limit único para todos) e o esquema seria http
+        // (URLs assinadas inválidas). Só o nginx alcança o Octane em produção,
+        // e ele sobrescreve esses headers em vez de repassar os do cliente.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_PROTO
+                | Request::HEADER_X_FORWARDED_PORT,
+        );
         $middleware->api(prepend: [
             ForceJsonResponse::class,
         ]);
