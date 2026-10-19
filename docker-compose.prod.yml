@@ -1,3 +1,12 @@
+# Topologia interna: o Laravel (Octane, Horizon, scheduler) publica eventos
+# direto no Reverb pela rede do compose, sem sair por nginx/Cloudflare. Fica
+# aqui e não no .env do servidor porque é fato da stack, não configuração —
+# o .env continua com o host público (REVERB_HOST) para o frontend.
+x-reverb-internal: &reverb-internal
+    REVERB_SERVER_HOST: reverb
+    REVERB_PORT: "8080"
+    REVERB_SCHEME: http
+
 services:
     nginx:
         image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-nginx:${IMAGE_TAG:-latest}
@@ -35,6 +44,16 @@ services:
         restart: always
         env_file:
             - .env
+        environment:
+            <<: *reverb-internal
+            # Octane não usa coroutines: concorrência = nº de workers. Cada
+            # worker mantém a app carregada (~80-120M em regime).
+            OCTANE_WORKERS: ${OCTANE_WORKERS:-4}
+            OCTANE_MAX_REQUESTS: ${OCTANE_MAX_REQUESTS:-1000}
+        # Sem `ports`: só o nginx alcança o Octane (TrustProxies confia em
+        # qualquer origem justamente por isso).
+        stop_signal: SIGTERM
+        stop_grace_period: 30s
         volumes:
             - app_storage:/var/www/html/storage
             - ./storage/logs:/var/www/html/storage/logs
@@ -46,7 +65,9 @@ services:
         networks:
             - pandypost-network-prod
         healthcheck:
-            test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+            # /up passa pelo boot do Laravel num worker de verdade, não só
+            # pela porta aberta.
+            test: ["CMD-SHELL", "curl -fsS -o /dev/null -m 4 http://127.0.0.1:8000/up || exit 1"]
             interval: 15s
             timeout: 5s
             retries: 5
@@ -54,10 +75,13 @@ services:
         deploy:
             resources:
                 limits:
+                    # Em regime cada worker fica em ~80-120M; o memory_limit
+                    # de 384M é só o teto de um worker descontrolado. Ao subir
+                    # OCTANE_WORKERS, suba este limite junto.
                     cpus: "1.00"
                     memory: 1536M
                 reservations:
-                    memory: 512M
+                    memory: 384M
 
     reverb:
         image: ${IMAGE_PREFIX:-ghcr.io/pandyia}/pandypost-php:${IMAGE_TAG:-latest}
@@ -65,9 +89,16 @@ services:
         restart: always
         env_file:
             - .env
+        environment:
+            <<: *reverb-internal
         command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
-        ports:
-            - "8080:8080"
+        # Sem `ports`: o cliente entra por wss://<api>/app/ via nginx (TLS,
+        # Cloudflare). A API HTTP do Reverb fica só na rede interna.
+        # Cada conexão WebSocket é um descritor de arquivo.
+        ulimits:
+            nofile:
+                soft: 65536
+                hard: 65536
         stop_signal: SIGTERM
         stop_grace_period: 30s
         volumes:
@@ -100,6 +131,8 @@ services:
         restart: always
         env_file:
             - .env
+        environment:
+            <<: *reverb-internal
         command: ["php", "artisan", "horizon"]
         stop_signal: SIGTERM
         stop_grace_period: 60s
@@ -123,8 +156,8 @@ services:
             resources:
                 limits:
                     # Teto dos workers (1792M, ver config/horizon.php) + a
-                    # memória compartilhada de opcache/JIT/interned strings
-                    # (~320M), que também é cobrada do cgroup do container.
+                    # memória compartilhada de opcache/interned strings
+                    # (~290M), que também é cobrada do cgroup do container.
                     cpus: "1.00"
                     memory: 2304M
                 reservations:
@@ -136,6 +169,8 @@ services:
         restart: always
         env_file:
             - .env
+        environment:
+            <<: *reverb-internal
         command: ["php", "artisan", "schedule:work"]
         stop_signal: SIGTERM
         stop_grace_period: 30s

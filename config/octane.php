@@ -139,10 +139,7 @@ return [
     */
 
     'tables' => [
-        'example:1000' => [
-            'name' => 'string:1000',
-            'votes' => 'int',
-        ],
+        //
     ],
 
     /*
@@ -196,6 +193,19 @@ return [
     */
 
     'garbage' => 50,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tick
+    |--------------------------------------------------------------------------
+    |
+    | Ligado, o Octane dispara um task por segundo para os Octane::tick(). O
+    | app não usa tick, e desligado ele dispensa task workers ociosos (ver
+    | docker/php/prod/supervisord.conf).
+    |
+    */
+
+    'tick' => false,
 
     /*
     |--------------------------------------------------------------------------
