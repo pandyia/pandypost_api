@@ -3,22 +3,19 @@
 namespace App\Services;
 
 use App\Enums\NotificationType;
-use App\Exceptions\TokenException;
 use App\Exceptions\LoginException;
-
+use App\Exceptions\TokenException;
 use App\Models\ResetPassword;
 use App\Models\User;
 use App\Models\VerificationEmailToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Services\NotificationService;
 
 class AuthService
 {
     public function __construct(
         protected NotificationService $notificationService
-    ) {
-    }
+    ) {}
 
     public function signup(array $data): array
     {
@@ -50,20 +47,21 @@ class AuthService
     {
         $user = User::findByEmail($data['email']);
 
-        if (!$user) {
+        if (! $user) {
             throw LoginException::userNotFound();
         }
 
-        if (!Hash::check($data['password'], $user->password)) {
+        if (! Hash::check($data['password'], $user->password)) {
             throw LoginException::invalidCredentials();
         }
 
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             throw LoginException::emailNotVerified();
         }
 
-        $expiration = $user->loginExpiration($data['remember_me'] ?? false);
-        return $user->accessWithWorkspace($expiration);
+        $user->update(['remember_me' => $data['remember_me'] ?? false]);
+
+        return $user->accessWithWorkspace($user->loginExpiration());
     }
 
     public function resendVerification(User $user): void
@@ -87,7 +85,7 @@ class AuthService
     {
         $verificationToken = VerificationEmailToken::where('token', $token)->first();
 
-        if (!$verificationToken) {
+        if (! $verificationToken) {
             throw TokenException::invalidToken();
         }
 
@@ -108,7 +106,7 @@ class AuthService
     {
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -125,7 +123,7 @@ class AuthService
     {
         $reset = ResetPassword::findByToken($data['token']);
 
-        if (!$reset || $reset->email !== $data['email']) {
+        if (! $reset || $reset->email !== $data['email']) {
             throw TokenException::invalidToken();
         }
 

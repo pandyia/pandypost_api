@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\NotificationType;
 use App\Models\Traits\BelongsToWorkspace;
 use App\Observers\UserObserver;
-use DB;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -271,16 +270,12 @@ class User extends Authenticatable implements Auditable
         };
     }
 
-    public function loginExpiration(bool $rememberMe)
+    public function loginExpiration()
     {
-        return DB::transaction(function () use ($rememberMe) {
-            $this->update(['remember_me' => $rememberMe]);
-
-            return match ($rememberMe) {
-                true => now()->addDays(intval(config('auth.token_expiration_days'))),
-                false => now()->addMinutes(intval(config('sanctum.expiration')))
-            };
-        });
+        return match ($this->remember_me) {
+            true => now()->addDays(intval(config('auth.token_expiration_days'))),
+            false => now()->addMinutes(intval(config('sanctum.expiration')))
+        };
     }
 
     public function generateAccessToken(?\DateTimeInterface $expiration = null): string
