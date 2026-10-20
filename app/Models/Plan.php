@@ -27,6 +27,10 @@ class Plan extends Model implements Auditable
         'stripe_plan_id',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     protected $casts = [
         'is_visible' => 'boolean',
         'is_active' => 'boolean',
@@ -76,10 +80,9 @@ class Plan extends Model implements Auditable
      */
     public function gatewayPriceIds(): array
     {
-        $priceIds = $this->prices()->withTrashed()->pluck('id');
-
-        $current = Price::withTrashed()->whereIn('id', $priceIds)->pluck('gateway_price_id');
-        $historical = PriceHistory::whereIn('price_id', $priceIds)->pluck('gateway_price_id');
+        $current = $this->prices()->withTrashed()->pluck('gateway_price_id');
+        $historical = PriceHistory::whereIn('price_id', $this->prices()->withTrashed()->select('id'))
+            ->pluck('gateway_price_id');
 
         return $current->merge($historical)->filter()->unique()->values()->all();
     }

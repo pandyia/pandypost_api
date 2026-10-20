@@ -22,6 +22,10 @@ class PriceHistory extends Model
         'reason',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     protected $casts = [
         'amount' => 'integer',
         'trial_period_days' => 'integer',

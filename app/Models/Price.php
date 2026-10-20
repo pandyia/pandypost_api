@@ -27,6 +27,10 @@ class Price extends Model implements Auditable
         'is_active',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     protected $casts = [
         'amount' => 'integer',
         'trial_period_days' => 'integer',
