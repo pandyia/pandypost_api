@@ -281,6 +281,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="agendamentos-POSTapi-scheduled-posts">
                                 <a href="#agendamentos-POSTapi-scheduled-posts">Agendar publicação</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">
+                                <a href="#agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">Reenviar post que falhou</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="agendamentos-DELETEapi-scheduled-posts--scheduledPost-">
                                 <a href="#agendamentos-DELETEapi-scheduled-posts--scheduledPost-">Cancelar agendamento</a>
                             </li>
@@ -506,7 +509,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Atualizado em 18/10/2026 (73da4fc)</li>
+        <li>Atualizado em 20/10/2026 (e0b1c0a)</li>
     </ul>
 </div>
 
@@ -3113,7 +3116,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar/upload-url"
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar/upload-url"
 );
 
 const headers = {
@@ -3135,7 +3138,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar/upload-url" \
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar/upload-url" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3262,10 +3265,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
-               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
                data-component="url">
     <br>
-<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -3308,7 +3311,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar"
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar"
 );
 
 const headers = {
@@ -3330,7 +3333,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar" \
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3456,10 +3459,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
                data-component="url">
     <br>
-<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -3502,7 +3505,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar"
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar"
 );
 
 const headers = {
@@ -3520,7 +3523,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:9000/api/workspaces/ab2896cb-4324-4030-976d-020a9a65925e/avatar" \
+    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -3632,10 +3635,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
-               value="ab2896cb-4324-4030-976d-020a9a65925e"
+               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
                data-component="url">
     <br>
-<p>Example: <code>ab2896cb-4324-4030-976d-020a9a65925e</code></p>
+<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -8573,7 +8576,57 @@ Os detalhes aparecem no console do navegador.</code></pre>
             </div>
                 </form>
 
-                    <h2 id="contas-sociais-GETapi-social-accounts--platform--auth">Iniciar conexão (URL de OAuth)</h2>
+    <h3>Resposta</h3>
+    <h4 class="fancy-heading-panel"><b>Campos da resposta</b></h4>
+    <div style=" padding-left: 28px;  clear: unset;">
+        <details>
+            <summary style="padding-bottom: 10px;">
+                <b style="line-height: 2;"><code>data</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+
+            </summary>
+                                                <div style=" margin-left: 14px; clear: unset;">
+        <details>
+            <summary style="padding-bottom: 10px;">
+                <b style="line-height: 2;"><code>scheduled_posts</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+
+            </summary>
+                                                <div style="margin-left: 28px; clear: unset;">
+                        <b style="line-height: 2;"><code>can_retry</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>true</code> quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar (<code>POST /scheduled-posts/{uuid}/retry</code>).</p>
+                    </div>
+                                                                <div style="margin-left: 28px; clear: unset;">
+                        <b style="line-height: 2;"><code>retry_until</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Até quando o arquivo fica guardado para reenvio (5 dias após a falha).</p>
+                    </div>
+                                                                <div style="margin-left: 28px; clear: unset;">
+                        <b style="line-height: 2;"><code>platform_post_url</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Link do post publicado. No Instagram vem do permalink da rede; pode ser <code>null</code> se não foi possível obtê-lo.</p>
+                    </div>
+                                    </details>
+        </div>
+                                        </details>
+        </div>
+                        <h2 id="contas-sociais-GETapi-social-accounts--platform--auth">Iniciar conexão (URL de OAuth)</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
@@ -8922,7 +8975,8 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <li><code>POST /scheduled-posts</code> com o <code>path</code> em <code>media_storage_path</code> e as contas escolhidas.
 É criado <strong>um post por conta</strong>. Sem <code>scheduled_at</code>, publica na hora.</li>
 </ol>
-<p><code>status</code>: <code>pending</code> → <code>processing</code> → <code>published</code> ou <code>failed</code>; <code>cancelled</code> quando cancelado.</p>
+<p><code>status</code>: <code>pending</code> → <code>processing</code> → <code>published</code> ou <code>failed</code>; <code>cancelled</code> quando cancelado.
+Post <code>failed</code> guarda o arquivo por 5 dias e pode ser reenviado em <code>POST /scheduled-posts/{uuid}/retry</code>.</p>
 
                                 <h2 id="agendamentos-GETapi-scheduled-posts">Listar agendamentos</h2>
 
@@ -9162,6 +9216,22 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
 <br>
 <p>Só aparece quando <code>status</code> = <code>failed</code>.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>can_retry</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>true</code> quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>retry_until</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Até quando o arquivo fica guardado para reenvio (5 dias após a falha). <code>null</code> se não dá para reenviar.</p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>payload</code></b>&nbsp;&nbsp;
@@ -9782,6 +9852,211 @@ Must be one of:
                data-component="body">
     <br>
 <p>Card do pipeline a vincular; ele vai para a etapa <code>scheduled</code>. Example: <code>3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f</code></p>
+        </div>
+        </form>
+
+                    <h2 id="agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">Reenviar post que falhou</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Só posts <code>failed</code> do workspace corrente cuja mídia ainda está guardada (<code>can_retry</code> na listagem).
+Sem <code>scheduled_at</code> o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam.</p>
+<p><strong>Permissão:</strong> <code>posts.create</code></p>
+
+<span id="example-requests-POSTapi-scheduled-posts--scheduledPost--retry">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/scheduled-posts/e1d2c3b4-a5f6-4789-8abc-def012345678/retry"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "scheduled_at": "2026-10-25T18:00:00-03:00"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/scheduled-posts/e1d2c3b4-a5f6-4789-8abc-def012345678/retry" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"scheduled_at\": \"2026-10-25T18:00:00-03:00\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-scheduled-posts--scheduledPost--retry">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Post reenviado para a fila.&quot;,
+    &quot;data&quot;: {
+        &quot;uuid&quot;: &quot;e1d2c3b4-...&quot;,
+        &quot;status&quot;: &quot;pending&quot;,
+        &quot;can_retry&quot;: false
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.create&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, post não falhou):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;retry_not_allowed&quot;,
+    &quot;message&quot;: &quot;S&oacute; &eacute; poss&iacute;vel reenviar posts que falharam.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, arquivo já removido):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;media_expired&quot;,
+    &quot;message&quot;: &quot;O arquivo deste post n&atilde;o est&aacute; mais dispon&iacute;vel. Adicione o post novamente.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-scheduled-posts--scheduledPost--retry" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-scheduled-posts--scheduledPost--retry"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-scheduled-posts--scheduledPost--retry"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-scheduled-posts--scheduledPost--retry" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-scheduled-posts--scheduledPost--retry">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-scheduled-posts--scheduledPost--retry" data-method="POST"
+      data-path="api/scheduled-posts/{scheduledPost}/retry"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-scheduled-posts--scheduledPost--retry', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-scheduled-posts--scheduledPost--retry"
+                    onclick="tryItOut('POSTapi-scheduled-posts--scheduledPost--retry');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-scheduled-posts--scheduledPost--retry"
+                    onclick="cancelTryOut('POSTapi-scheduled-posts--scheduledPost--retry');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-scheduled-posts--scheduledPost--retry"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/scheduled-posts/{scheduledPost}/retry</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-scheduled-posts--scheduledPost--retry"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-scheduled-posts--scheduledPost--retry"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-scheduled-posts--scheduledPost--retry"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>scheduledPost</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="scheduledPost"                data-endpoint="POSTapi-scheduled-posts--scheduledPost--retry"
+               value="e1d2c3b4-a5f6-4789-8abc-def012345678"
+               data-component="url">
+    <br>
+<p>UUID do post. Example: <code>e1d2c3b4-a5f6-4789-8abc-def012345678</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>scheduled_at</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="scheduled_at"                data-endpoint="POSTapi-scheduled-posts--scheduledPost--retry"
+               value="2026-10-25T18:00:00-03:00"
+               data-component="body">
+    <br>
+<p>Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora. Example: <code>2026-10-25T18:00:00-03:00</code></p>
         </div>
         </form>
 

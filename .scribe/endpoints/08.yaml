@@ -11,6 +11,7 @@ description: |-
      É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
   `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+  Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
 endpoints:
   -
     custom: []
@@ -32,6 +33,7 @@ endpoints:
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
         `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Listar agendamentos'
@@ -146,6 +148,28 @@ endpoints:
         exampleWasSpecified: false
         nullable: false
         deprecated: false
+      can_retry:
+        custom: []
+        name: can_retry
+        description: '`true` quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      retry_until:
+        custom: []
+        name: retry_until
+        description: 'Até quando o arquivo fica guardado para reenvio (5 dias após a falha). `null` se não dá para reenviar.'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
       payload:
         custom: []
         name: payload
@@ -184,6 +208,7 @@ endpoints:
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
         `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Gerar URL de upload'
@@ -307,6 +332,7 @@ endpoints:
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
         `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Agendar publicação'
@@ -538,6 +564,105 @@ endpoints:
   -
     custom: []
     httpMethods:
+      - POST
+    uri: 'api/scheduled-posts/{scheduledPost}/retry'
+    metadata:
+      custom: []
+      groupName: Agendamentos
+      groupDescription: |-
+
+        Publicação e agendamento de vídeos/imagens nas contas conectadas.
+
+        **Fluxo de publicação:**
+        1. `POST /scheduled-posts/upload-url` → recebe `url` e `path`.
+        2. Envie o arquivo com `PUT {url}` direto para o S3, com o header `Content-Type` igual ao `content_type` pedido
+           (e os `headers` devolvidos). Não passa pela API.
+        3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
+           É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
+
+        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Reenviar post que falhou'
+      description: |-
+        Só posts `failed` do workspace corrente cuja mídia ainda está guardada (`can_retry` na listagem).
+        Sem `scheduled_at` o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam.
+
+        **Permissão:** `posts.create`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      scheduledPost:
+        custom: []
+        name: scheduledPost
+        description: 'UUID do post.'
+        required: true
+        example: e1d2c3b4-a5f6-4789-8abc-def012345678
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      scheduledPost: e1d2c3b4-a5f6-4789-8abc-def012345678
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      scheduled_at:
+        custom: []
+        name: scheduled_at
+        description: 'Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora.'
+        required: false
+        example: '2026-10-25T18:00:00-03:00'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      scheduled_at: '2026-10-25T18:00:00-03:00'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Post reenviado para a fila.", "data": {"uuid": "e1d2c3b4-...", "status": "pending", "can_retry": false}}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "retry_not_allowed", "message": "Só é possível reenviar posts que falharam."}'
+        headers: []
+        description: 'post não falhou'
+      -
+        custom: []
+        status: 422
+        content: '{"error": "media_expired", "message": "O arquivo deste post não está mais disponível. Adicione o post novamente."}'
+        headers: []
+        description: 'arquivo já removido'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
       - DELETE
     uri: 'api/scheduled-posts/{scheduledPost}'
     metadata:
@@ -555,6 +680,7 @@ endpoints:
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
         `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Cancelar agendamento'

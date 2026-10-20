@@ -127,3 +127,72 @@ describe('link do post publicado no Instagram', function () {
     });
 
 });
+
+function publishedInstagramPost(array $overrides = []): ScheduledPost
+{
+    [$user, $account, $post] = instagramProcessingPost();
+    $post->update(array_merge([
+        'status' => 'published',
+        'platform_post_id' => '17913722205549643',
+        'platform_post_url' => null,
+    ], $overrides));
+
+    return $post->fresh();
+}
+
+describe('instagram:backfill-permalinks', function () {
+
+    it('grava o permalink dos posts publicados sem link', function () {
+        $post = publishedInstagramPost();
+        Http::fake([
+            '*/17913722205549643*' => Http::response(['permalink' => 'https://www.instagram.com/p/Des1N6NCInQ/']),
+        ]);
+
+        $this->artisan('instagram:backfill-permalinks')->assertSuccessful();
+
+        expect($post->fresh()->platform_post_url)->toBe('https://www.instagram.com/p/Des1N6NCInQ/')
+            ->and($post->fresh()->platform_post_id)->toBe('17913722205549643');
+    });
+
+    it('no --dry-run não consulta a Graph API nem grava', function () {
+        $post = publishedInstagramPost();
+        Http::fake();
+
+        $this->artisan('instagram:backfill-permalinks', ['--dry-run' => true])
+            ->expectsOutputToContain('1 post(s) seriam atualizados')
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+        expect($post->fresh()->platform_post_url)->toBeNull();
+    });
+
+    it('segue para os próximos posts quando um falha', function () {
+        $broken = publishedInstagramPost(['platform_post_id' => '111']);
+        $ok = publishedInstagramPost(['platform_post_id' => '222']);
+        Http::fake([
+            '*/111*' => fn () => throw new ConnectionException('timeout'),
+            '*/222*' => Http::response(['permalink' => 'https://www.instagram.com/p/OK222/']),
+        ]);
+
+        $this->artisan('instagram:backfill-permalinks')
+            ->expectsOutputToContain('1 post(s) atualizados, 1 com falha')
+            ->assertSuccessful();
+
+        expect($broken->fresh()->platform_post_url)->toBeNull()
+            ->and($ok->fresh()->platform_post_url)->toBe('https://www.instagram.com/p/OK222/');
+    });
+
+    it('ignora posts que já têm link, sem id da mídia ou não publicados', function () {
+        publishedInstagramPost(['platform_post_url' => 'https://www.instagram.com/p/JaTem/']);
+        publishedInstagramPost(['platform_post_id' => null]);
+        publishedInstagramPost(['status' => 'failed']);
+        Http::fake();
+
+        $this->artisan('instagram:backfill-permalinks')
+            ->expectsOutputToContain('Nenhum post do Instagram sem link')
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+    });
+
+});

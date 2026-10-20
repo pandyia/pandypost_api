@@ -496,7 +496,7 @@ endpoints:
         name: workspace_uuid
         description: ''
         required: true
-        example: ab2896cb-4324-4030-976d-020a9a65925e
+        example: 45171527-92f1-4e21-ab9b-ab94a85acce4
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -514,7 +514,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      workspace_uuid: ab2896cb-4324-4030-976d-020a9a65925e
+      workspace_uuid: 45171527-92f1-4e21-ab9b-ab94a85acce4
       workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
     queryParameters: []
     cleanQueryParameters: []
@@ -588,7 +588,7 @@ endpoints:
         name: workspace_uuid
         description: ''
         required: true
-        example: ab2896cb-4324-4030-976d-020a9a65925e
+        example: 45171527-92f1-4e21-ab9b-ab94a85acce4
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -606,7 +606,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      workspace_uuid: ab2896cb-4324-4030-976d-020a9a65925e
+      workspace_uuid: 45171527-92f1-4e21-ab9b-ab94a85acce4
       workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
     queryParameters: []
     cleanQueryParameters: []
@@ -680,7 +680,7 @@ endpoints:
         name: workspace_uuid
         description: ''
         required: true
-        example: ab2896cb-4324-4030-976d-020a9a65925e
+        example: 45171527-92f1-4e21-ab9b-ab94a85acce4
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -698,7 +698,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      workspace_uuid: ab2896cb-4324-4030-976d-020a9a65925e
+      workspace_uuid: 45171527-92f1-4e21-ab9b-ab94a85acce4
       workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
     queryParameters: []
     cleanQueryParameters: []

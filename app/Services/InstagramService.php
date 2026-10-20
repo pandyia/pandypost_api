@@ -164,10 +164,11 @@ class InstagramService implements SocialMediaServiceInterface
 
     /**
      * O id do media_publish é interno; o link público (com o código do post) só vem do campo permalink.
+     * Usado na publicação (aqui e no CheckInstagramContainerJob) e no instagram:backfill-permalinks.
      *
      * @throws ScheduledPostException
      */
-    private function fetchPermalink(string $mediaId, string $accessToken): string
+    public function fetchPermalink(string $mediaId, string $accessToken): string
     {
         try {
             $response = Http::get($this->buildApiUrl($mediaId), [

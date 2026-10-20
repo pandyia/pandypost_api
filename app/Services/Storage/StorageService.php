@@ -188,7 +188,9 @@ class StorageService
 
         $toDelete = [];
         foreach ($paths as $path) {
-            $isUsedByOtherPost = ScheduledPost::where('media_path', $path)
+            $isUsedByOtherPost = ScheduledPost::where(fn ($q) => $q
+                ->where('media_path', $path)
+                ->orWhere('payload->thumbnail_path', $path))
                 ->where(fn ($q) => $q
                     ->whereIn('status', ['pending', 'processing'])
                     ->orWhere(fn ($failed) => $failed->where('status', 'failed')->whereNull('media_purged_at')))

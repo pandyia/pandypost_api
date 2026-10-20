@@ -5,11 +5,11 @@ namespace App\Jobs;
 use App\Exceptions\ScheduledPostException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Services\InstagramService;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
@@ -114,7 +114,7 @@ class CheckInstagramContainerJob implements ShouldQueue
         $permalink = null;
         if ($platformPostId) {
             try {
-                $permalink = $this->fetchPermalink($platformPostId, $accessToken);
+                $permalink = app(InstagramService::class)->fetchPermalink($platformPostId, $accessToken);
             } catch (ScheduledPostException $e) {
                 Log::warning("Post {$this->post->id}: {$e->getMessage()}");
             }
@@ -130,25 +130,6 @@ class CheckInstagramContainerJob implements ShouldQueue
         // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
 
         Log::info("Post {$this->post->id} publicado com sucesso no Instagram!");
-    }
-
-    /**
-     * O id do media_publish é interno; o link público (com o código do post) só vem do campo permalink.
-     *
-     * @throws ScheduledPostException
-     */
-    private function fetchPermalink(string $mediaId, string $accessToken): string
-    {
-        try {
-            $response = Http::get(
-                self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$mediaId,
-                ['fields' => 'permalink', 'access_token' => $accessToken]
-            )->json();
-        } catch (ConnectionException) {
-            throw ScheduledPostException::permalinkUnavailable();
-        }
-
-        return $response['permalink'] ?? throw ScheduledPostException::permalinkUnavailable();
     }
 
     private function markAsFailed(string $error): void

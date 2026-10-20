@@ -157,6 +157,10 @@ class SocialAccountController extends BaseController
      *   "links": {"first": "...", "last": "...", "prev": null, "next": null},
      *   "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
      * }
+     *
+     * @responseField data[].scheduled_posts[].can_retry boolean `true` quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar (`POST /scheduled-posts/{uuid}/retry`).
+     * @responseField data[].scheduled_posts[].retry_until string|null Até quando o arquivo fica guardado para reenvio (5 dias após a falha).
+     * @responseField data[].scheduled_posts[].platform_post_url string|null Link do post publicado. No Instagram vem do permalink da rede; pode ser `null` se não foi possível obtê-lo.
      */
     public function schedules(Request $request): Response
     {

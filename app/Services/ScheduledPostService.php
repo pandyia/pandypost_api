@@ -95,22 +95,47 @@ class ScheduledPostService extends BaseService
         }
 
         // Posts antigos não têm o controle de limpeza, então confere no storage também.
-        if (! $post->canRetry() || ! $this->storageService->exists($post->media_path)) {
+        if (! $post->canRetry() || ! $this->mediaStillExists($post)) {
             throw ScheduledPostException::mediaExpired();
         }
 
-        $post->update([
-            'status' => ScheduledPostStatus::PENDING->value,
-            'error_message' => null,
-            'failed_at' => null,
-            'scheduled_at' => $scheduledAt,
-            'container_id' => null,
-            'container_created_at' => null,
-        ]);
+        DB::transaction(function () use (&$post, $scheduledAt) {
+            // Trava a linha e confere o status de novo: dois cliques simultâneos não despacham dois jobs.
+            $locked = ScheduledPost::whereKey($post->id)->lockForUpdate()->first();
+
+            if ($locked?->status !== ScheduledPostStatus::FAILED->value) {
+                throw ScheduledPostException::cannotRetry();
+            }
+
+            $locked->update([
+                'status' => ScheduledPostStatus::PENDING->value,
+                'error_message' => null,
+                'failed_at' => null,
+                'scheduled_at' => $scheduledAt,
+                'container_id' => null,
+                'container_created_at' => null,
+            ]);
+
+            $post = $locked;
+        });
 
         $this->dispatchPlatformJob($post);
 
         return $post->load($this->with);
+    }
+
+    /** Vídeo e, quando houver, a thumbnail ainda precisam estar no storage. */
+    private function mediaStillExists(ScheduledPost $post): bool
+    {
+        $paths = array_filter([$post->media_path, $post->payload['thumbnail_path'] ?? null]);
+
+        foreach ($paths as $path) {
+            if (! $this->storageService->exists($path)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

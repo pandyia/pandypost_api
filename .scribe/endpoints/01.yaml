@@ -327,7 +327,40 @@ endpoints:
           }
         headers: []
         description: ''
-    responseFields: []
+    responseFields:
+      'data[].scheduled_posts[].can_retry':
+        custom: []
+        name: 'data[].scheduled_posts[].can_retry'
+        description: '`true` quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar (`POST /scheduled-posts/{uuid}/retry`).'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'data[].scheduled_posts[].retry_until':
+        custom: []
+        name: 'data[].scheduled_posts[].retry_until'
+        description: 'Até quando o arquivo fica guardado para reenvio (5 dias após a falha).'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'data[].scheduled_posts[].platform_post_url':
+        custom: []
+        name: 'data[].scheduled_posts[].platform_post_url'
+        description: 'Link do post publicado. No Instagram vem do permalink da rede; pode ser `null` se não foi possível obtê-lo.'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
     auth:
       - headers
       - Authorization
