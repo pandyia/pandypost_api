@@ -46,6 +46,7 @@ help:
 	@echo "  restart-octane | restart-horizon | restart-reverb   Reinicia só um serviço"
 	@echo "  test-s3          Testa se o bucket S3 está funcionando"
 	@echo "  ngrok            Expõe a porta 9000 com ngrok"
+	@echo "  ngrok-minio      Expõe o MinIO (9100) com ngrok p/ testar Instagram em local"
 	@echo "  prod-up | prod-down | prod-pull | prod-logs   Produção (cuidado)"
 
 composer:
@@ -158,6 +159,11 @@ recreate:
 
 ngrok:
 	ngrok http 9000
+
+# Expõe o MinIO (9100) para a Meta baixar vídeos no teste do Instagram.
+# Depois: AWS_TEMPORARY_URL=https://<id>.ngrok-free.app/pandypost-dev no .env e make reload-env
+ngrok-minio:
+	ngrok http 9100 --host-header=minio.localtest.me:9100
 
 test:
 	$(exec) php artisan test
