@@ -41,4 +41,9 @@ class ScheduledPostException extends BaseException
     {
         return static::make(ScheduledPostError::MEDIA_EXPIRED);
     }
+
+    public static function permalinkUnavailable(): self
+    {
+        return static::make(ScheduledPostError::PERMALINK_UNAVAILABLE);
+    }
 }

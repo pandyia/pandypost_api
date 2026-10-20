@@ -12,6 +12,7 @@ enum ScheduledPostError: string implements ErrorEnumInterface
     case CANCEL_NOT_ALLOWED = 'cancel_not_allowed';
     case RETRY_NOT_ALLOWED = 'retry_not_allowed';
     case MEDIA_EXPIRED = 'media_expired';
+    case PERMALINK_UNAVAILABLE = 'permalink_unavailable';
 
     public function message(?string $platform = null): string
     {
@@ -22,6 +23,7 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::CANCEL_NOT_ALLOWED => 'Este post não pode ser cancelado pois já foi publicado ou está em processamento.',
             self::RETRY_NOT_ALLOWED => 'Só é possível reenviar posts que falharam.',
             self::MEDIA_EXPIRED => 'O arquivo deste post não está mais disponível. Adicione o post novamente.',
+            self::PERMALINK_UNAVAILABLE => 'Não foi possível obter o link do post publicado no Instagram.',
         };
     }
 
@@ -34,6 +36,7 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::CANCEL_NOT_ALLOWED => 409,
             self::RETRY_NOT_ALLOWED => 409,
             self::MEDIA_EXPIRED => 422,
+            self::PERMALINK_UNAVAILABLE => 502,
         };
     }
 }

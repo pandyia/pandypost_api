@@ -2,22 +2,25 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\ScheduledPostException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class CheckInstagramContainerJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     private const GRAPH_API_VERSION = 'v25.0';
+
     private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
 
     public int $tries = 15;
@@ -42,7 +45,7 @@ class CheckInstagramContainerJob implements ShouldQueue
         $status = $this->getContainerStatus($accessToken);
         $attempt = $this->attempts();
 
-        Log::info("Container {$this->containerId} - Status: {$status} (tentativa {$attempt}/{$this->tries}) [Publish: " . ($this->shouldPublish ? 'Sim' : 'Não') . "]");
+        Log::info("Container {$this->containerId} - Status: {$status} (tentativa {$attempt}/{$this->tries}) [Publish: ".($this->shouldPublish ? 'Sim' : 'Não').']');
 
         match ($status) {
             'FINISHED' => $this->handleFinishedContainer($accessToken),
@@ -56,7 +59,7 @@ class CheckInstagramContainerJob implements ShouldQueue
         $backoffValues = $this->backoff();
         $attempt = min($this->attempts() - 1, count($backoffValues) - 1);
         $delay = $backoffValues[$attempt] ?? 30;
-        
+
         Log::info("Container ainda processando. Próxima tentativa em {$delay}s");
         $this->release($delay);
     }
@@ -64,7 +67,7 @@ class CheckInstagramContainerJob implements ShouldQueue
     private function getContainerStatus(string $accessToken): ?string
     {
         $response = Http::get(
-            self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $this->containerId,
+            self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$this->containerId,
             [
                 'fields' => 'status_code',
                 'access_token' => $accessToken,
@@ -76,8 +79,9 @@ class CheckInstagramContainerJob implements ShouldQueue
 
     private function handleFinishedContainer(string $accessToken): void
     {
-        if (!$this->shouldPublish) {
+        if (! $this->shouldPublish) {
             Log::info("Container {$this->containerId} pronto para uso futuro! (Warmup completo)");
+
             return;
         }
 
@@ -87,7 +91,7 @@ class CheckInstagramContainerJob implements ShouldQueue
     private function publishContainer(string $accessToken): void
     {
         $response = Http::post(
-            self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $this->account->platform_id . '/media_publish',
+            self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$this->account->platform_id.'/media_publish',
             [
                 'creation_id' => $this->containerId,
                 'access_token' => $accessToken,
@@ -96,24 +100,55 @@ class CheckInstagramContainerJob implements ShouldQueue
 
         if (isset($response['error'])) {
             Log::error('Falha ao publicar no Instagram', ['response' => $response]);
-            $this->markAsFailed('Erro na publicação: ' . json_encode($response));
+            $this->markAsFailed('Erro na publicação: '.json_encode($response));
+
             return;
         }
 
-        $this->markAsPublished($response['id'] ?? null);
+        $this->markAsPublished($response['id'] ?? null, $accessToken);
     }
 
-    private function markAsPublished(?string $platformPostId): void
+    private function markAsPublished(?string $platformPostId, string $accessToken): void
     {
+        // A publicação já aconteceu: sem o permalink o post fica publicado, só sem link.
+        $permalink = null;
+        if ($platformPostId) {
+            try {
+                $permalink = $this->fetchPermalink($platformPostId, $accessToken);
+            } catch (ScheduledPostException $e) {
+                Log::warning("Post {$this->post->id}: {$e->getMessage()}");
+            }
+        }
+
         $this->post->update([
             'status' => 'published',
             'platform_post_id' => $platformPostId,
+            'platform_post_url' => $permalink,
             'published_at' => now(),
         ]);
 
         // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
 
         Log::info("Post {$this->post->id} publicado com sucesso no Instagram!");
+    }
+
+    /**
+     * O id do media_publish é interno; o link público (com o código do post) só vem do campo permalink.
+     *
+     * @throws ScheduledPostException
+     */
+    private function fetchPermalink(string $mediaId, string $accessToken): string
+    {
+        try {
+            $response = Http::get(
+                self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$mediaId,
+                ['fields' => 'permalink', 'access_token' => $accessToken]
+            )->json();
+        } catch (ConnectionException) {
+            throw ScheduledPostException::permalinkUnavailable();
+        }
+
+        return $response['permalink'] ?? throw ScheduledPostException::permalinkUnavailable();
     }
 
     private function markAsFailed(string $error): void
@@ -133,9 +168,8 @@ class CheckInstagramContainerJob implements ShouldQueue
             'container_id' => null,
             'container_created_at' => null,
         ]);
-        
+
         $this->markAsFailed('Erro no processamento do container pelo Instagram');
         $this->fail(new Exception('Container processing failed'));
     }
 }
-

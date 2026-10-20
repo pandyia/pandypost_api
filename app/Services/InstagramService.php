@@ -3,19 +3,20 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Exceptions\ScheduledPostException;
 use App\Jobs\CheckInstagramContainerJob;
-use App\Jobs\PublishPostJob;
-use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
+use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
+use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Exception;
 
 class InstagramService implements SocialMediaServiceInterface
 {
     private const GRAPH_API_VERSION = 'v25.0';
+
     private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
 
     public function __construct(
@@ -26,7 +27,7 @@ class InstagramService implements SocialMediaServiceInterface
     {
         Log::info("Iniciando upload Instagram. Post ID: {$post->id}");
         $post->update(['status' => 'processing']);
-        
+
         $this->processContainer($account, $post, true);
     }
 
@@ -53,13 +54,13 @@ class InstagramService implements SocialMediaServiceInterface
             }
 
             $containerId = $this->createMediaContainer($account, $post, $accessToken);
-            
+
             $post->update([
                 'container_id' => $containerId,
                 'container_created_at' => now(),
             ]);
 
-            Log::info("Container criado: {$containerId}. Disparando job de verificação (publish: " . ($shouldPublish ? 'Sim' : 'Não') . ")...");
+            Log::info("Container criado: {$containerId}. Disparando job de verificação (publish: ".($shouldPublish ? 'Sim' : 'Não').')...');
             CheckInstagramContainerJob::dispatch($post, $account, $containerId, $shouldPublish);
 
         } catch (Exception $e) {
@@ -75,29 +76,32 @@ class InstagramService implements SocialMediaServiceInterface
      */
     private function handleExistingContainer(ScheduledPost $post, SocialAccount $account, string $accessToken, bool $shouldPublish): bool
     {
-        if (!$post->hasValidContainer()) {
+        if (! $post->hasValidContainer()) {
             return false;
         }
 
         Log::info("Verificando container existente: {$post->container_id}");
         $status = $this->getContainerStatus($post->container_id, $accessToken);
-        
+
         if ($status === 'FINISHED') {
-            Log::info("Container já está pronto.");
+            Log::info('Container já está pronto.');
             if ($shouldPublish) {
                 $this->publishContainer($post, $account, $accessToken);
             }
+
             return true;
         }
-        
+
         if ($status === 'ERROR' || $status === null) {
             Log::warning("Container inválido (status: {$status}). Criando novo...");
             $post->update(['container_id' => null, 'container_created_at' => null]);
+
             return false; // Precisa criar novo
         }
 
-        Log::info("Container em andamento. Disparando job de verificação recorrente.");
+        Log::info('Container em andamento. Disparando job de verificação recorrente.');
         CheckInstagramContainerJob::dispatch($post, $account, $post->container_id, $shouldPublish);
+
         return true;
     }
 
@@ -112,6 +116,7 @@ class InstagramService implements SocialMediaServiceInterface
             return $response['status_code'] ?? null;
         } catch (Exception $e) {
             Log::error("Erro ao verificar status do container: {$e->getMessage()}");
+
             return null;
         }
     }
@@ -128,14 +133,26 @@ class InstagramService implements SocialMediaServiceInterface
             Log::error("Falha ao publicar no Instagram. Erro: {$errorMessage}");
             $post->update([
                 'status' => 'failed',
-                'error_message' => 'Erro na publicação: ' . $errorMessage,
+                'error_message' => 'Erro na publicação: '.$errorMessage,
             ]);
+
             return;
+        }
+
+        // A publicação já aconteceu: sem o permalink o post fica publicado, só sem link.
+        $permalink = null;
+        if (isset($response['id'])) {
+            try {
+                $permalink = $this->fetchPermalink($response['id'], $accessToken);
+            } catch (ScheduledPostException $e) {
+                Log::warning("Post {$post->id}: {$e->getMessage()}");
+            }
         }
 
         $post->update([
             'status' => 'published',
             'platform_post_id' => $response['id'] ?? null,
+            'platform_post_url' => $permalink,
             'published_at' => now(),
         ]);
 
@@ -143,6 +160,25 @@ class InstagramService implements SocialMediaServiceInterface
 
         Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo do S3...");
         $this->cleanupFiles($post);
+    }
+
+    /**
+     * O id do media_publish é interno; o link público (com o código do post) só vem do campo permalink.
+     *
+     * @throws ScheduledPostException
+     */
+    private function fetchPermalink(string $mediaId, string $accessToken): string
+    {
+        try {
+            $response = Http::get($this->buildApiUrl($mediaId), [
+                'fields' => 'permalink',
+                'access_token' => $accessToken,
+            ])->json();
+        } catch (ConnectionException) {
+            throw ScheduledPostException::permalinkUnavailable();
+        }
+
+        return $response['permalink'] ?? throw ScheduledPostException::permalinkUnavailable();
     }
 
     private function createMediaContainer(SocialAccount $account, ScheduledPost $post, string $accessToken): string
@@ -164,7 +200,7 @@ class InstagramService implements SocialMediaServiceInterface
 
         $response = Http::post($this->buildApiUrl("{$account->platform_id}/media"), $payload)->json();
 
-        if (!isset($response['id'])) {
+        if (! isset($response['id'])) {
             $error = json_encode($response);
             Log::error("Falha ao criar container Instagram. Retorno: {$error}");
             throw new Exception("Erro ao criar container: {$error}");
@@ -175,7 +211,7 @@ class InstagramService implements SocialMediaServiceInterface
 
     private function buildApiUrl(string $endpoint): string
     {
-        return self::GRAPH_API_BASE_URL . '/' . self::GRAPH_API_VERSION . '/' . $endpoint;
+        return self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$endpoint;
     }
 
     private function isVideo(string $path): bool
@@ -190,9 +226,9 @@ class InstagramService implements SocialMediaServiceInterface
     private function cleanupFiles(ScheduledPost $post): void
     {
         $paths = [$post->media_path];
-        
+
         $payload = $post->payload ?? [];
-        if (!empty($payload['thumbnail_path'])) {
+        if (! empty($payload['thumbnail_path'])) {
             $paths[] = $payload['thumbnail_path'];
         }
 

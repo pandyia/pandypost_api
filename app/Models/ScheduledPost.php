@@ -46,6 +46,7 @@ class ScheduledPost extends Model implements Auditable
         'container_id',
         'container_created_at',
         'platform_post_id',
+        'platform_post_url',
         'failed_at',
         'media_purged_at',
     ];
@@ -157,7 +158,8 @@ class ScheduledPost extends Model implements Auditable
             // Platform::FACEBOOK => $this->platform_post_id ? "https://www.facebook.com/{$this->platform_post_id}" : null,
             // Platform::TWITTER => $this->platform_post_id ? "https://twitter.com/i/web/status/{$this->platform_post_id}" : null,
             // Platform::LINKEDIN => $this->platform_post_id ? "https://www.linkedin.com/feed/update/{$this->platform_post_id}" : null,
-            Platform::INSTAGRAM => $this->platform_post_id ? "https://www.instagram.com/p/{$this->platform_post_id}" : null,
+            // O id que a Graph API devolve não é o código da URL: o link vem do permalink gravado na publicação.
+            Platform::INSTAGRAM => $this->platform_post_url,
             Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
             _ => null,
         };
