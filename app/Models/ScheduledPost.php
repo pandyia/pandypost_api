@@ -5,18 +5,18 @@ namespace App\Models;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class ScheduledPost extends Model implements Auditable
 {
-    use AuditableTrait, BelongsToWorkspace;
+    use AuditableTrait, BelongsToWorkspace, HasUuid;
 
     // Sem coluna workspace_id: o escopo de tenant vem da conta social do post.
     protected string $workspaceRelation = 'socialAccount';
@@ -63,14 +63,8 @@ class ScheduledPost extends Model implements Auditable
         'payload' => 'array',
     ];
 
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
     protected static function booted(): void
     {
-        static::creating(fn ($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
 
         // A falha pode vir de vários caminhos (jobs, serviços); o prazo de retenção da mídia conta daqui.
         static::updating(function (self $post) {

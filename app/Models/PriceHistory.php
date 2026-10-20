@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Enums\BillingFrequency;
 use App\Enums\Currency;
+use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class PriceHistory extends Model
 {
+    use HasUuid;
+
     protected $fillable = [
         'uuid',
         'price_id',
@@ -33,16 +35,6 @@ class PriceHistory extends Model
         'frequency' => BillingFrequency::class,
         'archived_at' => 'datetime',
     ];
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn (PriceHistory $history) => $history->uuid = $history->uuid ?: (string) Str::uuid());
-    }
 
     // Relationships
 

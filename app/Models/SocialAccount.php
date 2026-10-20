@@ -5,18 +5,18 @@ namespace App\Models;
 use App\Enums\Platform;
 use App\Exceptions\SocialAccountException;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class SocialAccount extends Model implements Auditable
 {
-    use AuditableTrait, BelongsToWorkspace;
+    use AuditableTrait, BelongsToWorkspace, HasUuid;
 
     protected array $auditExclude = [
         'access_token',
@@ -58,16 +58,6 @@ class SocialAccount extends Model implements Auditable
     protected $casts = [
         'expires_at' => 'datetime',
     ];
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn ($account) => $account->uuid = $account->uuid ?: (string) Str::uuid());
-    }
 
     private const TOKEN_EXPIRY_MARGIN_MINUTES = 5;
 

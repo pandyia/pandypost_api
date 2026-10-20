@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Plan extends Model implements Auditable
 {
-    use AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasUuid, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -39,16 +39,6 @@ class Plan extends Model implements Auditable
     public function generateTags(): array
     {
         return ['plan'];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn (Plan $plan) => $plan->uuid = $plan->uuid ?: (string) Str::uuid());
     }
 
     // Relationships

@@ -4,17 +4,17 @@ namespace App\Models;
 
 use App\Enums\BillingFrequency;
 use App\Enums\Currency;
+use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class Price extends Model implements Auditable
 {
-    use AuditableTrait, SoftDeletes;
+    use AuditableTrait, HasUuid, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -42,16 +42,6 @@ class Price extends Model implements Auditable
     public function generateTags(): array
     {
         return ['price'];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn (Price $price) => $price->uuid = $price->uuid ?: (string) Str::uuid());
     }
 
     // Relationships

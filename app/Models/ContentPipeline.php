@@ -4,16 +4,16 @@ namespace App\Models;
 
 use App\Enums\PipelineStage;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class ContentPipeline extends Model implements Auditable
 {
-    use AuditableTrait, BelongsToWorkspace, SoftDeletes;
+    use AuditableTrait, BelongsToWorkspace, HasUuid, SoftDeletes;
 
     public function generateTags(): array
     {
@@ -38,16 +38,6 @@ class ContentPipeline extends Model implements Auditable
         'stage' => PipelineStage::class,
         'due_date' => 'date',
     ];
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn($card) => $card->uuid = $card->uuid ?: (string) Str::uuid());
-    }
 
     // Relationships
 

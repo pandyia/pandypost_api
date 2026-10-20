@@ -3,19 +3,19 @@
 namespace App\Models;
 
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use App\Observers\InviteObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
 
 #[ObservedBy(InviteObserver::class)]
 class Invite extends Model implements Auditable
 {
-    use AuditableTrait, BelongsToWorkspace, HasFactory;
+    use AuditableTrait, BelongsToWorkspace, HasFactory, HasUuid;
 
     public function generateTags(): array
     {
@@ -45,22 +45,12 @@ class Invite extends Model implements Auditable
 
     const STATUS_EXPIRED = 'EXPIRED';
 
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
     // funciona AUTOMÁTICO apenas quando usado model como parametro no controller (Invite $invite, usado para accept e decline)
     public function resolveRouteBinding($value, $field = null)
     {
         return $this->withoutGlobalScope('workspace')
             ->where($field ?? $this->getRouteKeyName(), $value)
             ->firstOrFail();
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn ($invite) => $invite->uuid = $invite->uuid ?: (string) Str::uuid());
     }
 
     // Relationships

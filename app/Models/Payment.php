@@ -5,9 +5,9 @@ namespace App\Models;
 use App\Enums\Currency;
 use App\Enums\PaymentStatus;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 /**
  * Pagamento (1 linha por invoice/checkout), populado pelo webhook.
@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  */
 class Payment extends Model
 {
-    use BelongsToWorkspace;
+    use BelongsToWorkspace, HasUuid;
 
     protected $fillable = [
         'uuid',
@@ -52,16 +52,6 @@ class Payment extends Model
     ];
 
     protected $hidden = ['id'];
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn (Payment $payment) => $payment->uuid = $payment->uuid ?: (string) Str::uuid());
-    }
 
     // Relationships
 

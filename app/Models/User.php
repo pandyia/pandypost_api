@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NotificationType;
 use App\Models\Traits\BelongsToWorkspace;
+use App\Models\Traits\HasUuid;
 use App\Observers\UserObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -21,7 +21,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements Auditable
 {
-    use AuditableTrait, BelongsToWorkspace, HasApiTokens, HasFactory, Notifiable;
+    use AuditableTrait, BelongsToWorkspace, HasApiTokens, HasFactory, HasUuid, Notifiable;
 
     protected array $auditExclude = [
         'password',
@@ -95,16 +95,6 @@ class User extends Authenticatable implements Auditable
         'remember_token',
         'avatar_path',
     ];
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(fn ($user) => $user->uuid = $user->uuid ?: (string) Str::uuid());
-    }
 
     protected function casts(): array
     {
