@@ -9,6 +9,7 @@ class SocialAccountException extends BaseException
     public static function authFailed(string $platform): self
     {
         $error = SocialAccountError::AUTH_FAILED;
+
         return static::make($error, $error->message($platform));
     }
 
@@ -25,12 +26,14 @@ class SocialAccountException extends BaseException
     public static function platformNotSupported(string $platform): self
     {
         $error = SocialAccountError::PLATFORM_NOT_SUPPORTED;
+
         return static::make($error, $error->message($platform));
     }
 
     public static function accountAlreadyLinked(string $platform): self
     {
         $error = SocialAccountError::ACCOUNT_ALREADY_LINKED;
+
         return static::make($error, $error->message($platform));
     }
 
@@ -47,5 +50,18 @@ class SocialAccountException extends BaseException
     public static function oauthInitializationFailed(): self
     {
         return static::make(SocialAccountError::OAUTH_INITIALIZATION_FAILED);
+    }
+
+    public static function refreshTokenMissing(): self
+    {
+        return static::make(SocialAccountError::REFRESH_TOKEN_MISSING);
+    }
+
+    public static function tokenRefreshFailed(string $provider, string $responseBody): self
+    {
+        return static::make(
+            SocialAccountError::TOKEN_REFRESH_FAILED,
+            "Não foi possível renovar o token do {$provider}: {$responseBody}"
+        );
     }
 }

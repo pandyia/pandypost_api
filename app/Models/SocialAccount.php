@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Platform;
+use App\Exceptions\SocialAccountException;
 use App\Models\Traits\BelongsToWorkspace;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -141,7 +142,7 @@ class SocialAccount extends Model implements Auditable
     private function refreshYouTubeToken(): string
     {
         if (! $this->refresh_token) {
-            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
+            throw SocialAccountException::refreshTokenMissing();
         }
 
         $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
@@ -162,7 +163,7 @@ class SocialAccount extends Model implements Auditable
             return $data['access_token'];
         }
 
-        throw new \Exception('Não foi possível renovar o token do Google: '.$response->body());
+        throw SocialAccountException::tokenRefreshFailed('Google', $response->body());
     }
 
     /**
@@ -171,7 +172,7 @@ class SocialAccount extends Model implements Auditable
     private function refreshTikTokToken(): string
     {
         if (! $this->refresh_token) {
-            throw new \Exception('Refresh token ausente. O usuário precisa reconectar a conta.');
+            throw SocialAccountException::refreshTokenMissing();
         }
 
         $response = Http::asForm()->post('https://open.tiktokapis.com/v2/oauth/token/', [
@@ -193,7 +194,7 @@ class SocialAccount extends Model implements Auditable
             return $data['access_token'];
         }
 
-        throw new \Exception('Não foi possível renovar o token do TikTok: '.$response->body());
+        throw SocialAccountException::tokenRefreshFailed('TikTok', $response->body());
     }
 
     private function refreshInstagramToken(): string
@@ -214,7 +215,7 @@ class SocialAccount extends Model implements Auditable
             return $data['access_token'];
         }
 
-        throw new \Exception('Não foi possível renovar o token do Instagram: '.$response->body());
+        throw SocialAccountException::tokenRefreshFailed('Instagram', $response->body());
     }
 
     /**

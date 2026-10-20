@@ -14,6 +14,8 @@ enum SocialAccountError: string implements ErrorEnumInterface
     case INVALID_OAUTH_STATE = 'invalid_oauth_state';
     case OAUTH_TOKEN_EXCHANGE_FAILED = 'oauth_token_exchange_failed';
     case OAUTH_INITIALIZATION_FAILED = 'oauth_initialization_failed';
+    case REFRESH_TOKEN_MISSING = 'refresh_token_missing';
+    case TOKEN_REFRESH_FAILED = 'token_refresh_failed';
 
     public function message(?string $platform = null): string
     {
@@ -26,6 +28,8 @@ enum SocialAccountError: string implements ErrorEnumInterface
             self::INVALID_OAUTH_STATE => 'State OAuth inválido ou expirado.',
             self::OAUTH_TOKEN_EXCHANGE_FAILED => 'Falha ao trocar o código pelo token de acesso.',
             self::OAUTH_INITIALIZATION_FAILED => 'Falha ao iniciar o fluxo OAuth.',
+            self::REFRESH_TOKEN_MISSING => 'Refresh token ausente. O usuário precisa reconectar a conta.',
+            self::TOKEN_REFRESH_FAILED => 'Não foi possível renovar o token de acesso.',
         };
     }
 
@@ -40,6 +44,8 @@ enum SocialAccountError: string implements ErrorEnumInterface
             self::INVALID_OAUTH_STATE => 400,
             self::OAUTH_TOKEN_EXCHANGE_FAILED => 400,
             self::OAUTH_INITIALIZATION_FAILED => 500,
+            self::REFRESH_TOKEN_MISSING => 401,
+            self::TOKEN_REFRESH_FAILED => 502,
         };
     }
 }
