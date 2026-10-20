@@ -9,6 +9,7 @@ use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -24,6 +25,9 @@ class ScheduledPost extends Model implements Auditable
     {
         return ['post'];
     }
+
+    /** Dias que a mídia de um post com falha fica guardada para reenvio. */
+    public const MEDIA_RETENTION_DAYS = 5;
 
     protected $fillable = [
         'uuid',
@@ -42,6 +46,8 @@ class ScheduledPost extends Model implements Auditable
         'container_id',
         'container_created_at',
         'platform_post_id',
+        'failed_at',
+        'media_purged_at',
     ];
 
     protected $hidden = ['id'];
@@ -51,6 +57,8 @@ class ScheduledPost extends Model implements Auditable
         'scheduled_at' => 'datetime',
         'published_at' => 'datetime',
         'container_created_at' => 'datetime',
+        'failed_at' => 'datetime',
+        'media_purged_at' => 'datetime',
         'payload' => 'array',
     ];
 
@@ -63,10 +71,22 @@ class ScheduledPost extends Model implements Auditable
     {
         static::creating(fn ($post) => $post->uuid = $post->uuid ?: (string) Str::uuid());
 
+        // A falha pode vir de vários caminhos (jobs, serviços); o prazo de retenção da mídia conta daqui.
+        static::updating(function (self $post) {
+            if ($post->isDirty('status') && $post->status === ScheduledPostStatus::FAILED->value) {
+                $post->failed_at = now();
+            }
+        });
+
         // Ponto central de sucesso: todas as redes marcam o post como publicado via update().
         static::updated(function (self $post) {
             if ($post->wasChanged('status') && $post->status === ScheduledPostStatus::PUBLISHED->value) {
                 app(NotificationService::class)->notifyPostPublished($post);
+            }
+
+            // Ponto central de falha: avisa em qualquer caminho (PublishPostJob, Instagram, TikTok).
+            if ($post->wasChanged('status') && $post->status === ScheduledPostStatus::FAILED->value) {
+                app(NotificationService::class)->notifyPostFailed($post);
             }
         });
     }
@@ -107,6 +127,18 @@ class ScheduledPost extends Model implements Auditable
 
         // Containers do Instagram expiram após 24h
         return $this->container_created_at->diffInHours(now()) < 24;
+    }
+
+    /** Falhou e a mídia ainda está guardada. */
+    public function canRetry(): bool
+    {
+        return $this->status === ScheduledPostStatus::FAILED->value && $this->media_purged_at === null;
+    }
+
+    /** Até quando a mídia fica guardada para reenvio. */
+    public function retryDeadline(): ?Carbon
+    {
+        return $this->canRetry() ? $this->failed_at?->copy()->addDays(self::MEDIA_RETENTION_DAYS) : null;
     }
 
     public function totalPostsForAccount(): int

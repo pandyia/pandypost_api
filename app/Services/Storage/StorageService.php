@@ -177,6 +177,7 @@ class StorageService
 
     /**
      * Deleta os caminhos do S3 SOMENTE se nenhum outro post agendado estiver usando o mesmo arquivo.
+     * Post com falha ainda dentro do prazo de reenvio (mídia não limpa) também conta como "em uso".
      */
     public function deleteIfUnused(array $paths, ?int $currentPostId = null): bool
     {
@@ -188,7 +189,9 @@ class StorageService
         $toDelete = [];
         foreach ($paths as $path) {
             $isUsedByOtherPost = ScheduledPost::where('media_path', $path)
-                ->whereIn('status', ['pending', 'processing'])
+                ->where(fn ($q) => $q
+                    ->whereIn('status', ['pending', 'processing'])
+                    ->orWhere(fn ($failed) => $failed->where('status', 'failed')->whereNull('media_purged_at')))
                 ->when($currentPostId, fn ($q) => $q->where('id', '!=', $currentPostId))
                 ->exists();
 

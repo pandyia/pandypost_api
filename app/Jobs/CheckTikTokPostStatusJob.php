@@ -52,8 +52,8 @@ class CheckTikTokPostStatusJob implements ShouldQueue
 
         match ($status) {
             'PUBLISH_COMPLETE' => $this->handleSuccess($publicityId, $storageService),
-            'FAILED'           => $this->handleFailed($failReason, $storageService),
-            default            => $this->retryWithBackoff(),
+            'FAILED' => $this->handleFailed($failReason),
+            default => $this->retryWithBackoff(),
         };
     }
 
@@ -79,9 +79,9 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         $storageService->deleteIfUnused([$this->post->media_path], $this->post->id);
     }
 
-    private function handleFailed(?string $failReason, StorageService $storageService): void
+    private function handleFailed(?string $failReason): void
     {
-        $error = "Erro no TikTok: " . ($failReason ?: 'Falha na publicação');
+        $error = 'Erro no TikTok: '.($failReason ?: 'Falha na publicação');
 
         $this->post->update([
             'status' => 'failed',
@@ -89,7 +89,6 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         ]);
 
         Log::error("Falha no post TikTok {$this->post->id}: {$error}");
-        $storageService->deleteIfUnused([$this->post->media_path], $this->post->id);
         $this->fail(new Exception($error));
     }
 }

@@ -143,6 +143,8 @@ class NotificationService
 
             $payload = [
                 'resource' => $post->uuid,
+                // Cada falha avisa uma vez; um reenvio que falha de novo avisa de novo.
+                'dedupe_key' => 'post_failed:'.$post->uuid.':'.($post->failed_at?->timestamp ?? 0),
                 'post_title' => (string) $post->title,
                 'platform' => $post->platform->value,
                 'platform_label' => $post->platform->label(),

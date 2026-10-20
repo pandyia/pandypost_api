@@ -3,6 +3,7 @@
 namespace App\Services\Factories;
 
 use App\Enums\NotificationType;
+use App\Models\ScheduledPost;
 use App\Notifications\CentralNotification;
 use App\Notifications\EmailVerificationNotification;
 use App\Notifications\PasswordResetNotification;
@@ -17,7 +18,7 @@ class NotificationFactory
     {
         $workspaceId = $payload['workspace_id'] ?? null;
         $workspaceContext = ['workspace_uuid' => $payload['workspace_uuid'] ?? null];
-        $dedupeKey = isset($payload['resource']) ? "{$type->value}:{$payload['resource']}" : null;
+        $dedupeKey = $payload['dedupe_key'] ?? (isset($payload['resource']) ? "{$type->value}:{$payload['resource']}" : null);
 
         return match ($type) {
             NotificationType::EMAIL_VERIFICATION => new EmailVerificationNotification($payload['token']),
@@ -52,7 +53,7 @@ class NotificationFactory
             NotificationType::POST_FAILED => new CentralNotification(
                 $type,
                 'Falha ao publicar',
-                "Não foi possível publicar \"{$payload['post_title']}\" no {$payload['platform_label']}.",
+                "Não foi possível publicar \"{$payload['post_title']}\" no {$payload['platform_label']}. Você tem ".ScheduledPost::MEDIA_RETENTION_DAYS.' dias para reenviar.',
                 '/pipeline',
                 [
                     'post_uuid' => $payload['resource'],

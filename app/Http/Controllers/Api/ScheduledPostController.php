@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\GenerateUploadUrlRequest;
+use App\Http\Requests\RetryScheduledPostRequest;
 use App\Http\Requests\StoreScheduledPostRequest;
 use App\Http\Resources\ScheduledPostResource;
 use App\Services\ScheduledPostService;
@@ -24,6 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  *    É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
  *
  * `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+ * Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
  */
 class ScheduledPostController extends BaseController
 {
@@ -33,7 +35,7 @@ class ScheduledPostController extends BaseController
 
     protected static array $permissionMethods = [
         'view' => ['index'],
-        'create' => ['store', 'uploadUrl'],
+        'create' => ['store', 'uploadUrl', 'retry'],
         'delete' => ['destroy'],
     ];
 
@@ -176,6 +178,33 @@ class ScheduledPostController extends BaseController
     }
 
     /**
+     * Reenviar post que falhou
+     *
+     * Só posts `failed` do workspace corrente cuja mídia ainda está guardada (`can_retry` na listagem).
+     * Sem `scheduled_at` o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam.
+     *
+     * **Permissão:** `posts.create`
+     *
+     * @urlParam scheduledPost string required UUID do post. Example: e1d2c3b4-a5f6-4789-8abc-def012345678
+     *
+     * @bodyParam scheduled_at string Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora. Example: 2026-10-25T18:00:00-03:00
+     *
+     * @response 200 {"message": "Post reenviado para a fila.", "data": {"uuid": "e1d2c3b4-...", "status": "pending", "can_retry": false}}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}
+     * @response 409 scenario="post não falhou" {"error": "retry_not_allowed", "message": "Só é possível reenviar posts que falharam."}
+     * @response 422 scenario="arquivo já removido" {"error": "media_expired", "message": "O arquivo deste post não está mais disponível. Adicione o post novamente."}
+     */
+    public function retry(RetryScheduledPostRequest $request, string $uuid): JsonResponse
+    {
+        $post = $this->service->retry($uuid, $request->validated('scheduled_at'));
+
+        return response()->json([
+            'message' => 'Post reenviado para a fila.',
+            'data' => new ScheduledPostResource($post),
+        ]);
+    }
+
+    /**
      * Listar agendamentos
      *
      * Posts do workspace corrente, mais recentes primeiro.
@@ -212,6 +241,8 @@ class ScheduledPostController extends BaseController
      * @responseField media_url string|null URL temporária (assinada) para exibir a mídia.
      * @responseField platform_post_url string|null Link do post publicado (YouTube e Instagram).
      * @responseField error_message string Só aparece quando `status` = `failed`.
+     * @responseField can_retry boolean `true` quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar.
+     * @responseField retry_until string|null Até quando o arquivo fica guardado para reenvio (5 dias após a falha). `null` se não dá para reenviar.
      * @responseField payload object Opções específicas da plataforma enviadas no agendamento.
      *
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.view"}

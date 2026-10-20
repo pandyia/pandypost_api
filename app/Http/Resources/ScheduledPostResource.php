@@ -15,8 +15,8 @@ class ScheduledPostResource extends JsonResource
             'uuid' => $this->uuid,
             'responsible' => $this->user?->name,
             'media_url' => $this->getMediaUrl(),
-            "total_posts_for_account" => $this->totalPostsForAccount(),
-            "failed_posts_for_account" => $this->failedPostsForAccount(),
+            'total_posts_for_account' => $this->totalPostsForAccount(),
+            'failed_posts_for_account' => $this->failedPostsForAccount(),
             'platform' => $this->platform,
             'title' => $this->title,
             'caption' => $this->caption,
@@ -26,6 +26,8 @@ class ScheduledPostResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'platform_post_id' => $this->platform_post_id,
             'platform_post_url' => $this->getPlatformPostUrl(),
+            'can_retry' => $this->canRetry(),
+            'retry_until' => $this->retryDeadline()?->toIso8601String(),
             'error_message' => $this->when($this->status === ScheduledPostStatus::FAILED->value, $this->error_message),
             'payload' => $this->payload,
         ];
@@ -36,7 +38,7 @@ class ScheduledPostResource extends JsonResource
      */
     private function getMediaUrl(): ?string
     {
-        if (!$this->media_path) {
+        if (! $this->media_path || $this->media_purged_at) {
             return null;
         }
 

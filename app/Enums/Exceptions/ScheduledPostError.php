@@ -10,6 +10,8 @@ enum ScheduledPostError: string implements ErrorEnumInterface
     case INVALID_ACCOUNT_SELECTION = 'invalid_account_selection';
     case PLATFORM_NOT_SUPPORTED = 'platform_not_supported';
     case CANCEL_NOT_ALLOWED = 'cancel_not_allowed';
+    case RETRY_NOT_ALLOWED = 'retry_not_allowed';
+    case MEDIA_EXPIRED = 'media_expired';
 
     public function message(?string $platform = null): string
     {
@@ -17,7 +19,9 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::NO_ACCOUNT_LINKED => "Nenhuma conta do {$platform} vinculada.",
             self::INVALID_ACCOUNT_SELECTION => "A conta selecionada não pertence à plataforma {$platform} ou não está disponível para este usuário.",
             self::PLATFORM_NOT_SUPPORTED => "O serviço da plataforma '{$platform}' não suporta agendamentos diretos.",
-            self::CANCEL_NOT_ALLOWED => 'Este post não pode ser cancelado pois já foi publicado ou está em processamento.'
+            self::CANCEL_NOT_ALLOWED => 'Este post não pode ser cancelado pois já foi publicado ou está em processamento.',
+            self::RETRY_NOT_ALLOWED => 'Só é possível reenviar posts que falharam.',
+            self::MEDIA_EXPIRED => 'O arquivo deste post não está mais disponível. Adicione o post novamente.',
         };
     }
 
@@ -28,6 +32,8 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::INVALID_ACCOUNT_SELECTION => 422,
             self::PLATFORM_NOT_SUPPORTED => 400,
             self::CANCEL_NOT_ALLOWED => 409,
+            self::RETRY_NOT_ALLOWED => 409,
+            self::MEDIA_EXPIRED => 422,
         };
     }
 }

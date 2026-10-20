@@ -4,8 +4,6 @@ namespace App\Jobs;
 
 use App\Models\ScheduledPost;
 use App\Services\Factories\SocialMediaFactory;
-use App\Services\NotificationService;
-use App\Services\Storage\StorageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -56,19 +54,7 @@ class PublishPostJob implements ShouldQueue
             'error_message' => substr($exception->getMessage(), 0, 255),
         ]);
 
-        // Limpa os arquivos do S3 se o post falhou de vez e caiu no Failed Jobs
-        $storageService = app(StorageService::class);
-
-        $paths = [$this->post->media_path];
-
-        $payload = $this->post->payload ?? [];
-        if (! empty($payload['thumbnail_path'])) {
-            $paths[] = $payload['thumbnail_path'];
-        }
-
-        $storageService->deleteMany($paths);
-
-        // Avisa os membros com permissão de posts (falha ao notificar não afeta o fluxo).
-        app(NotificationService::class)->notifyPostFailed($this->post);
+        // A mídia fica guardada para reenvio (limpeza em posts:purge-failed-media) e o aviso
+        // de falha sai do observer do ScheduledPost.
     }
 }

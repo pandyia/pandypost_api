@@ -5,16 +5,16 @@ namespace App\Services;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Exceptions\ScheduledPostException;
+use App\Jobs\PublishPostJob;
 use App\Models\ContentPipeline;
-use App\Models\SocialAccount;
 use App\Models\ScheduledPost;
-use App\Services\Factories\PayloadBuilderFactory;
-use App\Services\Billing\Tenant\SubscriptionService;
+use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\Billing\Tenant\SubscriptionService;
+use App\Services\Factories\PayloadBuilderFactory;
 use App\Services\Storage\StorageService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use App\Jobs\PublishPostJob;
 use Illuminate\Support\Facades\DB;
 
 class ScheduledPostService extends BaseService
@@ -41,18 +41,17 @@ class ScheduledPostService extends BaseService
     {
         $this->subscriptionService->ensureValidSubscription($user);
 
-        $accountUuids     = $data['social_account_uuids'];
+        $accountUuids = $data['social_account_uuids'];
         $pipelineCardUuid = Arr::pull($data, 'pipeline_card_uuid');
         $mediaStoragePath = $data['media_storage_path'];
 
         return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $mediaStoragePath) {
             $this->subscriptionService->consumeQuota($user, count($accountUuids));
 
-            $posts = collect($accountUuids)->map(fn (string $uuid) =>
-                $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
+            $posts = collect($accountUuids)->map(fn (string $uuid) => $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
             );
 
-            $this->handlePipelineCard($pipelineCardUuid, $posts); //TODO tem a ver com kanban, não implementado ainda no frontend.
+            $this->handlePipelineCard($pipelineCardUuid, $posts); // TODO tem a ver com kanban, não implementado ainda no frontend.
 
             return $posts;
         });
@@ -76,11 +75,42 @@ class ScheduledPostService extends BaseService
 
         $paths = [$post->media_path];
         $payload = $post->payload ?? [];
-        if (!empty($payload['thumbnail_path'])) {
+        if (! empty($payload['thumbnail_path'])) {
             $paths[] = $payload['thumbnail_path'];
         }
 
         $this->storageService->deleteMany(array_filter($paths));
+    }
+
+    /**
+     * Reenvia um post que falhou, com os mesmos dados.
+     * Sem data o post sai na hora; com data, é reagendado.
+     */
+    public function retry(string $uuid, ?string $scheduledAt = null): ScheduledPost
+    {
+        $post = ScheduledPost::where('uuid', $uuid)->firstOrFail();
+
+        if ($post->status !== ScheduledPostStatus::FAILED->value) {
+            throw ScheduledPostException::cannotRetry();
+        }
+
+        // Posts antigos não têm o controle de limpeza, então confere no storage também.
+        if (! $post->canRetry() || ! $this->storageService->exists($post->media_path)) {
+            throw ScheduledPostException::mediaExpired();
+        }
+
+        $post->update([
+            'status' => ScheduledPostStatus::PENDING->value,
+            'error_message' => null,
+            'failed_at' => null,
+            'scheduled_at' => $scheduledAt,
+            'container_id' => null,
+            'container_created_at' => null,
+        ]);
+
+        $this->dispatchPlatformJob($post);
+
+        return $post->load($this->with);
     }
 
     /**
@@ -92,19 +122,19 @@ class ScheduledPostService extends BaseService
         string $mediaStoragePath,
         array $data,
     ): ScheduledPost {
-        $account      = $this->ensureValidSocialAccount($user, $uuid);
-        $platform     = Platform::from($account->platform);
+        $account = $this->ensureValidSocialAccount($user, $uuid);
+        $platform = Platform::from($account->platform);
         $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data);
-        $attributes   = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
+        $attributes = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
 
         $postData = array_merge($attributes, [
-            'user_id'           => $user->id,
+            'user_id' => $user->id,
             'social_account_id' => $account->id,
-            'platform'          => $platform->value,
-            'media_path'        => $mediaStoragePath,
-            'payload'           => $payloadBuild->payload(),
-            'status'            => ScheduledPostStatus::PENDING->value,
-            'scheduled_at'      => $attributes['scheduled_at'] ?? null,
+            'platform' => $platform->value,
+            'media_path' => $mediaStoragePath,
+            'payload' => $payloadBuild->payload(),
+            'status' => ScheduledPostStatus::PENDING->value,
+            'scheduled_at' => $attributes['scheduled_at'] ?? null,
         ]);
 
         $post = $this->store($postData);
@@ -134,7 +164,7 @@ class ScheduledPostService extends BaseService
             ->where('uuid', $socialAccountUuid)
             ->first();
 
-        if (!$account) {
+        if (! $account) {
             throw ScheduledPostException::noAccountLinked($socialAccountUuid);
         }
 
