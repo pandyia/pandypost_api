@@ -35,7 +35,7 @@ class ContentPipeline extends Model implements Auditable
     protected $hidden = ['id'];
 
     protected $casts = [
-        'stage'    => PipelineStage::class,
+        'stage' => PipelineStage::class,
         'due_date' => 'date',
     ];
 
@@ -64,12 +64,5 @@ class ContentPipeline extends Model implements Auditable
     public function scheduledPost(): BelongsTo
     {
         return $this->belongsTo(ScheduledPost::class);
-    }
-
-    // Business Methods
-
-    public function isScheduled(): bool
-    {
-        return $this->stage === PipelineStage::SCHEDULED;
     }
 }

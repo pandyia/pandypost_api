@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Exceptions\SocialAccountException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Models\User;
@@ -13,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 class SocialAccountService extends BaseService
 {
     protected array $normalFilter = ['platform'];
+
     protected array $with = [];
 
     public function __construct(
@@ -25,12 +25,14 @@ class SocialAccountService extends BaseService
     public function getRedirectUrl(string $platform, ?User $user = null): string
     {
         $provider = $this->factory->make($platform);
+
         return $provider->getRedirectUrl($user);
     }
 
     public function syncAccount(User|Workspace $context, string $platform, ?string $code = null): SocialAccount
     {
         $provider = $this->factory->make($platform);
+
         return $provider->syncAccount($context, $code);
     }
 
@@ -39,8 +41,8 @@ class SocialAccountService extends BaseService
         $account = $this->findByUuid($uuid);
 
         DB::transaction(function () use ($account) {
-            ScheduledPost::where('social_account_id', $account->id)
-                ->where('status', 'pending')
+            ScheduledPost::pending()
+                ->where('social_account_id', $account->id)
                 ->update(['status' => 'cancelled']);
 
             $account->revokeToken();

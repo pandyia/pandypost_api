@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Log;
 class WarmupPostsCommand extends Command
 {
     protected $signature = 'posts:warmup';
+
     protected $description = 'Prepara containers do Instagram antecipadamente para evitar delay na publicação';
 
     public function handle(SocialMediaFactory $factory): void
     {
-        $posts = ScheduledPost::query()
+        $posts = ScheduledPost::pending()
             ->where('platform', 'instagram')
-            ->where('status', 'pending')
             ->whereBetween('scheduled_at', [now(), now()->addMinutes(60)])
             ->with(['socialAccount'])
             ->get();
@@ -36,7 +36,7 @@ class WarmupPostsCommand extends Command
 
             $account = $post->socialAccount;
 
-            if (!$account) {
+            if (! $account) {
                 continue;
             }
 
@@ -51,4 +51,3 @@ class WarmupPostsCommand extends Command
         }
     }
 }
-

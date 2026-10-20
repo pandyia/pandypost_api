@@ -64,11 +64,6 @@ class Role extends Model implements Auditable
 
     // Business Methods
 
-    public function hasPermission(string $permissionName): bool
-    {
-        return $this->permissions()->where('name', $permissionName)->exists();
-    }
-
     public static function adminPermissions(): array
     {
         return Permission::pluck('id')->toArray();
@@ -81,4 +76,3 @@ class Role extends Model implements Auditable
             ->exists();
     }
 }
-

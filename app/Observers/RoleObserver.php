@@ -15,6 +15,7 @@ class RoleObserver
             throw RoleException::hasLinkedUsers();
         }
     }
+
     public function created(Role $role): void
     {
         event(new RoleEvent('created', $role));
@@ -22,8 +23,6 @@ class RoleObserver
 
     public function updated(Role $role): void
     {
-        if ($role->wasChanged('deleted_at'))
-            return;
         event(new RoleEvent('updated', $role));
     }
 
@@ -31,9 +30,4 @@ class RoleObserver
     {
         event(new RoleEvent('deleted', $role));
     }
-    public function restored(Role $role): void
-    {
-        event(new RoleEvent('restored', $role));
-    }
-
 }
