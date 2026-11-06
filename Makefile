@@ -157,6 +157,16 @@ restart-horizon:
 recreate:
 	docker compose up -d --force-recreate
 
+# CLEANUP
+# Remove containers, volumes (dados do banco/minio!), imagens locais e órfãos do projeto.
+clean:
+	docker-compose down --volumes --rmi local --remove-orphans
+
+# Remove containers, imagens locais e órfãos (mantém volumes) + limpa o cache de build do Docker.
+prune:
+	docker-compose down --rmi local --remove-orphans
+	docker builder prune -af
+
 ngrok:
 	ngrok http 9000
 

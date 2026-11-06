@@ -21,7 +21,8 @@ class TikTokOAuthProvider implements OAuthProviderInterface
 
     private const USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
 
-    private const SCOPES = 'user.info.basic,user.info.profile,user.info.stats,video.list';
+    // video.upload/video.publish = Direct Post (spec 011). Contas conectadas antes precisam reconectar.
+    private const SCOPES = 'user.info.basic,user.info.profile,user.info.stats,video.list,video.upload,video.publish';
 
     public function getRedirectUrl(?User $user = null): string
     {
@@ -61,7 +62,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
         }
 
         $profile = Http::withToken($token['access_token'])
-            ->get(self::USER_INFO_URL, ['fields' => 'open_id,display_name,avatar_url'])
+            ->get(self::USER_INFO_URL, ['fields' => 'open_id,display_name,avatar_url,username'])
             ->json('data.user', []);
 
         return SocialAccount::updateOrCreate(
@@ -77,6 +78,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
                 'expires_at' => now()->addSeconds($token['expires_in'] ?? 86400),
                 'nickname' => $profile['display_name'] ?? 'TikTok',
                 'avatar' => $profile['avatar_url'] ?? null,
+                'username' => $profile['username'] ?? null,
             ]
         );
     }

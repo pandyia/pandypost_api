@@ -147,7 +147,10 @@ class ScheduledPost extends Model implements Auditable
             // O id que a Graph API devolve não é o código da URL: o link vem do permalink gravado na publicação.
             Platform::INSTAGRAM => $this->platform_post_url,
             Platform::YOUTUBE => $this->platform_post_id ? "https://www.youtube.com/watch?v={$this->platform_post_id}" : null,
-            _ => null,
+            Platform::TIKTOK => $this->platform_post_id && $this->socialAccount?->username
+                ? "https://www.tiktok.com/@{$this->socialAccount->username}/video/{$this->platform_post_id}"
+                : null,
+            default => null,
         };
     }
 }
