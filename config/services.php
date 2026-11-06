@@ -31,8 +31,6 @@ return [
         'client_key' => env('TIKTOK_CLIENT_KEY'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
         'redirect' => env('TIKTOK_REDIRECT_URI', env('APP_URL').'/api/social-accounts/tiktok/callback'),
-        // Apps não auditados só podem publicar com SELF_ONLY. Após a auditoria: PUBLIC_TO_EVERYONE.
-        'default_privacy' => env('TIKTOK_DEFAULT_PRIVACY', 'SELF_ONLY'),
     ],
 
     'postmark' => [

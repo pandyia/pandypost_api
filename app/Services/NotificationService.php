@@ -26,6 +26,8 @@ class NotificationService
 {
     private const POST_PERMISSIONS = ['posts.view', 'posts.create', 'posts.update', 'posts.delete'];
 
+    private const SOCIAL_ACCOUNT_PERMISSIONS = ['social_accounts.view', 'social_accounts.connect', 'social_accounts.disconnect', 'posts.create'];
+
     private const BILLING_PERMISSIONS = ['billing.view', 'billing.manage'];
 
     private const UNREAD_LIST_LIMIT = 50;
@@ -205,19 +207,23 @@ class NotificationService
     }
 
     /**
-     * Avisa quem conectou a conta. Nunca inclui a mensagem do erro da plataforma.
+     * A conta é do workspace (spec 017): avisa quem conectou por último (se ainda é membro) e os membros com
+     * permissão de gerir contas ou agendar posts, uma vez por pessoa. Nunca inclui a mensagem do erro da plataforma.
      */
     public function notifySocialAccountDisconnected(SocialAccount $account): void
     {
         $this->safely(function () use ($account) {
-            $user = User::withoutGlobalScopes()->find($account->user_id);
+            $recipients = $this->recipientsWithPermission($account->workspace_id, self::SOCIAL_ACCOUNT_PERMISSIONS);
 
-            if (! $user) {
-                return;
+            $connector = $account->user_id ? User::withoutGlobalScopes()->find($account->user_id) : null;
+            $connectorIsMember = $connector && Access::where('user_id', $connector->id)->where('workspace_id', $account->workspace_id)->exists();
+
+            if ($connectorIsMember) {
+                $recipients->push($connector);
             }
 
             // O timestamp de expiração distingue uma nova desconexão após reconectar.
-            $this->send($user, NotificationType::SOCIAL_ACCOUNT_DISCONNECTED, [
+            $payload = [
                 'resource' => $account->uuid.':'.($account->expires_at?->timestamp ?? 0),
                 'account_uuid' => $account->uuid,
                 'nickname' => (string) $account->nickname,
@@ -225,7 +231,11 @@ class NotificationService
                 'platform_label' => Platform::tryFrom((string) $account->platform)?->label() ?? ucfirst((string) $account->platform),
                 'workspace_id' => $account->workspace_id,
                 'workspace_uuid' => Workspace::allAccess()->whereKey($account->workspace_id)->value('uuid'),
-            ]);
+            ];
+
+            foreach ($recipients->unique('id') as $user) {
+                $this->sendSafely($user, NotificationType::SOCIAL_ACCOUNT_DISCONNECTED, $payload);
+            }
         });
     }
 

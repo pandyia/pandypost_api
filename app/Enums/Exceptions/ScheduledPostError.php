@@ -13,17 +13,21 @@ enum ScheduledPostError: string implements ErrorEnumInterface
     case RETRY_NOT_ALLOWED = 'retry_not_allowed';
     case MEDIA_EXPIRED = 'media_expired';
     case PERMALINK_UNAVAILABLE = 'permalink_unavailable';
+    case SUBSCRIPTION_INACTIVE = 'subscription_inactive';
+    case ACCOUNT_NOT_FOUND = 'account_not_found';
 
     public function message(?string $platform = null): string
     {
         return match ($this) {
-            self::NO_ACCOUNT_LINKED => "Nenhuma conta do {$platform} vinculada.",
+            self::NO_ACCOUNT_LINKED => 'A conta selecionada não está disponível neste workspace.',
             self::INVALID_ACCOUNT_SELECTION => "A conta selecionada não pertence à plataforma {$platform} ou não está disponível para este usuário.",
             self::PLATFORM_NOT_SUPPORTED => "O serviço da plataforma '{$platform}' não suporta agendamentos diretos.",
             self::CANCEL_NOT_ALLOWED => 'Este post não pode ser cancelado pois já foi publicado ou está em processamento.',
             self::RETRY_NOT_ALLOWED => 'Só é possível reenviar posts que falharam.',
             self::MEDIA_EXPIRED => 'O arquivo deste post não está mais disponível. Adicione o post novamente.',
             self::PERMALINK_UNAVAILABLE => 'Não foi possível obter o link do post publicado no Instagram.',
+            self::SUBSCRIPTION_INACTIVE => 'Assinatura inativa ou expirada no momento da publicação.',
+            self::ACCOUNT_NOT_FOUND => 'A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente.',
         };
     }
 
@@ -37,6 +41,8 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::RETRY_NOT_ALLOWED => 409,
             self::MEDIA_EXPIRED => 422,
             self::PERMALINK_UNAVAILABLE => 502,
+            self::SUBSCRIPTION_INACTIVE => 403,
+            self::ACCOUNT_NOT_FOUND => 404,
         };
     }
 }

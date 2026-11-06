@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
 use App\Models\ScheduledPost;
-use App\Services\InstagramService;
+use App\Services\Instagram\InstagramApi;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -15,7 +15,7 @@ class BackfillInstagramPermalinksCommand extends Command
 
     protected $description = 'Grava o permalink dos posts do Instagram publicados antes de a publicação passar a guardá-lo';
 
-    public function handle(InstagramService $instagram): void
+    public function handle(InstagramApi $instagram): void
     {
         $isDryRun = (bool) $this->option('dry-run');
         $updated = 0;
@@ -59,7 +59,7 @@ class BackfillInstagramPermalinksCommand extends Command
 
                 try {
                     $tokens[$account->id] ??= $account->getValidToken();
-                    $permalink = $instagram->fetchPermalink($post->platform_post_id, $tokens[$account->id]);
+                    $permalink = $instagram->permalink($tokens[$account->id], $post->platform_post_id);
 
                     $post->update(['platform_post_url' => $permalink]);
                     $updated++;

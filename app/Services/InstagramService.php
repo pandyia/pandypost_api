@@ -3,24 +3,22 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Exceptions\BaseException;
+use App\Exceptions\InstagramException;
 use App\Exceptions\ScheduledPostException;
 use App\Jobs\CheckInstagramContainerJob;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Services\Instagram\InstagramApi;
 use App\Services\Storage\StorageService;
 use Exception;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class InstagramService implements SocialMediaServiceInterface
 {
-    private const GRAPH_API_VERSION = 'v25.0';
-
-    private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
-
     public function __construct(
         private readonly StorageService $storageService,
+        private readonly InstagramApi $api,
     ) {}
 
     public function upload(SocialAccount $account, ScheduledPost $post): void
@@ -64,7 +62,9 @@ class InstagramService implements SocialMediaServiceInterface
             CheckInstagramContainerJob::dispatch($post, $account, $containerId, $shouldPublish);
 
         } catch (Exception $e) {
-            Log::error("Erro no processamento do Instagram (Post {$post->id}): {$e->getMessage()}");
+            // Sem getMessage(): exceção que não é de domínio pode trazer URL/token. Só classe e código de domínio.
+            $code = $e instanceof BaseException ? $e->getErrorCode() : 'n/a';
+            Log::error("Erro no processamento do Instagram (Post {$post->id}, ".$e::class.", código {$code}).");
             if ($shouldPublish) {
                 throw $e;
             }
@@ -83,16 +83,24 @@ class InstagramService implements SocialMediaServiceInterface
         Log::info("Verificando container existente: {$post->container_id}");
         $status = $this->getContainerStatus($post->container_id, $accessToken);
 
+        if ($status === 'PUBLISHED') {
+            // Um envio anterior chegou a publicar (a resposta do media_publish se perdeu): não republica.
+            $this->markAlreadyPublished($post);
+
+            return true;
+        }
+
         if ($status === 'FINISHED') {
             Log::info('Container já está pronto.');
             if ($shouldPublish) {
-                $this->publishContainer($post, $account, $accessToken);
+                $this->publishContainer($post, $account, $accessToken, $post->container_id);
             }
 
             return true;
         }
 
-        if ($status === 'ERROR' || $status === null) {
+        // EXPIRED: o container passou das 24 h e não aceita mais publicação.
+        if ($status === 'ERROR' || $status === 'EXPIRED' || $status === null) {
             Log::warning("Container inválido (status: {$status}). Criando novo...");
             $post->update(['container_id' => null, 'container_created_at' => null]);
 
@@ -108,78 +116,79 @@ class InstagramService implements SocialMediaServiceInterface
     private function getContainerStatus(string $containerId, string $accessToken): ?string
     {
         try {
-            $response = Http::get($this->buildApiUrl($containerId), [
-                'fields' => 'status_code',
-                'access_token' => $accessToken,
-            ])->json();
-
-            return $response['status_code'] ?? null;
-        } catch (Exception $e) {
+            return $this->api->containerStatus($accessToken, $containerId);
+        } catch (InstagramException $e) {
             Log::error("Erro ao verificar status do container: {$e->getMessage()}");
 
             return null;
         }
     }
 
-    private function publishContainer(ScheduledPost $post, SocialAccount $account, string $accessToken): void
+    /**
+     * Publica o container informado (o do job, não o que está no post: um job antigo nunca publica o container
+     * recriado depois), grava o resultado e, se publicou, apaga a mídia do S3.
+     * Resposta de erro da Meta marca o post como failed; falta de resposta propaga para o retry da fila.
+     */
+    public function publishContainer(ScheduledPost $post, SocialAccount $account, string $accessToken, string $containerId): void
     {
-        $response = Http::post($this->buildApiUrl("{$account->platform_id}/media_publish"), [
-            'creation_id' => $post->container_id,
-            'access_token' => $accessToken,
-        ])->json();
+        try {
+            $mediaId = $this->api->publish($accessToken, $account->platform_id, $containerId);
+        } catch (InstagramException $e) {
+            if ($e->isUnavailable()) {
+                throw $e;
+            }
 
-        if (isset($response['error'])) {
-            $errorMessage = json_encode($response);
-            Log::error("Falha ao publicar no Instagram. Erro: {$errorMessage}");
-            $post->update([
-                'status' => 'failed',
-                'error_message' => 'Erro na publicação: '.$errorMessage,
-            ]);
+            // A Meta pode ter publicado e ainda assim devolvido erro (publicação concorrente): confere antes de dar o post como falho.
+            if ($this->getContainerStatus($containerId, $accessToken) === 'PUBLISHED') {
+                $this->markAlreadyPublished($post);
+
+                return;
+            }
+
+            Log::error("Falha ao publicar no Instagram (post {$post->id}): {$e->getMessage()}");
+            $post->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
 
             return;
         }
 
-        // A publicação já aconteceu: sem o permalink o post fica publicado, só sem link.
-        $permalink = null;
-        if (isset($response['id'])) {
-            try {
-                $permalink = $this->fetchPermalink($response['id'], $accessToken);
-            } catch (ScheduledPostException $e) {
-                Log::warning("Post {$post->id}: {$e->getMessage()}");
-            }
-        }
-
-        $post->update([
-            'status' => 'published',
-            'platform_post_id' => $response['id'] ?? null,
-            'platform_post_url' => $permalink,
-            'published_at' => now(),
-        ]);
-
-        // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
-
-        Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo do S3...");
-        $this->cleanupFiles($post);
+        $this->finishPublished($post, $mediaId, $mediaId ? $this->permalinkOrNull($post, $accessToken, $mediaId) : null);
     }
 
     /**
-     * O id do media_publish é interno; o link público (com o código do post) só vem do campo permalink.
-     * Usado na publicação (aqui e no CheckInstagramContainerJob) e no instagram:backfill-permalinks.
-     *
-     * @throws ScheduledPostException
+     * O container está PUBLISHED na Meta mas não temos o id da mídia: o id do container não é o da mídia e não há
+     * consulta segura de um para o outro. O post fecha como publicado, sem id e sem link, em vez de falhar com o conteúdo no ar.
      */
-    public function fetchPermalink(string $mediaId, string $accessToken): string
+    public function markAlreadyPublished(ScheduledPost $post): void
+    {
+        Log::warning("Post {$post->id}: container já publicado no Instagram. Fechando como publicado, sem id da mídia.");
+
+        $this->finishPublished($post, null, null);
+    }
+
+    private function finishPublished(ScheduledPost $post, ?string $mediaId, ?string $permalink): void
+    {
+        $post->update([
+            'status' => 'published',
+            'platform_post_id' => $mediaId,
+            'platform_post_url' => $permalink,
+            'published_at' => now(),
+            'error_message' => null,
+        ]);
+
+        Log::info("Post {$post->id} publicado com sucesso no Instagram! Removendo arquivo do S3...");
+        $this->storageService->deleteIfUnused($post->mediaPaths(), $post->id);
+    }
+
+    /** A publicação já aconteceu: sem o permalink o post fica publicado, só sem link. */
+    private function permalinkOrNull(ScheduledPost $post, string $accessToken, string $mediaId): ?string
     {
         try {
-            $response = Http::get($this->buildApiUrl($mediaId), [
-                'fields' => 'permalink',
-                'access_token' => $accessToken,
-            ])->json();
-        } catch (ConnectionException) {
-            throw ScheduledPostException::permalinkUnavailable();
-        }
+            return $this->api->permalink($accessToken, $mediaId);
+        } catch (ScheduledPostException $e) {
+            Log::warning("Post {$post->id}: {$e->getMessage()}");
 
-        return $response['permalink'] ?? throw ScheduledPostException::permalinkUnavailable();
+            return null;
+        }
     }
 
     private function createMediaContainer(SocialAccount $account, ScheduledPost $post, string $accessToken): string
@@ -187,32 +196,17 @@ class InstagramService implements SocialMediaServiceInterface
         // Gera uma presigned GET URL temporária do S3 para a Graph API do Instagram baixar.
         $mediaUrl = $this->storageService->generateDownloadUrl($post->media_path);
 
-        $payload = [
-            'caption' => $post->caption,
-            'access_token' => $accessToken,
-        ];
+        // Sem legenda o campo não vai (null no corpo é um valor, não ausência, para a Graph API).
+        $media = $post->caption !== null && $post->caption !== '' ? ['caption' => $post->caption] : [];
 
         if ($this->isVideo($post->media_path)) {
-            $payload['media_type'] = 'REELS';
-            $payload['video_url'] = $mediaUrl;
+            $media['media_type'] = 'REELS';
+            $media['video_url'] = $mediaUrl;
         } else {
-            $payload['image_url'] = $mediaUrl;
+            $media['image_url'] = $mediaUrl;
         }
 
-        $response = Http::post($this->buildApiUrl("{$account->platform_id}/media"), $payload)->json();
-
-        if (! isset($response['id'])) {
-            $error = json_encode($response);
-            Log::error("Falha ao criar container Instagram. Retorno: {$error}");
-            throw new Exception("Erro ao criar container: {$error}");
-        }
-
-        return $response['id'];
-    }
-
-    private function buildApiUrl(string $endpoint): string
-    {
-        return self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$endpoint;
+        return $this->api->createContainer($accessToken, $account->platform_id, $media);
     }
 
     private function isVideo(string $path): bool
@@ -222,17 +216,5 @@ class InstagramService implements SocialMediaServiceInterface
             ['mp4', 'mov', 'avi', 'mkv'],
             true
         );
-    }
-
-    private function cleanupFiles(ScheduledPost $post): void
-    {
-        $paths = [$post->media_path];
-
-        $payload = $post->payload ?? [];
-        if (! empty($payload['thumbnail_path'])) {
-            $paths[] = $payload['thumbnail_path'];
-        }
-
-        $this->storageService->deleteIfUnused($paths, $post->id);
     }
 }

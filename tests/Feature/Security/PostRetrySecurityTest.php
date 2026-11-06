@@ -124,7 +124,7 @@ describe('spec 012: reenvio de post falho (esteira de publicação)', function (
         $response = $this->withToken($user->test_token)->getJson('/api/scheduled-posts')->assertOk();
 
         expect($response->getContent())->not->toContain('SEGREDO-TOKEN-123');
-    })->skip('VULN-RETRY-02: PublishPostJob::failed e os serviços gravam $exception->getMessage()/json_encode(resposta) cru em error_message, e ScheduledPostResource o expõe a quem tem posts.view');
+    });
 
     it('notificação de falha não carrega error_message e só chega a membros do workspace do post', function () {
         $user = createUserWithPermissions(['posts.create']);
@@ -191,6 +191,6 @@ describe('spec 012: reenvio de post falho (esteira de publicação)', function (
         (new CheckInstagramContainerJob($post, $account, 'container-1'))->handle();
 
         expect($post->fresh()->getPlatformPostUrl())->toBeNull();
-    })->skip('VULN-RETRY-03: permalink devolvido pela Graph API é gravado e exposto sem validar esquema/host (hardening; origem é a Meta, mas o front pode usar como href)');
+    });
 
 });

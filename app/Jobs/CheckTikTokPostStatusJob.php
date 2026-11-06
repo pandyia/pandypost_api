@@ -2,18 +2,24 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\BaseException;
+use App\Exceptions\TikTokException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
-use Exception;
+use App\Services\TikTok\TikTokApi;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
+/**
+ * Confere o resultado do Direct Post e é o único a marcar `published` (ou `failed`) depois do
+ * upload. O vídeo só sai do S3 em caso de sucesso; em falha fica para reenvio (spec 012).
+ */
 class CheckTikTokPostStatusJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -33,28 +39,44 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         return [2, 4, 8, 16, 30];
     }
 
-    public function handle(StorageService $storageService): void
+    public function handle(StorageService $storageService, TikTokApi $api): void
     {
-        $accessToken = $this->account->getValidToken();
-        $attempt = $this->attempts();
+        try {
+            $data = $api->fetchStatus($this->account->getValidToken(), $this->publishId);
+        } catch (TikTokException $e) {
+            // Token/permissão: repetir 15x não resolve. Instabilidade do TikTok segue para o retry normal.
+            if (! $e->isPermanent()) {
+                throw $e;
+            }
 
-        $response = Http::withToken($accessToken)
-            ->post('https://open.tiktokapis.com/v2/post/publish/status/fetch/', [
-                'publish_id' => $this->publishId,
-            ])->json();
+            $this->markFailed($e->getMessage());
 
-        $data = $response['data'] ?? [];
+            return;
+        }
+
         $status = $data['status'] ?? null;
-        $failReason = $data['fail_reason'] ?? null;
-        $publicityId = $data['publicity_id'] ?? $this->publishId;
 
-        Log::info("TikTok Publish ID {$this->publishId} - Status: {$status} (tentativa {$attempt}/{$this->tries})");
+        Log::info("TikTok Publish ID {$this->publishId} - Status: {$status} (tentativa {$this->attempts()}/{$this->tries})");
 
         match ($status) {
-            'PUBLISH_COMPLETE' => $this->handleSuccess($publicityId, $storageService),
-            'FAILED' => $this->handleFailed($failReason),
+            'PUBLISH_COMPLETE' => $this->handleSuccess($data, $storageService),
+            'FAILED' => $this->markFailed(TikTokException::fromApiCode($data['fail_reason'] ?? null)->getMessage()),
             default => $this->retryWithBackoff(),
         };
+    }
+
+    /** Esgotou as tentativas (ou erro inesperado): sem estado final, o post não pode ficar em processing para sempre. */
+    public function failed(Throwable $exception): void
+    {
+        $this->post->refresh();
+
+        if ($this->post->status !== 'processing') {
+            return;
+        }
+
+        $this->markFailed($exception instanceof BaseException
+            ? $exception->getMessage()
+            : TikTokException::publishTimeout()->getMessage());
     }
 
     private function retryWithBackoff(): void
@@ -67,28 +89,39 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         $this->release($delay);
     }
 
-    private function handleSuccess(string $platformPostId, StorageService $storageService): void
+    private function handleSuccess(array $data, StorageService $storageService): void
     {
+        // (sic) o TikTok escreve "publicaly" com um L só. Em sandbox/não auditado não há ID público.
+        $videoId = $data['publicaly_available_post_id'][0] ?? null;
+
         $this->post->update([
             'status' => 'published',
-            'platform_post_id' => $platformPostId,
+            'platform_post_id' => $videoId ? (string) $videoId : null,
             'published_at' => now(),
+            'error_message' => null,
         ]);
 
         Log::info("Post {$this->post->id} publicado com sucesso no TikTok!");
-        $storageService->deleteIfUnused([$this->post->media_path], $this->post->id);
+
+        $storageService->deleteIfUnused($this->post->mediaPaths(), $this->post->id);
     }
 
-    private function handleFailed(?string $failReason): void
+    private function markFailed(string $message): void
     {
-        $error = 'Erro no TikTok: '.($failReason ?: 'Falha na publicação');
+        // Estado final nunca é sobrescrito: o post pode ter sido publicado ou cancelado enquanto o job rodava.
+        $current = ScheduledPost::withoutGlobalScopes()->whereKey($this->post->getKey())->value('status');
+
+        if (in_array($current, ['published', 'cancelled'], true)) {
+            Log::warning("Post TikTok {$this->post->id} já está {$current}. Falha ignorada.");
+
+            return;
+        }
 
         $this->post->update([
             'status' => 'failed',
-            'error_message' => substr($error, 0, 255),
+            'error_message' => mb_substr($message, 0, 255),
         ]);
 
-        Log::error("Falha no post TikTok {$this->post->id}: {$error}");
-        $this->fail(new Exception($error));
+        Log::error("Falha no post TikTok {$this->post->id}: {$message}");
     }
 }

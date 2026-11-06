@@ -1,7 +1,9 @@
 <?php
 
+use App\Exceptions\SocialAccountException;
 use App\Models\SocialAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -80,20 +82,30 @@ describe('getValidToken', function () {
             ->toThrow(Exception::class, 'Refresh token ausente. O usuário precisa reconectar a conta.');
     });
 
-    it('falha na renovação do YouTube inclui o corpo da resposta na mensagem', function () {
+    it('falha na renovação do YouTube NÃO inclui o corpo da resposta na mensagem (spec 015, Q2)', function () {
         Http::fake(['oauth2.googleapis.com/token' => Http::response('invalid_grant', 400)]);
         $account = expiredAccount('youtube');
 
-        expect(fn () => $account->getValidToken())
-            ->toThrow(Exception::class, 'Não foi possível renovar o token do Google: invalid_grant');
+        try {
+            $account->getValidToken();
+            $this->fail('deveria lançar SocialAccountException');
+        } catch (SocialAccountException $e) {
+            expect($e->getMessage())->toBe('Não foi possível renovar o token do Google.')
+                ->and($e->getMessage())->not->toContain('invalid_grant');
+        }
     });
 
-    it('falha na renovação do TikTok inclui o corpo da resposta na mensagem', function () {
+    it('falha na renovação do TikTok NÃO inclui o corpo da resposta na mensagem (spec 011, RF-13)', function () {
         Http::fake(['open.tiktokapis.com/v2/oauth/token/' => Http::response('refresh_token_expired', 400)]);
         $account = expiredAccount('tiktok');
 
-        expect(fn () => $account->getValidToken())
-            ->toThrow(Exception::class, 'Não foi possível renovar o token do TikTok: refresh_token_expired');
+        try {
+            $account->getValidToken();
+            $this->fail('deveria lançar SocialAccountException');
+        } catch (SocialAccountException $e) {
+            expect($e->getMessage())->toBe('Não foi possível renovar o token do TikTok.')
+                ->and($e->getMessage())->not->toContain('refresh_token_expired');
+        }
     });
 
     it('TikTok com resposta 200 sem access_token também falha', function () {
@@ -101,15 +113,32 @@ describe('getValidToken', function () {
         $account = expiredAccount('tiktok');
 
         expect(fn () => $account->getValidToken())
-            ->toThrow(Exception::class, 'Não foi possível renovar o token do TikTok: ');
+            ->toThrow(SocialAccountException::class, 'Não foi possível renovar o token do TikTok.');
     });
 
-    it('falha na renovação do Instagram inclui o corpo da resposta na mensagem', function () {
+    it('falha na renovação do Instagram NÃO inclui o corpo da resposta na mensagem (spec 015, Q2)', function () {
         Http::fake(['graph.instagram.com/refresh_access_token*' => Http::response('token_invalido', 400)]);
         $account = expiredAccount('instagram');
 
-        expect(fn () => $account->getValidToken())
-            ->toThrow(Exception::class, 'Não foi possível renovar o token do Instagram: token_invalido');
+        try {
+            $account->getValidToken();
+            $this->fail('deveria lançar SocialAccountException');
+        } catch (SocialAccountException $e) {
+            expect($e->getMessage())->toBe('Não foi possível renovar o token do Instagram.')
+                ->and($e->getMessage())->not->toContain('token_invalido');
+        }
+    });
+
+    it('Instagram sem conexão na renovação vira a mesma mensagem, sem a URL com o token', function () {
+        Http::fake(['graph.instagram.com/refresh_access_token*' => fn () => throw new ConnectionException('timeout https://graph.instagram.com/refresh_access_token?access_token=SEGREDO')]);
+        $account = expiredAccount('instagram');
+
+        try {
+            $account->getValidToken();
+            $this->fail('deveria lançar SocialAccountException');
+        } catch (SocialAccountException $e) {
+            expect($e->getMessage())->toBe('Não foi possível renovar o token do Instagram.');
+        }
     });
 });
 

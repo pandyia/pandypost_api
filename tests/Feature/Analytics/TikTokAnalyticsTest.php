@@ -177,13 +177,16 @@ describe('OAuth do TikTok', function () {
 
     it('troca o code pelos tokens e cria a conta com o open_id', function () {
         $workspace = Workspace::withoutGlobalScopes()->find($this->user->currentAccess->workspace_id);
+        // O callback exige que o iniciador ainda tenha social_accounts.connect no workspace (spec 019, VULN-OAUTH-06).
+        $this->user->currentAccess->role->permissions()->sync([permission('social_accounts.connect')->id]);
+        $state = oauthStateFor($this->user, 'tiktok');
 
         Http::fake([
             'open.tiktokapis.com/v2/oauth/token/' => Http::response(['access_token' => 'at', 'refresh_token' => 'rt', 'open_id' => 'open-123', 'expires_in' => 86400, 'refresh_expires_in' => 31536000]),
             'open.tiktokapis.com/v2/user/info/*' => Http::response(['data' => ['user' => ['open_id' => 'open-123', 'display_name' => 'Criador', 'avatar_url' => 'https://cdn/a.jpg']], 'error' => ['code' => 'ok']]),
         ]);
 
-        $this->get('/api/social-accounts/tiktok/callback?code=abc&state='.urlencode(encrypt($workspace->uuid)))
+        $this->get('/api/social-accounts/tiktok/callback?code=abc&state='.urlencode($state))
             ->assertRedirectContains('success=1');
 
         $account = SocialAccount::withoutGlobalScopes()->where('platform_id', 'open-123')->first();
@@ -192,16 +195,17 @@ describe('OAuth do TikTok', function () {
             ->and($account->nickname)->toBe('Criador')
             ->and($account->access_token)->toBe('at')
             ->and($account->refresh_token)->toBe('rt')
-            ->and($account->workspace_id)->toBe($workspace->id);
+            ->and($account->workspace_id)->toBe($workspace->id)
+            ->and($account->user_id)->toBe($this->user->id);
 
         Http::assertSent(fn (Request $request) => str_contains($request->url(), 'oauth/token') && $request['grant_type'] === 'authorization_code' && $request['code'] === 'abc');
     });
 
     it('redireciona com erro quando a troca do code falha', function () {
-        $workspace = Workspace::withoutGlobalScopes()->find($this->user->currentAccess->workspace_id);
+        $state = oauthStateFor($this->user, 'tiktok');
         Http::fake(['open.tiktokapis.com/v2/oauth/token/' => Http::response(['error' => 'invalid_grant'], 400)]);
 
-        $this->get('/api/social-accounts/tiktok/callback?code=abc&state='.urlencode(encrypt($workspace->uuid)))
+        $this->get('/api/social-accounts/tiktok/callback?code=abc&state='.urlencode($state))
             ->assertRedirectContains('error=');
 
         expect(SocialAccount::withoutGlobalScopes()->where('platform', 'tiktok')->count())->toBe(1);

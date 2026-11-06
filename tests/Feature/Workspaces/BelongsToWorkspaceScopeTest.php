@@ -60,7 +60,7 @@ describe('escopo de workspace (BelongsToWorkspace)', function () {
         expect($ids)->toContain($postA->id)->not->toContain($postB->id);
     });
 
-    it('não filtra nada sem currentAccess (comportamento atual, ver VULN-09)', function () {
+    it('falha fechado sem currentAccess: nenhum registro de tenant (spec 019, VULN-TEN-02; antes VULN-09)', function () {
         $userA = createUserWithPermissions([]);
         $userB = createUserWithPermissions([]);
         $semAcesso = User::factory()->create();
@@ -69,8 +69,10 @@ describe('escopo de workspace (BelongsToWorkspace)', function () {
 
         $ids = User::query()->pluck('id')->all();
 
-        expect($ids)->toContain($userA->id, $userB->id)
-            ->and(Role::query()->count())->toBe(Role::withoutGlobalScopes()->count());
+        expect($ids)->toBe([])
+            ->and(User::withoutGlobalScopes()->whereKey([$userA->id, $userB->id])->count())->toBe(2)
+            ->and(Role::query()->count())->toBe(0)
+            ->and(Role::withoutGlobalScopes()->count())->toBeGreaterThan(0);
     });
 
     it('não filtra nada sem usuário autenticado', function () {

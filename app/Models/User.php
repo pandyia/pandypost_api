@@ -166,6 +166,9 @@ class User extends Authenticatable implements Auditable
                 ->whereHas('workspace', fn ($q) => $q->withoutGlobalScopes()->where('is_personal_team', true))
                 ->first();
             $this->update(['access_id' => $access?->id]);
+
+            // Sem isto a relação ficaria nula em cache depois de resolvida pelo workspace pessoal.
+            $this->setRelation('currentAccess', $access);
         }
 
         return $access;

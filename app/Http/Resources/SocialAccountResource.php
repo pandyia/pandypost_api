@@ -15,6 +15,7 @@ class SocialAccountResource extends JsonResource
             'platform_id' => $this->platform_id,
             'nickname' => $this->nickname,
             'avatar' => $this->avatar,
+            'can_publish' => $this->canPublish(),
             'expires_at' => $this->expires_at?->toIso8601String(),
             'connected_at' => $this->created_at?->toIso8601String(),
             'is_stale' => $this->isStale(),

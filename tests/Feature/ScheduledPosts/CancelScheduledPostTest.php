@@ -42,9 +42,9 @@ describe('cancelar post agendado', function () {
         $user = createUserWithPermissions(['posts.delete']);
         $post = scheduledPostFor($user);
 
-        $this->storage->shouldReceive('deleteMany')
+        $this->storage->shouldReceive('deleteIfUnused')
             ->once()
-            ->with(['workspaces/w/videos/video.mp4', 'workspaces/w/images/thumb.jpg'])
+            ->with(['workspaces/w/videos/video.mp4', 'workspaces/w/images/thumb.jpg'], $post->id)
             ->andReturnTrue();
 
         $this->withToken($user->test_token)
@@ -58,7 +58,7 @@ describe('cancelar post agendado', function () {
         $user = createUserWithPermissions(['posts.delete']);
         $post = scheduledPostFor($user, ['status' => 'published']);
 
-        $this->storage->shouldNotReceive('deleteMany');
+        $this->storage->shouldNotReceive('deleteIfUnused');
 
         $this->withToken($user->test_token)
             ->deleteJson("/api/scheduled-posts/{$post->uuid}")
@@ -72,7 +72,7 @@ describe('cancelar post agendado', function () {
         $user = createUserWithPermissions(['posts.delete']);
         $post = scheduledPostFor(createUserWithPermissions([]));
 
-        $this->storage->shouldNotReceive('deleteMany');
+        $this->storage->shouldNotReceive('deleteIfUnused');
 
         $this->withToken($user->test_token)
             ->deleteJson("/api/scheduled-posts/{$post->uuid}")

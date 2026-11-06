@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\Platform;
+use App\Exceptions\TikTokException;
 use App\Jobs\CheckTikTokPostStatusJob;
+use App\Jobs\PublishPostJob;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\OAuthProviders\TikTokOAuthProvider;
 use App\Services\Storage\StorageService;
+use App\Services\TikTok\TikTokApi;
 use App\Services\TikTokService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -21,6 +24,7 @@ class TikTokIntegrationTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Workspace $workspace;
 
     protected function setUp(): void
@@ -38,12 +42,16 @@ class TikTokIntegrationTest extends TestCase
             'services.tiktok.redirect' => 'https://app.pandypost.com/auth/tiktok/callback',
         ]);
 
-        $provider = new TikTokOAuthProvider();
+        $provider = new TikTokOAuthProvider;
         $url = $provider->getRedirectUrl($this->user);
 
         $this->assertStringContainsString('https://www.tiktok.com/v2/auth/authorize/', $url);
         $this->assertStringContainsString('client_key=test_client_key', $url);
-        $this->assertStringContainsString('scope=user.info.basic%2Cvideo.publish%2Cvideo.upload', $url);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+        $scopes = explode(',', $query['scope']);
+        foreach (['user.info.basic', 'user.info.profile', 'user.info.stats', 'video.list', 'video.upload', 'video.publish'] as $scope) {
+            $this->assertContains($scope, $scopes);
+        }
     }
 
     public function test_tiktok_account_sync_saves_social_account(): void
@@ -60,18 +68,20 @@ class TikTokIntegrationTest extends TestCase
                 'refresh_token' => 'mock_tiktok_refresh_token',
                 'open_id' => 'tiktok_user_12345',
                 'expires_in' => 86400,
+                'scope' => 'user.info.basic,video.upload,video.publish',
             ]),
             'https://open.tiktokapis.com/v2/user/info/*' => Http::response([
                 'data' => [
                     'user' => [
                         'display_name' => 'TikTok Creator',
                         'avatar_url' => 'https://tiktok.com/avatar.jpg',
+                        'username' => 'tiktok_creator',
                     ],
                 ],
             ]),
         ]);
 
-        $provider = new TikTokOAuthProvider();
+        $provider = new TikTokOAuthProvider;
         $account = $provider->syncAccount($this->user, 'mock_auth_code');
 
         $this->assertInstanceOf(SocialAccount::class, $account);
@@ -80,6 +90,8 @@ class TikTokIntegrationTest extends TestCase
         $this->assertEquals('TikTok Creator', $account->nickname);
         $this->assertEquals('mock_tiktok_access_token', $account->access_token);
         $this->assertEquals('mock_tiktok_refresh_token', $account->refresh_token);
+        $this->assertEquals('tiktok_creator', $account->fresh()->username);
+        $this->assertTrue($account->fresh()->canPublish());
     }
 
     public function test_tiktok_token_refresh(): void
@@ -129,6 +141,7 @@ class TikTokIntegrationTest extends TestCase
             'platform_id' => 'tiktok_test_id',
             'nickname' => 'TikTok Test User',
             'access_token' => 'test_access_token',
+            'scopes' => 'user.info.basic,video.upload,video.publish',
             'expires_at' => now()->addHours(12),
         ]);
 
@@ -140,8 +153,8 @@ class TikTokIntegrationTest extends TestCase
             'media_path' => "workspaces/{$this->workspace->uuid}/videos/test.mp4",
             'caption' => 'Check out my TikTok video!',
             'payload' => [
-                'tiktok_privacy_level' => 'PUBLIC_TO_EVERYONE',
-                'tiktok_disable_comment' => false,
+                'privacy_level' => 'PUBLIC_TO_EVERYONE',
+                'disable_comment' => false,
             ],
             'status' => 'pending',
         ]);
@@ -149,6 +162,17 @@ class TikTokIntegrationTest extends TestCase
         $uploadUrl = 'https://open-api.tiktok.com/media/upload/v1/test';
 
         Http::fake([
+            'https://open.tiktokapis.com/v2/post/publish/creator_info/query/' => Http::response([
+                'data' => [
+                    'creator_nickname' => 'TikTok Test User',
+                    'privacy_level_options' => ['PUBLIC_TO_EVERYONE', 'SELF_ONLY'],
+                    'comment_disabled' => false,
+                    'duet_disabled' => false,
+                    'stitch_disabled' => false,
+                    'max_video_post_duration_sec' => 600,
+                ],
+                'error' => ['code' => 'ok', 'message' => ''],
+            ]),
             'https://open.tiktokapis.com/v2/post/publish/video/init/' => Http::response([
                 'data' => [
                     'publish_id' => 'v_pub_file_test_999',
@@ -159,7 +183,7 @@ class TikTokIntegrationTest extends TestCase
                     'message' => '',
                 ],
             ]),
-            $uploadUrl => Http::response([], 200),
+            $uploadUrl => Http::response([], 201),
         ]);
 
         $stream = fopen('php://temp', 'r+');
@@ -173,18 +197,28 @@ class TikTokIntegrationTest extends TestCase
         $storageServiceMock->expects($this->once())
             ->method('readStream')
             ->willReturn($stream);
+        // O vídeo só é apagado no estado final (RF-6): o upload nunca apaga.
+        $storageServiceMock->expects($this->never())->method('deleteIfUnused');
+        $storageServiceMock->expects($this->never())->method('delete');
+        $storageServiceMock->expects($this->never())->method('deleteMany');
+        $this->app->instance(StorageService::class, $storageServiceMock);
 
-        $tiktokService = new TikTokService($storageServiceMock);
-        $tiktokService->upload($account, $post);
+        app(TikTokService::class)->upload($account, $post);
 
         $this->assertEquals('v_pub_file_test_999', $post->fresh()->container_id);
         $this->assertEquals('processing', $post->fresh()->status);
+        // Quem marca published é o CheckTikTokPostStatusJob, nunca o service.
+        $this->assertNull($post->fresh()->published_at);
+        $this->assertNull($post->fresh()->platform_post_id);
 
         Bus::assertDispatched(CheckTikTokPostStatusJob::class, function ($job) use ($post, $account) {
             return $job->publishId === 'v_pub_file_test_999'
                 && $job->post->id === $post->id
                 && $job->account->id === $account->id;
         });
+
+        // Sem polling dentro do service.
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/status/fetch/'));
     }
 
     public function test_check_tiktok_post_status_job_handles_publish_complete(): void
@@ -196,6 +230,8 @@ class TikTokIntegrationTest extends TestCase
             'platform_id' => 'tiktok_test_id',
             'nickname' => 'TikTok Test User',
             'access_token' => 'valid_token',
+            'scopes' => 'user.info.basic,video.upload,video.publish',
+            'username' => 'tiktok_creator',
             'expires_at' => now()->addHours(12),
         ]);
 
@@ -213,7 +249,7 @@ class TikTokIntegrationTest extends TestCase
             'https://open.tiktokapis.com/v2/post/publish/status/fetch/' => Http::response([
                 'data' => [
                     'status' => 'PUBLISH_COMPLETE',
-                    'publicity_id' => '72384910293840192',
+                    'publicaly_available_post_id' => ['72384910293840192'],
                 ],
             ]),
         ]);
@@ -225,12 +261,16 @@ class TikTokIntegrationTest extends TestCase
             ->willReturn(true);
 
         $job = new CheckTikTokPostStatusJob($post, $account, 'v_pub_file_test_999');
-        $job->handle($storageServiceMock);
+        $job->handle($storageServiceMock, app(TikTokApi::class));
 
         $freshPost = $post->fresh();
         $this->assertEquals('published', $freshPost->status);
         $this->assertEquals('72384910293840192', $freshPost->platform_post_id);
         $this->assertNotNull($freshPost->published_at);
+        $this->assertEquals(
+            'https://www.tiktok.com/@tiktok_creator/video/72384910293840192',
+            $freshPost->getPlatformPostUrl()
+        );
     }
 
     public function test_tiktok_service_upload_handles_unaudited_client_error(): void
@@ -244,6 +284,7 @@ class TikTokIntegrationTest extends TestCase
             'platform_id' => 'tiktok_test_id',
             'nickname' => 'TikTok Test User',
             'access_token' => 'test_access_token',
+            'scopes' => 'user.info.basic,video.upload,video.publish',
             'expires_at' => now()->addHours(12),
         ]);
 
@@ -254,10 +295,22 @@ class TikTokIntegrationTest extends TestCase
             'platform' => Platform::TIKTOK->value,
             'media_path' => "workspaces/{$this->workspace->uuid}/videos/test.mp4",
             'caption' => 'Check out my TikTok video!',
+            'payload' => ['privacy_level' => 'SELF_ONLY'],
             'status' => 'pending',
         ]);
 
         Http::fake([
+            'https://open.tiktokapis.com/v2/post/publish/creator_info/query/' => Http::response([
+                'data' => [
+                    'creator_nickname' => 'TikTok Test User',
+                    'privacy_level_options' => ['SELF_ONLY'],
+                    'comment_disabled' => false,
+                    'duet_disabled' => false,
+                    'stitch_disabled' => false,
+                    'max_video_post_duration_sec' => 600,
+                ],
+                'error' => ['code' => 'ok', 'message' => ''],
+            ]),
             'https://open.tiktokapis.com/v2/post/publish/video/init/' => Http::response([
                 'error' => [
                     'code' => 'unaudited_client_can_only_post_to_private_accounts',
@@ -268,17 +321,24 @@ class TikTokIntegrationTest extends TestCase
 
         $storageServiceMock = $this->createMock(StorageService::class);
         $storageServiceMock->expects($this->once())->method('size')->willReturn(23);
+        $this->app->instance(StorageService::class, $storageServiceMock);
 
-        $tiktokService = new TikTokService($storageServiceMock);
-
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('App do TikTok não auditado');
-
+        $thrown = null;
         try {
-            $tiktokService->upload($account, $post);
-        } finally {
-            $this->assertEquals('failed', $post->fresh()->status);
-            $this->assertStringContainsString('App do TikTok não auditado', $post->fresh()->error_message);
+            app(TikTokService::class)->upload($account, $post);
+        } catch (\Throwable $e) {
+            $thrown = $e;
         }
+
+        $this->assertInstanceOf(TikTokException::class, $thrown);
+        $this->assertStringContainsString('App do TikTok não auditado', $thrown->getMessage());
+        // O service só propaga; quem grava `failed` é o PublishPostJob::failed() (Decisão da fase TDD 4).
+        $this->assertEquals('processing', $post->fresh()->status);
+        (new PublishPostJob($post))->failed($thrown);
+        $this->assertEquals('failed', $post->fresh()->status);
+        $this->assertStringContainsString('App do TikTok não auditado', $post->fresh()->error_message);
+        // Nunca expõe o texto cru do TikTok.
+        $this->assertStringNotContainsString('Please review', $post->fresh()->error_message);
+        Bus::assertNotDispatched(CheckTikTokPostStatusJob::class);
     }
 }

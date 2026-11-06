@@ -67,7 +67,8 @@ class Invite extends Model implements Auditable
 
     public function invitedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'invited_by');
+        // Sem o escopo de tenant: quem recebe o convite está noutro workspace e precisa ver quem o convidou.
+        return $this->belongsTo(User::class, 'invited_by')->withoutGlobalScope('workspace');
     }
 
     public function role(): BelongsTo

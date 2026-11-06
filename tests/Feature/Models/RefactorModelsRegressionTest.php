@@ -25,14 +25,19 @@ describe('erros de domínio de SocialAccount', function () {
         }
     });
 
-    it('falha ao renovar token lança SocialAccountException com a mesma mensagem de antes', function () {
+    it('falha ao renovar token lança SocialAccountException sem o body da resposta (spec 015, Q2)', function () {
         Http::fake(['graph.instagram.com/*' => Http::response('token_invalido', 400)]);
         $account = connectedSocialAccount(createUserWithPermissions([]), 'instagram', [
             'expires_at' => now()->subHour(),
         ]);
 
-        expect(fn () => $account->getValidToken())
-            ->toThrow(SocialAccountException::class, 'Não foi possível renovar o token do Instagram: token_invalido');
+        try {
+            $account->getValidToken();
+            $this->fail('Deveria lançar exceção.');
+        } catch (SocialAccountException $e) {
+            expect($e->getMessage())->toBe('Não foi possível renovar o token do Instagram.')
+                ->and($e->getMessage())->not->toContain('token_invalido');
+        }
     });
 });
 

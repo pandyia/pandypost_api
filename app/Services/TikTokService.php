@@ -3,119 +3,109 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Exceptions\TikTokException;
+use App\Jobs\CheckTikTokPostStatusJob;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Services\Payloads\Builders\TikTokPayloadBuilder;
 use App\Services\Storage\StorageService;
-use Exception;
-use Illuminate\Support\Facades\Http;
+use App\Services\TikTok\TikTokApi;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Publica direto no TikTok (Direct Post, scope video.publish).
- * Enquanto o app não for auditado pelo TikTok, só é aceito privacy_level SELF_ONLY
- * (config services.tiktok.default_privacy / TIKTOK_DEFAULT_PRIVACY).
+ * Direct Post do TikTok (spec 011). O upload() só INICIA a publicação: valida, faz o init e envia
+ * o arquivo. Quem confirma o resultado (published/failed) é o CheckTikTokPostStatusJob.
+ * Erro propaga como TikTokException; o PublishPostJob::failed() é quem grava `failed`.
  */
 class TikTokService implements SocialMediaServiceInterface
 {
-    private const INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
-    private const STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
-
-    // TikTok: cada chunk entre 5MB e 64MB (o último pode chegar a 128MB). Vídeos < 5MB vão em 1 chunk.
+    // TikTok: cada chunk entre 5MB e 64MB (o último pode chegar a 128MB). Vídeo menor que 2 chunks vai inteiro.
     private const CHUNK_SIZE = 10 * 1024 * 1024;
-    private const STATUS_ATTEMPTS = 20;
-    private const STATUS_DELAY_SECONDS = 3;
 
     public function __construct(
         private readonly StorageService $storageService,
+        private readonly TikTokApi $api,
     ) {}
+
+    /**
+     * Opções do criador (privacidades permitidas, interações, duração máxima) para o front montar o post.
+     *
+     * @return array<string, mixed>
+     */
+    public function creatorInfo(SocialAccount $account): array
+    {
+        $this->ensureCanPublish($account);
+
+        return $this->api->creatorInfo($account->getValidToken());
+    }
 
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload para TikTok. Post ID: {$post->id}");
         $post->update(['status' => 'processing']);
 
-        try {
-            $token = $account->getValidToken();
-            $size = $this->storageService->size($post->media_path);
-            $mime = $this->storageService->mimeType($post->media_path);
-            $mime = str_starts_with($mime, 'video/') ? $mime : 'video/mp4';
+        $this->ensureCanPublish($account);
 
-            $chunkSize = $size < self::CHUNK_SIZE ? $size : self::CHUNK_SIZE;
-            $totalChunks = max(1, intdiv($size, $chunkSize));
+        $token = $account->getValidToken();
+        $payload = $post->payload ?? [];
 
-            $init = Http::withToken($token)
-                ->acceptJson()
-                ->post(self::INIT_URL, [
-                    'post_info' => $this->buildPostInfo($post),
-                    'source_info' => [
-                        'source' => 'FILE_UPLOAD',
-                        'video_size' => $size,
-                        'chunk_size' => $chunkSize,
-                        'total_chunk_count' => $totalChunks,
-                    ],
-                ])->json();
+        // A privacidade vale só se o TikTok ainda a oferece para a conta; nunca rebaixa em silêncio.
+        $allowed = $this->api->creatorInfo($token)['privacy_level_options'] ?? [];
+        if (! in_array($payload['privacy_level'] ?? null, $allowed, true)) {
+            throw TikTokException::privacyNotAllowed();
+        }
 
-            $publishId = $init['data']['publish_id'] ?? null;
-            $uploadUrl = $init['data']['upload_url'] ?? null;
+        $size = $this->storageService->size($post->media_path);
+        $totalChunks = max(1, intdiv($size, self::CHUNK_SIZE));
+        $chunkSize = $totalChunks === 1 ? $size : self::CHUNK_SIZE;
 
-            if (!$publishId || !$uploadUrl) {
-                throw new Exception('Falha ao inicializar upload no TikTok: ' . json_encode($init));
-            }
+        $init = $this->api->initUpload($token, $this->buildPostInfo($post), $size, $chunkSize, $totalChunks);
 
-            $this->streamChunks($uploadUrl, $post->media_path, $size, $chunkSize, $totalChunks, $mime);
-            $videoId = $this->waitForPublish($token, $publishId);
+        $this->sendChunks($init['upload_url'], $post->media_path, $size, $chunkSize, $totalChunks);
 
-            $post->update([
-                'status' => 'published',
-                // ID real do vídeo (só vem quando o post é público); senão fica null e o link não é gerado.
-                'platform_post_id' => $videoId,
-                'published_at' => now(),
-            ]);
+        $post->update(['container_id' => $init['publish_id']]);
+        CheckTikTokPostStatusJob::dispatch($post, $account, $init['publish_id']);
 
-            Log::info("Post {$post->id} publicado no TikTok (publish_id {$publishId}).");
-            $this->cleanupFiles($post);
-        } catch (Exception $e) {
-            Log::error("Erro no upload do TikTok para o Post {$post->id}: " . $e->getMessage());
-            throw $e;
+        Log::info("Vídeo do post {$post->id} enviado ao TikTok (publish_id {$init['publish_id']}). Aguardando confirmação.");
+    }
+
+    private function ensureCanPublish(SocialAccount $account): void
+    {
+        if (! $account->canPublish()) {
+            throw TikTokException::scopeMissing();
         }
     }
 
+    /** @return array<string, mixed> */
     private function buildPostInfo(ScheduledPost $post): array
     {
         $payload = $post->payload ?? [];
         $title = trim((string) ($post->caption ?: $post->title));
 
         return [
-            'title' => mb_substr($title, 0, 2200),
-            'privacy_level' => $payload['tiktok_privacy_level'] ?? config('services.tiktok.default_privacy', 'SELF_ONLY'),
-            'disable_comment' => (bool) ($payload['tiktok_disable_comment'] ?? false),
-            'disable_duet' => (bool) ($payload['tiktok_disable_duet'] ?? false),
-            'disable_stitch' => (bool) ($payload['tiktok_disable_stitch'] ?? false),
+            'title' => mb_substr($title, 0, TikTokPayloadBuilder::MAX_TITLE_LENGTH),
+            'privacy_level' => $payload['privacy_level'],
+            'disable_comment' => (bool) ($payload['disable_comment'] ?? false),
+            'disable_duet' => (bool) ($payload['disable_duet'] ?? false),
+            'disable_stitch' => (bool) ($payload['disable_stitch'] ?? false),
+            'brand_content_toggle' => (bool) ($payload['brand_content_toggle'] ?? false),
+            'brand_organic_toggle' => (bool) ($payload['brand_organic_toggle'] ?? false),
         ];
     }
 
-    private function streamChunks(string $uploadUrl, string $path, int $size, int $chunkSize, int $totalChunks, string $mime): void
+    private function sendChunks(string $uploadUrl, string $path, int $size, int $chunkSize, int $totalChunks): void
     {
+        $mime = $this->storageService->mimeType($path);
+        $mime = str_starts_with($mime, 'video/') ? $mime : 'video/mp4';
         $handle = $this->storageService->readStream($path);
 
         try {
             for ($i = 0; $i < $totalChunks; $i++) {
                 $start = $i * $chunkSize;
                 // O último chunk absorve o resto da divisão.
-                $end = ($i === $totalChunks - 1) ? $size - 1 : $start + $chunkSize - 1;
-                $length = $end - $start + 1;
+                $end = $i === $totalChunks - 1 ? $size - 1 : $start + $chunkSize - 1;
 
-                $body = $this->readExactly($handle, $length);
-
-                $response = Http::withHeaders([
-                    'Content-Type' => $mime,
-                    'Content-Range' => "bytes {$start}-{$end}/{$size}",
-                ])->withBody($body, $mime)->put($uploadUrl);
-
-                // 206 = chunk parcial aceito, 201 = upload completo.
-                if (!in_array($response->status(), [200, 201, 206], true)) {
-                    throw new Exception("Falha no envio do chunk {$i} ao TikTok ({$response->status()}): " . $response->body());
-                }
+                $this->api->uploadChunk($uploadUrl, $this->readExactly($handle, $end - $start + 1), $start, $end, $size, $mime);
             }
         } finally {
             if (is_resource($handle)) {
@@ -128,7 +118,7 @@ class TikTokService implements SocialMediaServiceInterface
     private function readExactly($handle, int $length): string
     {
         $buffer = '';
-        while (strlen($buffer) < $length && !feof($handle)) {
+        while (strlen($buffer) < $length && ! feof($handle)) {
             $data = fread($handle, $length - strlen($buffer));
             if ($data === false) {
                 break;
@@ -137,51 +127,11 @@ class TikTokService implements SocialMediaServiceInterface
         }
 
         if (strlen($buffer) !== $length) {
-            throw new Exception("Leitura incompleta do arquivo no S3 (esperado {$length}, lido " . strlen($buffer) . ').');
+            Log::error("Leitura incompleta do vídeo no S3 (esperado {$length}, lido ".strlen($buffer).').');
+
+            throw TikTokException::uploadFailed();
         }
 
         return $buffer;
-    }
-
-    private function waitForPublish(string $token, string $publishId): ?string
-    {
-        for ($attempt = 0; $attempt < self::STATUS_ATTEMPTS; $attempt++) {
-            $data = Http::withToken($token)
-                ->acceptJson()
-                ->post(self::STATUS_URL, ['publish_id' => $publishId])
-                ->json('data', []);
-
-            $status = $data['status'] ?? null;
-
-            if (in_array($status, ['PUBLISH_COMPLETE'], true)) {
-                // (sic) o TikTok escreve "publicaly" com um L só.
-                $id = $data['publicaly_available_post_id'][0] ?? null;
-
-                return $id ? (string) $id : null;
-            }
-
-            if ($status === 'FAILED') {
-                throw new Exception('TikTok recusou o vídeo: ' . ($data['fail_reason'] ?? 'motivo desconhecido'));
-            }
-
-            sleep(self::STATUS_DELAY_SECONDS);
-        }
-
-        // Upload foi aceito; o processamento pode só estar demorando. Não falha o post.
-        Log::warning("TikTok publish_id {$publishId}: status não confirmado após polling.");
-
-        return null;
-    }
-
-    private function cleanupFiles(ScheduledPost $post): void
-    {
-        $paths = [$post->media_path];
-
-        $thumbnailPath = ($post->payload ?? [])['thumbnail_path'] ?? null;
-        if ($thumbnailPath) {
-            $paths[] = $thumbnailPath;
-        }
-
-        $this->storageService->deleteIfUnused($paths, $post->id);
     }
 }

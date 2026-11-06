@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BaseException;
+use App\Exceptions\SocialAccountException;
 use App\Http\Resources\SocialAccountResource;
+use App\Models\User;
 use App\Models\Workspace;
+use App\Services\OAuthStateService;
 use App\Services\SocialAccountService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * @group Contas sociais
@@ -20,6 +26,10 @@ use Symfony\Component\HttpFoundation\Response;
  * 3. A plataforma chama o callback da API, que redireciona o popup para
  *    `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
  * 4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+ *
+ * A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+ * Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+ * (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
  */
 class SocialAccountController extends BaseController
 {
@@ -28,7 +38,7 @@ class SocialAccountController extends BaseController
     protected static string $permissionGroup = 'social_accounts';
 
     protected static array $permissionMethods = [
-        'view' => ['index'],
+        'view' => ['index', 'schedules'],
         'connect' => ['redirect'],
         'disconnect' => ['destroy'],
     ];
@@ -43,12 +53,14 @@ class SocialAccountController extends BaseController
      * Iniciar conexão (URL de OAuth)
      *
      * Devolve a URL de autorização da plataforma. **Não redireciona**: abra a URL num popup (passo 1 do fluxo acima).
+     * A URL leva um `state` de **uso único** que vale 10 minutos e registra o usuário e o workspace corrente: a conta
+     * conectada vai para esse workspace. Se o usuário trocar de workspace no meio do fluxo, a conta ainda vai para o de origem.
      *
      * **Permissão:** `social_accounts.connect`
      *
-     * @urlParam platform string required Plataforma. Enum: youtube, instagram, tiktok. Example: youtube
+     * @urlParam platform string required Plataforma. Enum: google (YouTube), instagram, tiktok. Example: tiktok
      *
-     * @response 200 {"url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=..."}
+     * @response 200 {"url": "https://www.tiktok.com/v2/auth/authorize/?client_key=...&state=..."}
      * @response 400 scenario="plataforma inválida" {"error": "platform_not_supported", "message": "Plataforma 'x' não é suportada."}
      * @response 500 scenario="credenciais da plataforma ausentes" {"error": "oauth_initialization_failed", "message": "Falha ao iniciar o fluxo OAuth."}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "social_accounts.connect"}
@@ -69,50 +81,73 @@ class SocialAccountController extends BaseController
      * - `?success=1` → conta conectada;
      * - `?error=<mensagem>` → falha (mensagem pronta para exibir).
      *
+     * `platform` aceito: `google` (YouTube), `instagram` ou `tiktok`.
+     *
+     * A conta fica no workspace de quem iniciou o fluxo e passa a ser **do workspace**: qualquer membro com a permissão
+     * de agendamento pode usá-la, independente de quem conectou. O `state` vale 10 minutos e **uma única vez**;
+     * reaproveitado, expirado, adulterado, emitido para **outra plataforma** (o `state` do Google não vale em `/instagram/callback`) ou de quem já saiu do workspace, devolve `?error=Estado OAuth inválido.`.
+     * O iniciador precisa ainda ter `social_accounts.connect` no workspace no momento do callback; senão vem `?error=Você não tem permissão para conectar contas neste workspace.`.
+     * Erro inesperado (banco, rede) vira `?error=Não foi possível conectar a conta. Tente novamente.`: só mensagens de erro de domínio da API chegam ao `error`.
+     * A rota tem limite de 30 requisições por minuto por IP (429).
+     *
      * @unauthenticated
      *
-     * @urlParam platform string required Plataforma. Enum: youtube, instagram, tiktok. Example: youtube
+     * @urlParam platform string required Plataforma. Enum: google (YouTube), instagram, tiktok. Example: google
      *
      * @queryParam code string required Código de autorização enviado pela plataforma. No-example
-     * @queryParam state string required Estado gerado no passo 1. No-example
+     * @queryParam state string required Estado gerado no passo 1 (expira em 10 min e é de uso único). No-example
      *
      * @response 302 scenario="redireciona para o frontend" ""
+     * @response 429 scenario="limite de requisições" {"message": "Too Many Attempts."}
      */
-    public function callback(string $platform, Request $request)
+    public function callback(string $platform, Request $request, OAuthStateService $oauthState)
     {
         $frontendCallbackUrl = config('app.frontend_url').'/social-accounts/callback';
 
-        $state = $request->input('state');
+        // Uso único: o state é consumido aqui, mesmo que o resto falhe.
+        try {
+            $this->socialAccountService->ensurePlatformSupported($platform);
+            $state = $oauthState->consume($request->input('state'), $platform);
+        } catch (SocialAccountException $e) {
+            // Plataforma inexistente tem texto próprio; qualquer falha do state é a mesma mensagem, sem detalhe.
+            $message = $e->getErrorCode() === 'platform_not_supported' ? $e->getMessage() : 'Estado OAuth inválido.';
 
-        if (! $state) {
+            return redirect($frontendCallbackUrl.'?error='.urlencode($message));
+        }
+
+        $workspace = Workspace::where('uuid', $state['workspace_uuid'])->first();
+        $initiator = User::find($state['user_id']);
+
+        // O iniciador precisa continuar com acesso ao workspace (pode ter saído entre o início e o callback).
+        if (! $workspace || ! $initiator
+            || ! $initiator->accesses()->where('workspace_id', $workspace->id)->exists()) {
             return redirect($frontendCallbackUrl.'?error='.urlencode('Estado OAuth inválido.'));
         }
 
-        try {
-            $workspaceUuid = decrypt($state);
-        } catch (\Exception $e) {
-            return redirect($frontendCallbackUrl.'?error='.urlencode('Estado OAuth inválido.'));
-        }
-
-        $workspace = Workspace::where('uuid', $workspaceUuid)->first();
-
-        if (! $workspace) {
-            return redirect($frontendCallbackUrl.'?error='.urlencode('Workspace não encontrado.'));
+        // O papel do iniciador pode ter mudado nos 10 minutos do state: precisa ainda poder conectar contas aqui.
+        if (! $initiator->isSuperAdmin() && ! $initiator->hasPermissionInWorkspace('social_accounts.connect', $workspace->id)) {
+            return redirect($frontendCallbackUrl.'?error='.urlencode('Você não tem permissão para conectar contas neste workspace.'));
         }
 
         try {
-            $this->socialAccountService->syncAccount($workspace, $platform, $request->input('code'));
+            $this->socialAccountService->syncAccount($initiator, $platform, $request->input('code'), $workspace);
 
             return redirect($frontendCallbackUrl.'?success=1');
-        } catch (\Exception $e) {
+        } catch (BaseException $e) {
+            // Exceção de domínio: a mensagem é um texto fixo em pt-BR, própria para exibir.
             return redirect($frontendCallbackUrl.'?error='.urlencode($e->getMessage()));
+        } catch (Throwable $e) {
+            // QueryException/ConnectionException trazem SQL com tokens ou URL de terceiros: só a classe vai para o log.
+            Log::warning("Falha inesperada no callback OAuth ({$platform}, ".$e::class.').');
+
+            return redirect($frontendCallbackUrl.'?error='.urlencode('Não foi possível conectar a conta. Tente novamente.'));
         }
     }
 
     /**
      * Desconectar conta
      *
-     * Remove a conta e **cancela os agendamentos pendentes** dela.
+     * Remove a conta (de qualquer membro do workspace) e **cancela os agendamentos pendentes** dela, apagando a mídia que nenhum outro post ainda usa. Os posts cancelados deixam de aparecer em `GET /scheduled-posts` (o histórico da conta some junto).
      *
      * **Permissão:** `social_accounts.disconnect`
      *
@@ -135,10 +170,13 @@ class SocialAccountController extends BaseController
      *
      * Mesma lista de contas, cada uma com `scheduled_posts` (formato de [Agendamentos](#agendamentos)). Útil para o calendário.
      *
+     * **Permissão:** `social_accounts.view` **e** `posts.view` (os posts trazem título, legenda e mídia). Falta de qualquer uma devolve 403; o `required_permission` indica a que faltou.
+     *
      * @queryParam per_page integer Itens por página. Sem ele, vem tudo. Example: 15
      * @queryParam page integer Página. Example: 1
      * @queryParam platform string Filtra pela plataforma. Example: instagram
      *
+     * @response 403 scenario="sem social_accounts.view ou posts.view" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.view"}
      * @response 200 {
      *   "data": [
      *     {
@@ -147,6 +185,7 @@ class SocialAccountController extends BaseController
      *       "platform_id": "UCx9...",
      *       "nickname": "Canal da Ana",
      *       "avatar": "https://yt3.ggpht.com/...",
+     *       "can_publish": true,
      *       "expires_at": "2026-10-15T15:00:00-03:00",
      *       "connected_at": "2026-10-01T10:00:00-03:00",
      *       "is_stale": false,
@@ -189,6 +228,7 @@ class SocialAccountController extends BaseController
      *       "platform_id": "UCx9...",
      *       "nickname": "Canal da Ana",
      *       "avatar": "https://yt3.ggpht.com/...",
+     *       "can_publish": true,
      *       "expires_at": "2026-10-15T15:00:00-03:00",
      *       "connected_at": "2026-10-01T10:00:00-03:00",
      *       "is_stale": false,
@@ -199,6 +239,10 @@ class SocialAccountController extends BaseController
      *   "meta": {"current_page": 1, "last_page": 1, "per_page": 15, "total": 1}
      * }
      *
+     * @responseField platform string Enum: youtube, instagram, tiktok.
+     * @responseField can_publish boolean `false` quando a conta não tem a permissão de publicar (hoje só o TikTok exige `video.publish`; YouTube e Instagram sempre `true`). Com `false`, desabilite o agendamento e peça para reconectar a conta; senão o agendamento é recusado com 422 (`social_account_uuids`) e, se já havia post, ele falha com `tiktok_scope_missing`.
+     * @responseField expires_at string|null Quando o token de acesso expira (ISO 8601).
+     * @responseField connected_at string Quando a conta foi conectada (ISO 8601).
      * @responseField is_stale boolean `true` se a conta está 2+ dias sem postar ou nunca postou.
      * @responseField days_since_last_activity integer|null Dias desde o último post (0 se há post agendado no futuro). `null` = nunca postou.
      *

@@ -8,7 +8,7 @@ Tudo roda em Docker; **não há `vendor/` no host**. Sem TTY: use `docker exec p
 
 ## Fluxo SDD
 
-Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **003**). Modelo de referência: `specs/001-billing/`.
+Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **019**). Modelo de referência: `specs/001-billing/`.
 
 1. **`spec.md`** — o quê e por quê, sem detalhe técnico. Seções: Contexto, Escopo, Requisitos (RF-n), Contrato de API, Critérios de aceite, Fora de escopo, Questões em aberto.
 2. **`plan.md`** — como: decisões (+ alternativa descartada), modelo de dados, arquivos, efeitos colaterais, testes, riscos.
@@ -34,6 +34,15 @@ Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: 
 - **Plataformas:** Strategy + Factory (`SocialMediaFactory`, `PayloadBuilderFactory`, `OAuthProviderFactory`).
 - **Efeitos colaterais:** Observers, Events (broadcast Reverb), Jobs na fila da plataforma, Notifications.
 - **Billing:** regras em `specs/001-billing/plan.md`.
+
+## Redes sociais (YouTube, Instagram, TikTok e futuras)
+
+**É um padrão.** Toda rede segue o mesmo molde (`Platform` + `<Rede>Api` + `<Rede>Error/Exception` + `<Rede>Service` + job de conferência + `<Rede>PayloadBuilder` + `<Rede>OAuthProvider` + analytics, registrados nas factories). Guia completo, checklist para rede nova (Facebook, X, Kwai...) e armadilhas já pagas: **`docs/padrao-redes-sociais.md`**. Use o agente `social-network`.
+
+- **A conta social é do workspace:** quem tem acesso e permissão agenda em qualquer conta conectada; `social_accounts.user_id` é só "quem conectou por último", nunca autorização.
+- Validação por rede no **agendamento** (422 tudo-ou-nada); `error_message` sempre texto fixo em pt-BR do enum de erro da rede, nunca body/token/URL de terceiro.
+- Só o `<Rede>Api` faz `Http::`; erro permanente (`isPermanent()`) não repete; nunca publicar em duplicidade; mídia no S3 só apagada em sucesso; job com `->afterCommit()`; `state` OAuth de uso único (`OAuthStateService`).
+- Specs de referência: 011 (TikTok), 014 (base comum), 015 (Instagram), 016 (YouTube), 017 (conta do workspace), 018 (endurecimento). Produto concorrente do mLabs: o diferencial é confiabilidade, validação antecipada e trabalho em equipe.
 
 ## Segurança
 
@@ -87,6 +96,7 @@ Branch `develop`, PR para `main`. Conventional Commits em pt-BR (`feat(billing):
 | `qa` | Valida contra os critérios de aceite | `tests/` |
 | `security` | Audita e prova falhas com teste; não corrige | `tests/` |
 | `docs` | Documenta os endpoints no Scribe (`/docs`) para o frontend; não muda comportamento | docblocks dos controllers |
+| `social-network` | Especialista em redes sociais: conduz rede nova/mudança de rede no padrão de `docs/padrao-redes-sociais.md` | spec + código + `tests/` (via fluxo SDD) |
 | `notifications` | Monta uma notificação nova no padrão da central (enum, factory, gancho, testes) e entrega o contrato ao front | código + `tests/` |
 
 Fluxo de feature: spec/plan/tasks aprovados → `tdd` → `dev` → `qa` → `security` (obrigatório em área crítica) → `docs`. Refatoração: spec aprovada → `refactor` → `qa`. Agentes que só escrevem em `tests/` não corrigem bugs: reportam.

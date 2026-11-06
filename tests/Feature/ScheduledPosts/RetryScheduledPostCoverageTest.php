@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\TikTokException;
 use App\Jobs\CheckInstagramContainerJob;
 use App\Jobs\CheckTikTokPostStatusJob;
 use App\Jobs\PublishPostJob;
@@ -9,6 +10,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\InstagramService;
 use App\Services\Storage\StorageService;
+use App\Services\TikTok\TikTokApi;
 use App\Services\YouTubeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -132,14 +134,16 @@ describe('critério 7: falha não apaga a mídia em nenhuma plataforma', functio
         Http::fake(['open.tiktokapis.com/*' => Http::response(['data' => ['status' => 'FAILED', 'fail_reason' => 'motivo']])]);
 
         try {
-            (new CheckTikTokPostStatusJob($post, $account, 'pub-1'))->handle(app(StorageService::class));
+            (new CheckTikTokPostStatusJob($post, $account, 'pub-1'))->handle(app(StorageService::class), app(TikTokApi::class));
         } catch (Throwable) {
         }
 
         Storage::disk('s3')->assertExists($post->media_path);
         $fresh = $post->fresh();
         expect($fresh->status)->toBe('failed')
-            ->and($fresh->error_message)->toContain('motivo')
+            // fail_reason desconhecido vira a mensagem genérica pt-BR; o texto cru do TikTok nunca vai ao error_message (RF-8).
+            ->and($fresh->error_message)->toBe(TikTokException::fromApiCode('motivo')->getMessage())
+            ->and($fresh->error_message)->not->toContain('motivo')
             ->and($fresh->failed_at)->not->toBeNull()
             ->and(Notification::where('type', 'post_failed')->count())->toBe(1);
     });

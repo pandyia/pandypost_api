@@ -6,11 +6,9 @@ use App\Enums\Exceptions\ScheduledPostError;
 
 class ScheduledPostException extends BaseException
 {
-    public static function noAccountLinked(string $platform): self
+    public static function noAccountLinked(): self
     {
-        $error = ScheduledPostError::NO_ACCOUNT_LINKED;
-
-        return static::make($error, $error->message($platform));
+        return static::make(ScheduledPostError::NO_ACCOUNT_LINKED);
     }
 
     public static function platformNotSupported(string $platform): self
@@ -45,5 +43,15 @@ class ScheduledPostException extends BaseException
     public static function permalinkUnavailable(): self
     {
         return static::make(ScheduledPostError::PERMALINK_UNAVAILABLE);
+    }
+
+    public static function subscriptionInactive(): self
+    {
+        return static::make(ScheduledPostError::SUBSCRIPTION_INACTIVE);
+    }
+
+    public static function accountNotFound(): self
+    {
+        return static::make(ScheduledPostError::ACCOUNT_NOT_FOUND);
     }
 }

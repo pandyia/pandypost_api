@@ -131,6 +131,12 @@ class ScheduledPost extends Model implements Auditable
         return $this->canRetry() ? $this->failed_at?->copy()->addDays(self::MEDIA_RETENTION_DAYS) : null;
     }
 
+    /** Arquivos do post no storage: o vídeo e, quando houver, a thumbnail. */
+    public function mediaPaths(): array
+    {
+        return array_values(array_filter([$this->media_path, $this->payload['thumbnail_path'] ?? null]));
+    }
+
     public function totalPostsForAccount(): int
     {
         return $this->socialAccount?->scheduledPosts()->count() ?? 0;

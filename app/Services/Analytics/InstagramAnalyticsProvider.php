@@ -6,6 +6,7 @@ use App\Contracts\AnalyticsProviderInterface;
 use App\Enums\Platform;
 use App\Exceptions\AnalyticsException;
 use App\Models\SocialAccount;
+use App\Services\Instagram\InstagramApi;
 use App\Support\Analytics\AnalyticsPeriod;
 use App\Support\Analytics\MetricsCalculator;
 use Carbon\CarbonImmutable;
@@ -26,7 +27,7 @@ use Throwable;
  */
 class InstagramAnalyticsProvider implements AnalyticsProviderInterface
 {
-    private const GRAPH_URL = 'https://graph.instagram.com/v25.0';
+    private const GRAPH_URL = InstagramApi::GRAPH_URL;
 
     private const ACCOUNT_METRICS = 'views,reach,accounts_engaged,total_interactions,likes,comments,shares,saves,profile_links_taps';
 

@@ -2,18 +2,20 @@
 
 namespace App\Services\OAuthProviders;
 
-use App\Contracts\OAuthProviderInterface;
+use App\Enums\Platform;
 use App\Exceptions\SocialAccountException;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * TikTok Login Kit (web) + Display API.
- * Escopos de leitura para o analytics; publicação continua fora (specs/003).
+ * Escopos de leitura para o analytics (spec 003) e de publicação (spec 011).
  */
-class TikTokOAuthProvider implements OAuthProviderInterface
+class TikTokOAuthProvider extends AbstractOAuthProvider
 {
     private const AUTHORIZE_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 
@@ -26,9 +28,7 @@ class TikTokOAuthProvider implements OAuthProviderInterface
 
     public function getRedirectUrl(?User $user = null): string
     {
-        $workspace = $user?->currentAccess?->workspace;
-
-        if (! $workspace || ! config('services.tiktok.client_key')) {
+        if (! config('services.tiktok.client_key')) {
             throw SocialAccountException::oauthInitializationFailed();
         }
 
@@ -37,19 +37,13 @@ class TikTokOAuthProvider implements OAuthProviderInterface
             'scope' => self::SCOPES,
             'response_type' => 'code',
             'redirect_uri' => config('services.tiktok.redirect'),
-            'state' => encrypt($workspace->uuid),
+            'state' => $this->stateFor($user, 'tiktok'),
         ]);
     }
 
-    public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
+    public function syncAccount(User $user, ?string $code = null, ?Workspace $workspace = null): SocialAccount
     {
-        if ($context instanceof Workspace) {
-            $workspaceId = $context->id;
-            $userId = $context->accesses()->first()?->user_id;
-        } else {
-            $workspaceId = $context->currentAccess->workspace_id;
-            $userId = $context->id;
-        }
+        [$workspaceId, $userId] = $this->ownerIds($user, $workspace);
 
         if (! $code) {
             throw SocialAccountException::authFailed('TikTok');
@@ -61,14 +55,12 @@ class TikTokOAuthProvider implements OAuthProviderInterface
             throw SocialAccountException::oauthTokenExchangeFailed();
         }
 
-        $profile = Http::withToken($token['access_token'])
-            ->get(self::USER_INFO_URL, ['fields' => 'open_id,display_name,avatar_url,username'])
-            ->json('data.user', []);
+        $profile = $this->fetchProfile($token['access_token']);
 
         return SocialAccount::updateOrCreate(
             [
                 'workspace_id' => $workspaceId,
-                'platform' => 'tiktok',
+                'platform' => Platform::TIKTOK->value,
                 'platform_id' => $token['open_id'],
             ],
             [
@@ -79,8 +71,32 @@ class TikTokOAuthProvider implements OAuthProviderInterface
                 'nickname' => $profile['display_name'] ?? 'TikTok',
                 'avatar' => $profile['avatar_url'] ?? null,
                 'username' => $profile['username'] ?? null,
+                // Escopos realmente concedidos (o usuário pode desmarcar); decidem o can_publish.
+                'scopes' => $token['scope'] ?? null,
             ]
         );
+    }
+
+    /** Perfil é complemento: se falhar, a conta é criada mesmo assim (com nickname padrão) e o motivo vai para o log. */
+    private function fetchProfile(string $accessToken): array
+    {
+        try {
+            $response = Http::withToken($accessToken)
+                ->get(self::USER_INFO_URL, ['fields' => 'open_id,display_name,avatar_url,username']);
+        } catch (ConnectionException) {
+            Log::warning('TikTok user/info indisponível (falha de conexão); conta criada sem perfil.');
+
+            return [];
+        }
+
+        $code = $response->json('error.code');
+        if ($response->failed() || ($code !== null && $code !== 'ok')) {
+            Log::warning('TikTok user/info falhou (HTTP '.$response->status().', código '.($code ?? 'ausente').'); conta criada sem perfil.');
+
+            return [];
+        }
+
+        return $response->json('data.user', []);
     }
 
     private function exchangeCode(string $code): array

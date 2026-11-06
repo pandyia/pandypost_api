@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledPostController;
 use App\Http\Controllers\Api\SocialAccountController;
+use App\Http\Controllers\Api\TikTokCreatorInfoController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WorkspaceAvatarController;
 use App\Http\Controllers\Api\WorkspaceController;
@@ -50,7 +51,7 @@ Route::controller(AuthController::class)->group(function () {
 | Rotas que recebem retorno do Google/Meta sem Bearer Token.
 | O Token de usuário é validado pelo parâmetro JWT 'state' na URL.
 */
-Route::get('social-accounts/{platform}/callback', [SocialAccountController::class, 'callback']);
+Route::get('social-accounts/{platform}/callback', [SocialAccountController::class, 'callback'])->middleware('throttle:30,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -159,9 +160,11 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:45,1'])->group(function
 
     // Social Accounts
     Route::get('social-accounts', [SocialAccountController::class, 'index']);
-    Route::get('social-accounts/schedules', [SocialAccountController::class, 'schedules']);
+    // Lista contas e posts: exige social_accounts.view (via $permissionMethods) e também posts.view.
+    Route::get('social-accounts/schedules', [SocialAccountController::class, 'schedules'])->middleware('permission:posts.view');
     Route::get('social-accounts/{platform}/auth', [SocialAccountController::class, 'redirect']);
     Route::delete('social-accounts/{socialAccount}', [SocialAccountController::class, 'destroy']);
+    Route::get('social-accounts/{socialAccount}/tiktok/creator-info', TikTokCreatorInfoController::class);
 
     // Workspaces (CRUD)
     Route::apiResource('workspaces', WorkspaceController::class);

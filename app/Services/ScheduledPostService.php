@@ -14,8 +14,10 @@ use App\Services\Billing\Tenant\SubscriptionService;
 use App\Services\Factories\PayloadBuilderFactory;
 use App\Services\Storage\StorageService;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ScheduledPostService extends BaseService
 {
@@ -41,6 +43,7 @@ class ScheduledPostService extends BaseService
     {
         $this->subscriptionService->ensureValidSubscription($user);
 
+        $data['scheduled_at'] = $this->toAppTimezone($data['scheduled_at'] ?? null);
         $accountUuids = $data['social_account_uuids'];
         $pipelineCardUuid = Arr::pull($data, 'pipeline_card_uuid');
         $mediaStoragePath = $data['media_storage_path'];
@@ -48,8 +51,10 @@ class ScheduledPostService extends BaseService
         return DB::transaction(function () use ($user, $accountUuids, $pipelineCardUuid, $data, $mediaStoragePath) {
             $this->subscriptionService->consumeQuota($user, count($accountUuids));
 
-            $posts = collect($accountUuids)->map(fn (string $uuid) => $this->createPostForAccount($user, $uuid, $mediaStoragePath, $data)
-            );
+            // Todas as contas são conferidas antes de criar qualquer post: tudo ou nada, sem job despachado à toa.
+            $accounts = collect($accountUuids)->map(fn (string $uuid) => $this->ensureValidSocialAccount($user, $uuid));
+
+            $posts = $accounts->map(fn (SocialAccount $account) => $this->createPostForAccount($user, $account, $mediaStoragePath, $data));
 
             $this->handlePipelineCard($pipelineCardUuid, $posts); // TODO tem a ver com kanban, não implementado ainda no frontend.
 
@@ -59,13 +64,12 @@ class ScheduledPostService extends BaseService
 
     /**
      * Cancela um post agendado.
-     * Só é possível cancelar posts com status "pending".
+     * Só é possível cancelar posts com status "pending". Qualquer membro com permissão no workspace pode cancelar
+     * (a conta é do workspace); o escopo de tenant isola os demais workspaces (404).
      */
-    public function cancel(User $user, string $uuid): void
+    public function cancel(string $uuid): void
     {
-        $post = ScheduledPost::where('uuid', $uuid)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
+        $post = ScheduledPost::where('uuid', $uuid)->firstOrFail();
 
         if ($post->status !== ScheduledPostStatus::PENDING->value) {
             throw ScheduledPostException::cannotCancel();
@@ -73,13 +77,8 @@ class ScheduledPostService extends BaseService
 
         $post->update(['status' => ScheduledPostStatus::CANCELLED->value]);
 
-        $paths = [$post->media_path];
-        $payload = $post->payload ?? [];
-        if (! empty($payload['thumbnail_path'])) {
-            $paths[] = $payload['thumbnail_path'];
-        }
-
-        $this->storageService->deleteMany(array_filter($paths));
+        // O agendamento em várias contas reaproveita a mídia: só apaga se nenhum outro post ainda a usa.
+        $this->storageService->deleteIfUnused($post->mediaPaths(), $post->id);
     }
 
     /**
@@ -111,7 +110,7 @@ class ScheduledPostService extends BaseService
                 'status' => ScheduledPostStatus::PENDING->value,
                 'error_message' => null,
                 'failed_at' => null,
-                'scheduled_at' => $scheduledAt,
+                'scheduled_at' => $this->toAppTimezone($scheduledAt),
                 'container_id' => null,
                 'container_created_at' => null,
             ]);
@@ -124,12 +123,19 @@ class ScheduledPostService extends BaseService
         return $post->load($this->with);
     }
 
+    /**
+     * Data com fuso (ISO com `Z` ou `-03:00`) vira o mesmo instante no fuso da aplicação: gravar o relógio do
+     * offset como se fosse local deslocaria o post. Data sem fuso já vale no fuso da aplicação.
+     */
+    private function toAppTimezone(?string $date): ?Carbon
+    {
+        return $date ? Carbon::parse($date)->setTimezone(config('app.timezone')) : null;
+    }
+
     /** Vídeo e, quando houver, a thumbnail ainda precisam estar no storage. */
     private function mediaStillExists(ScheduledPost $post): bool
     {
-        $paths = array_filter([$post->media_path, $post->payload['thumbnail_path'] ?? null]);
-
-        foreach ($paths as $path) {
+        foreach ($post->mediaPaths() as $path) {
             if (! $this->storageService->exists($path)) {
                 return false;
             }
@@ -143,11 +149,10 @@ class ScheduledPostService extends BaseService
      */
     private function createPostForAccount(
         User $user,
-        string $uuid,
+        SocialAccount $account,
         string $mediaStoragePath,
         array $data,
     ): ScheduledPost {
-        $account = $this->ensureValidSocialAccount($user, $uuid);
         $platform = Platform::from($account->platform);
         $payloadBuild = $this->payloadBuilderFactory->make($platform)->build($data);
         $attributes = Arr::except($payloadBuild->attributes(), ['social_account_uuids', 'media_storage_path', 'thumbnail_storage_path']);
@@ -185,12 +190,23 @@ class ScheduledPostService extends BaseService
 
     private function ensureValidSocialAccount(User $user, string $socialAccountUuid): SocialAccount
     {
-        $account = SocialAccount::where('user_id', $user->id)
-            ->where('uuid', $socialAccountUuid)
+        // A conta pertence ao workspace: o global scope de tenant isola; user_id da conta não entra (spec 017).
+        // O workspace corrente é filtrado explicitamente, além do global scope (defesa em profundidade).
+        $account = SocialAccount::where('uuid', $socialAccountUuid)
+            ->where('workspace_id', $user->resolveCurrentAccess()?->workspace_id)
             ->first();
 
         if (! $account) {
-            throw ScheduledPostException::noAccountLinked($socialAccountUuid);
+            throw ScheduledPostException::noAccountLinked();
+        }
+
+        // Conta sem o escopo de publicação (hoje só o TikTok): 422 no agendamento em vez de falhar na hora de publicar.
+        if (! $account->canPublish()) {
+            $label = Platform::from($account->platform)->label();
+
+            throw ValidationException::withMessages([
+                'social_account_uuids' => ["A conta do {$label} não tem permissão para publicar. Reconecte a conta do {$label}."],
+            ]);
         }
 
         return $account;
@@ -198,8 +214,11 @@ class ScheduledPostService extends BaseService
 
     private function dispatchPlatformJob(ScheduledPost $post): void
     {
-        $post->scheduled_at
-            ? PublishPostJob::dispatch($post)->delay($post->scheduled_at)
-            : PublishPostJob::dispatch($post);
+        // afterCommit: o worker só pega o job depois que o post existe de fato (e nunca de um post com rollback).
+        $dispatch = PublishPostJob::dispatch($post)->afterCommit();
+
+        if ($post->scheduled_at) {
+            $dispatch->delay($post->scheduled_at);
+        }
     }
 }

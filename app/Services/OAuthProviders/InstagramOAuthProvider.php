@@ -2,24 +2,23 @@
 
 namespace App\Services\OAuthProviders;
 
-use App\Contracts\OAuthProviderInterface;
+use App\Enums\Platform;
+use App\Exceptions\InstagramException;
 use App\Exceptions\SocialAccountException;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
-use Illuminate\Support\Facades\Http;
+use App\Services\Instagram\InstagramApi;
 
-class InstagramOAuthProvider implements OAuthProviderInterface
+class InstagramOAuthProvider extends AbstractOAuthProvider
 {
+    private const DEFAULT_USERNAME = 'Instagram User';
+
+    public function __construct(private readonly InstagramApi $api) {}
+
     public function getRedirectUrl(?User $user = null): string
     {
-        $workspace = $user?->currentAccess?->workspace;
-
-        if (! $workspace) {
-            throw SocialAccountException::oauthInitializationFailed();
-        }
-
-        $state = encrypt($workspace->uuid);
+        $state = $this->stateFor($user, 'instagram');
 
         $params = [
             'client_id' => config('services.meta.app_id'),
@@ -35,21 +34,19 @@ class InstagramOAuthProvider implements OAuthProviderInterface
         return 'https://www.instagram.com/oauth/authorize?'.$query;
     }
 
-    public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
+    public function syncAccount(User $user, ?string $code = null, ?Workspace $workspace = null): SocialAccount
     {
-        if ($context instanceof Workspace) {
-            $workspaceId = $context->id;
-            $userId = $context->accesses()->first()?->user_id;
-        } else {
-            $workspaceId = $context->currentAccess->workspace_id;
-            $userId = $context->id;
-        }
+        [$workspaceId, $userId] = $this->ownerIds($user, $workspace);
 
         if (! $code) {
             throw SocialAccountException::authFailed('Instagram');
         }
 
-        $tokenResponse = $this->exchangeInstagramCode($code);
+        try {
+            $tokenResponse = $this->api->exchangeCode($code);
+        } catch (InstagramException) {
+            throw SocialAccountException::authFailed('Instagram');
+        }
 
         $accessToken = $tokenResponse['access_token'] ?? null;
         $instagramId = $tokenResponse['user_id'] ?? null;
@@ -58,19 +55,13 @@ class InstagramOAuthProvider implements OAuthProviderInterface
             throw SocialAccountException::authFailed('Instagram');
         }
 
-        $profileResponse = Http::get('https://graph.instagram.com/v25.0/me', [
-            'fields' => 'id,username',
-            'access_token' => $accessToken,
-        ])->json();
-
-        $username = $profileResponse['username'] ?? 'Instagram User';
-
+        $username = $this->fetchUsername($accessToken);
         $longLivedToken = $this->exchangeForLongLivedToken($accessToken);
 
         return SocialAccount::updateOrCreate(
             [
                 'workspace_id' => $workspaceId,
-                'platform' => 'instagram',
+                'platform' => Platform::INSTAGRAM->value,
                 'platform_id' => $instagramId,
             ],
             [
@@ -84,24 +75,22 @@ class InstagramOAuthProvider implements OAuthProviderInterface
         );
     }
 
-    private function exchangeInstagramCode(string $code): array
+    private function fetchUsername(string $accessToken): string
     {
-        return Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
-            'client_id' => config('services.meta.app_id'),
-            'client_secret' => config('services.meta.app_secret'),
-            'grant_type' => 'authorization_code',
-            'redirect_uri' => config('services.meta.redirect'),
-            'code' => $code,
-        ])->json();
+        try {
+            return $this->api->profile($accessToken)['username'] ?? self::DEFAULT_USERNAME;
+        } catch (InstagramException) {
+            return self::DEFAULT_USERNAME;
+        }
     }
 
     private function exchangeForLongLivedToken(string $shortLivedToken): array
     {
-        $response = Http::get('https://graph.instagram.com/access_token', [
-            'grant_type' => 'ig_exchange_token',
-            'client_secret' => config('services.meta.app_secret'),
-            'access_token' => $shortLivedToken,
-        ])->json();
+        try {
+            $response = $this->api->longLivedToken($shortLivedToken);
+        } catch (InstagramException) {
+            $response = [];
+        }
 
         if (isset($response['access_token'])) {
             return [

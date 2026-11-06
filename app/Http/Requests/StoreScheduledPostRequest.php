@@ -43,7 +43,7 @@ class StoreScheduledPostRequest extends FormRequest
             'caption' => ['nullable', 'string'],
             'scheduled_at' => ['nullable', 'date', 'after:+5 minutes'],
             'is_short' => ['nullable', 'boolean'],
-            
+
             // Campos dinâmicos do YouTube
             'youtube_privacy_status' => ['nullable', Rule::enum(YouTubePrivacyStatus::class)],
             'youtube_category_id' => ['nullable', 'string', 'max:10'],
@@ -51,8 +51,16 @@ class StoreScheduledPostRequest extends FormRequest
             'youtube_tags.*' => ['string', 'max:50'],
             'youtube_made_for_kids' => ['nullable', 'boolean'],
 
+            // Campos dinâmicos do TikTok (privacy_level e as demais regras ficam só no TikTokPayloadBuilder)
+            'privacy_level' => ['nullable', 'string'],
+            'disable_comment' => ['nullable', 'boolean'],
+            'disable_duet' => ['nullable', 'boolean'],
+            'disable_stitch' => ['nullable', 'boolean'],
+            'brand_content_toggle' => ['nullable', 'boolean'],
+            'brand_organic_toggle' => ['nullable', 'boolean'],
+
             // Optional: links this post to a pipeline card, moving it to "scheduled" automatically.
-            'pipeline_card_uuid'   => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
+            'pipeline_card_uuid' => ['nullable', 'uuid', 'exists:content_pipelines,uuid'],
         ];
     }
 

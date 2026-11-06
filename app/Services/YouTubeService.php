@@ -3,18 +3,22 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Enums\YouTubePrivacyStatus;
+use App\Exceptions\YouTubeException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
 use Exception;
 use Google\Client;
 use Google\Http\MediaFileUpload;
+use Google\Service\Exception as GoogleServiceException;
 use Google\Service\YouTube;
 use Google\Service\YouTube\Video;
 use Google\Service\YouTube\VideoSnippet;
 use Google\Service\YouTube\VideoStatus;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class YouTubeService implements SocialMediaServiceInterface
 {
@@ -55,36 +59,59 @@ class YouTubeService implements SocialMediaServiceInterface
             ]);
 
             Log::info("Post {$post->id} enviado ao YouTube com sucesso! Removendo arquivo do S3...");
-            $this->cleanupFiles($post, $payload);
 
-        } catch (Exception $e) {
-            Log::error("Erro no upload do YouTube para o Post {$post->id}: ".$e->getMessage());
-            throw $e;
+            // O vídeo já está no ar: falha ao limpar o S3 não pode fazer o job repetir (publicaria o vídeo de novo).
+            try {
+                $this->cleanupFiles($post, $payload);
+            } catch (Throwable $e) {
+                Log::warning("Post {$post->id}: não foi possível apagar a mídia do S3 depois do upload (".$e::class.').');
+            }
+
+        } catch (GoogleServiceException $e) {
+            // Só o motivo vai para o log: a mensagem do Google é o JSON cru da resposta.
+            Log::error("Erro no upload do YouTube para o Post {$post->id}: ".(YouTubeException::reasonOf($e) ?? 'sem motivo'));
+
+            throw YouTubeException::fromGoogle($e);
         }
     }
 
     private function getAuthenticatedClient(SocialAccount $account): Client
     {
-        $client = new Client;
+        $client = app(Client::class);
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setAccessToken($account->access_token);
 
-        if ($client->isAccessTokenExpired()) {
-            if (! $account->refresh_token) {
-                // Conta quebrada: avisa quem a conectou (sem expor o erro da plataforma).
-                app(NotificationService::class)->notifySocialAccountDisconnected($account);
+        // O SDK dá como vencido todo token sem `expires_in` (a string pura da conexão); nesse caso vale o expires_at da conta.
+        $isExpired = isset($client->getAccessToken()['expires_in'])
+            ? $client->isAccessTokenExpired()
+            : $account->isTokenExpired();
 
-                throw new Exception('Token expirado e sem refresh_token disponível.');
-            }
-            $newTokens = $client->fetchAccessTokenWithRefreshToken($account->refresh_token);
-            if (isset($newTokens['access_token'])) {
-                $account->update([
-                    'access_token' => $newTokens['access_token'],
-                    'expires_at' => now()->addSeconds($newTokens['expires_in'] ?? 3600),
-                ]);
-            }
+        if (! $isExpired) {
+            return $client;
         }
+
+        if (! $account->refresh_token) {
+            // Conta quebrada: avisa quem a conectou (sem expor o erro da plataforma).
+            app(NotificationService::class)->notifySocialAccountDisconnected($account);
+
+            throw YouTubeException::refreshTokenMissing();
+        }
+
+        $newTokens = $client->fetchAccessTokenWithRefreshToken($account->refresh_token);
+        if (! isset($newTokens['access_token'])) {
+            // Google recusou o refresh_token (revogado/expirado): a conta precisa ser reconectada, como no caso sem refresh_token.
+            if (($newTokens['error'] ?? null) === 'invalid_grant') {
+                app(NotificationService::class)->notifySocialAccountDisconnected($account);
+            }
+
+            throw YouTubeException::tokenRefreshFailed();
+        }
+
+        $account->update([
+            'access_token' => $newTokens['access_token'],
+            'expires_at' => now()->addSeconds($newTokens['expires_in'] ?? 3600),
+        ]);
 
         return $client;
     }
@@ -112,7 +139,7 @@ class YouTubeService implements SocialMediaServiceInterface
         $video->setSnippet($snippet);
 
         $statusObj = new VideoStatus;
-        $privacy = (string) Arr::get($payload, 'youtube_privacy_status', 'public');
+        $privacy = (string) Arr::get($payload, 'youtube_privacy_status', YouTubePrivacyStatus::PUBLIC->value);
         $statusObj->setPrivacyStatus($privacy);
 
         // Regra COPPA de conteúdo para crianças (padrão: false)
@@ -143,7 +170,7 @@ class YouTubeService implements SocialMediaServiceInterface
         $client->setDefer(false);
 
         if (! $status || ! isset($status->id)) {
-            throw new Exception('Falha ao fazer upload do vídeo para o YouTube.');
+            throw YouTubeException::uploadFailed();
         }
 
         return $status->id;

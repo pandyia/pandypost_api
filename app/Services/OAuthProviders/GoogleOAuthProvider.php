@@ -2,31 +2,23 @@
 
 namespace App\Services\OAuthProviders;
 
-use App\Contracts\OAuthProviderInterface;
+use App\Enums\Platform;
 use App\Exceptions\SocialAccountException;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use Laravel\Socialite\Facades\Socialite;
 
-class GoogleOAuthProvider implements OAuthProviderInterface
+class GoogleOAuthProvider extends AbstractOAuthProvider
 {
-    private const PLATFORM_NAME = 'youtube';
-
     public function getRedirectUrl(?User $user = null): string
     {
-        $workspace = $user?->currentAccess?->workspace;
-
-        if (!$workspace) {
-            throw SocialAccountException::oauthInitializationFailed();
-        }
-
-        $state = encrypt($workspace->uuid);
+        $state = $this->stateFor($user, 'google');
 
         return Socialite::driver('google')->stateless()->scopes([
             'https://www.googleapis.com/auth/youtube.upload',
             'https://www.googleapis.com/auth/youtube.readonly',
-            'https://www.googleapis.com/auth/yt-analytics.readonly'
+            'https://www.googleapis.com/auth/yt-analytics.readonly',
         ])->with([
             'state' => $state,
             'access_type' => 'offline',
@@ -34,15 +26,9 @@ class GoogleOAuthProvider implements OAuthProviderInterface
         ])->redirect()->getTargetUrl();
     }
 
-    public function syncAccount(User|Workspace $context, ?string $code = null): SocialAccount
+    public function syncAccount(User $user, ?string $code = null, ?Workspace $workspace = null): SocialAccount
     {
-        if ($context instanceof Workspace) {
-            $workspaceId = $context->id;
-            $userId = $context->accesses()->first()?->user_id;
-        } else {
-            $workspaceId = $context->currentAccess->workspace_id;
-            $userId = $context->id;
-        }
+        [$workspaceId, $userId] = $this->ownerIds($user, $workspace);
 
         try {
             $socialiteUser = Socialite::driver('google')->stateless()->user();
@@ -53,7 +39,7 @@ class GoogleOAuthProvider implements OAuthProviderInterface
         return SocialAccount::updateOrCreate(
             [
                 'workspace_id' => $workspaceId,
-                'platform' => self::PLATFORM_NAME,
+                'platform' => Platform::YOUTUBE->value,
                 'platform_id' => $socialiteUser->getId(),
             ],
             [

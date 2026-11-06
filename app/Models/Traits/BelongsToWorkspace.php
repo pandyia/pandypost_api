@@ -15,7 +15,11 @@ trait BelongsToWorkspace
 
             $access = auth()->user()->currentAccess;
 
+            // Falha fechado: usuário autenticado sem workspace corrente não enxerga dado de tenant nenhum.
+            // Sem usuário (jobs, comandos, webhooks) o escopo não se aplica; quem precisa dele filtra explicitamente.
             if (! $access) {
+                $builder->whereRaw('1 = 0');
+
                 return;
             }
 

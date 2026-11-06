@@ -2,17 +2,25 @@
 
 namespace App\Services\Payloads\Builders;
 
+use Illuminate\Support\Facades\Validator;
+
+// O Instagram só usa a legenda (campo direto do ScheduledPost); o tipo de mídia é inferido no InstagramService.
 class InstagramPayloadBuilder extends AbstractPlatformPayloadBuilder
 {
+    // Limite da legenda do Instagram.
+    public const MAX_CAPTION_LENGTH = 2200;
+
     protected function extractPayload(array &$attributes): array
     {
-        $payload = parent::extractPayload($attributes);
+        // Reels aceita MP4/MOV; imagem, só JPEG (a Graph API recusa PNG).
+        $this->validateMediaExtension($attributes, ['mp4', 'mov', 'jpg', 'jpeg'], 'O Instagram aceita vídeo (MP4 ou MOV) ou imagem JPEG. PNG não é aceito.');
 
-        // Instagram atualmente só utiliza caption (campo direto do ScheduledPost)
-        // e media_type (REELS vs image) que é inferido automaticamente pelo InstagramService.
-        // Campos extras como hashtags automáticas, location, collaborators
-        // podem ser adicionados aqui no futuro.
+        Validator::make($attributes, [
+            'caption' => ['nullable', 'string', 'max:'.self::MAX_CAPTION_LENGTH],
+        ], [
+            'caption.max' => 'A legenda do Instagram pode ter no máximo '.self::MAX_CAPTION_LENGTH.' caracteres.',
+        ])->validate();
 
-        return $payload;
+        return parent::extractPayload($attributes);
     }
 }

@@ -30,13 +30,6 @@ class SocialAccountException extends BaseException
         return static::make($error, $error->message($platform));
     }
 
-    public static function accountAlreadyLinked(string $platform): self
-    {
-        $error = SocialAccountError::ACCOUNT_ALREADY_LINKED;
-
-        return static::make($error, $error->message($platform));
-    }
-
     public static function invalidOAuthState(): self
     {
         return static::make(SocialAccountError::INVALID_OAUTH_STATE);
@@ -57,11 +50,9 @@ class SocialAccountException extends BaseException
         return static::make(SocialAccountError::REFRESH_TOKEN_MISSING);
     }
 
-    public static function tokenRefreshFailed(string $provider, string $responseBody): self
+    public static function tokenRefreshFailed(string $provider): self
     {
-        return static::make(
-            SocialAccountError::TOKEN_REFRESH_FAILED,
-            "Não foi possível renovar o token do {$provider}: {$responseBody}"
-        );
+        // Resposta de terceiro (body) nunca entra na mensagem: ela vai para error_message e para o front.
+        return static::make(SocialAccountError::TOKEN_REFRESH_FAILED, "Não foi possível renovar o token do {$provider}.");
     }
 }

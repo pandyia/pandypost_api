@@ -4,6 +4,7 @@ namespace App\Services\Payloads\Builders;
 
 use App\Contracts\PlatformPayloadBuilderInterface;
 use App\Services\Payloads\PayloadBuildResult;
+use Illuminate\Validation\ValidationException;
 
 abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderInterface
 {
@@ -28,6 +29,26 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
         return $attributes['payload'] ?? [];
     }
 
+    /**
+     * A rede só aceita as extensões listadas (o upload-url só emite mp4, mov, jpg e png). Erro de validação
+     * (422) aqui evita criar um post que a rede vai recusar na hora de publicar.
+     *
+     * @param  list<string>  $extensions
+     */
+    protected function validateMediaExtension(array $attributes, array $extensions, string $message): void
+    {
+        // O caminho é obrigatório no StoreScheduledPostRequest; sem ele não há o que conferir aqui.
+        if (empty($attributes['media_storage_path'])) {
+            return;
+        }
+
+        $extension = strtolower(pathinfo((string) $attributes['media_storage_path'], PATHINFO_EXTENSION));
+
+        if (! in_array($extension, $extensions, true)) {
+            throw ValidationException::withMessages(['media_storage_path' => [$message]]);
+        }
+    }
+
     protected function normalizeBoolean(mixed $value, ?bool $default = null): ?bool
     {
         if ($value === null || $value === '') {
@@ -39,7 +60,7 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
 
     protected function normalizeStringArray(mixed $value): array
     {
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return [];
         }
 
@@ -51,7 +72,7 @@ abstract class AbstractPlatformPayloadBuilder implements PlatformPayloadBuilderI
 
     protected function pull(array &$attributes, string $key, mixed $default = null): mixed
     {
-        if (!array_key_exists($key, $attributes)) {
+        if (! array_key_exists($key, $attributes)) {
             return $default;
         }
 

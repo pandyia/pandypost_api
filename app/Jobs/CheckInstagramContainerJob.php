@@ -2,26 +2,24 @@
 
 namespace App\Jobs;
 
-use App\Exceptions\ScheduledPostException;
+use App\Enums\ScheduledPostStatus;
+use App\Exceptions\BaseException;
+use App\Exceptions\InstagramException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Services\Instagram\InstagramApi;
 use App\Services\InstagramService;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CheckInstagramContainerJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    private const GRAPH_API_VERSION = 'v25.0';
-
-    private const GRAPH_API_BASE_URL = 'https://graph.instagram.com';
 
     public int $tries = 15;
 
@@ -41,17 +39,52 @@ class CheckInstagramContainerJob implements ShouldQueue
 
     public function handle(): void
     {
+        // Post cancelado, já publicado ou já falho: job antigo (warmup, retry depois do sucesso) não age.
+        if (! $this->isStillPublishable()) {
+            Log::info("Post {$this->post->id} não está mais pendente. Verificação do container {$this->containerId} ignorada.");
+
+            return;
+        }
+
         $accessToken = $this->account->getValidToken();
-        $status = $this->getContainerStatus($accessToken);
+
+        try {
+            $status = app(InstagramApi::class)->containerStatus($accessToken, $this->containerId);
+        } catch (InstagramException $e) {
+            // Token/permissão: repetir 15x não resolve. Instabilidade da Meta segue para o retry normal.
+            if (! $e->isPermanent()) {
+                throw $e;
+            }
+
+            $this->failUnlessWarmup($e->getMessage());
+
+            return;
+        }
+
         $attempt = $this->attempts();
 
         Log::info("Container {$this->containerId} - Status: {$status} (tentativa {$attempt}/{$this->tries}) [Publish: ".($this->shouldPublish ? 'Sim' : 'Não').']');
 
         match ($status) {
             'FINISHED' => $this->handleFinishedContainer($accessToken),
-            'ERROR' => $this->handleError(),
+            'PUBLISHED' => app(InstagramService::class)->markAlreadyPublished($this->post),
+            'ERROR', 'EXPIRED' => $this->handleError(),
             default => $this->retryWithBackoff(),
         };
+    }
+
+    /** Esgotou as tentativas (ou erro inesperado): sem estado final, o post não pode ficar em processing para sempre. */
+    public function failed(Throwable $exception): void
+    {
+        $this->post->refresh();
+
+        if ($this->post->status !== 'processing') {
+            return;
+        }
+
+        $this->markAsFailed($exception instanceof BaseException
+            ? $exception->getMessage()
+            : InstagramException::publishTimeout()->getMessage());
     }
 
     private function retryWithBackoff(): void
@@ -64,19 +97,6 @@ class CheckInstagramContainerJob implements ShouldQueue
         $this->release($delay);
     }
 
-    private function getContainerStatus(string $accessToken): ?string
-    {
-        $response = Http::get(
-            self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$this->containerId,
-            [
-                'fields' => 'status_code',
-                'access_token' => $accessToken,
-            ]
-        )->json();
-
-        return $response['status_code'] ?? null;
-    }
-
     private function handleFinishedContainer(string $accessToken): void
     {
         if (! $this->shouldPublish) {
@@ -85,58 +105,34 @@ class CheckInstagramContainerJob implements ShouldQueue
             return;
         }
 
-        $this->publishContainer($accessToken);
+        // O container deste job, não o $post->container_id (que pode ter sido recriado depois).
+        app(InstagramService::class)->publishContainer($this->post, $this->account, $accessToken, $this->containerId);
     }
 
-    private function publishContainer(string $accessToken): void
+    private function isStillPublishable(): bool
     {
-        $response = Http::post(
-            self::GRAPH_API_BASE_URL.'/'.self::GRAPH_API_VERSION.'/'.$this->account->platform_id.'/media_publish',
-            [
-                'creation_id' => $this->containerId,
-                'access_token' => $accessToken,
-            ]
-        )->json();
+        $status = ScheduledPost::withoutGlobalScopes()->whereKey($this->post->getKey())->value('status');
 
-        if (isset($response['error'])) {
-            Log::error('Falha ao publicar no Instagram', ['response' => $response]);
-            $this->markAsFailed('Erro na publicação: '.json_encode($response));
+        return in_array($status, [ScheduledPostStatus::PENDING->value, ScheduledPostStatus::PROCESSING->value], true);
+    }
+
+    /** Warmup é melhor-esforço: o erro dele não derruba o post, a publicação na hora cria o container de novo. */
+    private function failUnlessWarmup(string $error): void
+    {
+        if ($this->shouldPublish) {
+            $this->markAsFailed($error);
 
             return;
         }
 
-        $this->markAsPublished($response['id'] ?? null, $accessToken);
-    }
-
-    private function markAsPublished(?string $platformPostId, string $accessToken): void
-    {
-        // A publicação já aconteceu: sem o permalink o post fica publicado, só sem link.
-        $permalink = null;
-        if ($platformPostId) {
-            try {
-                $permalink = app(InstagramService::class)->fetchPermalink($platformPostId, $accessToken);
-            } catch (ScheduledPostException $e) {
-                Log::warning("Post {$this->post->id}: {$e->getMessage()}");
-            }
-        }
-
-        $this->post->update([
-            'status' => 'published',
-            'platform_post_id' => $platformPostId,
-            'platform_post_url' => $permalink,
-            'published_at' => now(),
-        ]);
-
-        // FASE 2: contagem de quota (posts_used) removida — limites deferidos.
-
-        Log::info("Post {$this->post->id} publicado com sucesso no Instagram!");
+        Log::warning("Warmup do post {$this->post->id} falhou ({$error}). O post segue pendente.");
     }
 
     private function markAsFailed(string $error): void
     {
         $this->post->update([
             'status' => 'failed',
-            'error_message' => substr($error, 0, 255),
+            'error_message' => mb_substr($error, 0, 255),
         ]);
 
         Log::error("Falha no post {$this->post->id}: {$error}");
@@ -150,7 +146,6 @@ class CheckInstagramContainerJob implements ShouldQueue
             'container_created_at' => null,
         ]);
 
-        $this->markAsFailed('Erro no processamento do container pelo Instagram');
-        $this->fail(new Exception('Container processing failed'));
+        $this->failUnlessWarmup(InstagramException::containerFailed()->getMessage());
     }
 }

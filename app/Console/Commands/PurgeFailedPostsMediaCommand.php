@@ -24,12 +24,7 @@ class PurgeFailedPostsMediaCommand extends Command
                 // Marca antes: deste ponto o post já não protege o arquivo no deleteIfUnused.
                 $post->update(['media_purged_at' => now()]);
 
-                $paths = [$post->media_path];
-                if (! empty($post->payload['thumbnail_path'])) {
-                    $paths[] = $post->payload['thumbnail_path'];
-                }
-
-                $storage->deleteIfUnused($paths, $post->id);
+                $storage->deleteIfUnused($post->mediaPaths(), $post->id);
                 $purged++;
             });
 
