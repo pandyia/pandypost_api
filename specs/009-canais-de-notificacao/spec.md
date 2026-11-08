@@ -28,6 +28,7 @@ Push do navegador/sistema operacional (exigiria permissão do usuário e service
 
 ## Adendo — Post publicado com dois canais
 - RF-6: `post_published` vira família como as outras. **E-mail** (campo solto `post_published`, padrão **ligado**) e **no app** (`in_app.post_published`, padrão **desligado**, opt-in), ambos opcionais. A notificação só é criada/enviada se ao menos um canal estiver ligado; só o autor do post é avisado.
+  - *Nota (2026-11-08):* o padrão de `in_app.post_published` passou de desligado para **ligado** (ver spec 007, D-4). O restante do RF-6 vale como escrito; preferência já salva continua respeitada.
 - Mudança de significado: antes `post_published` era o aviso no app. Sem migração nem seeder: o recurso ainda não foi lançado e o banco de desenvolvimento já foi acertado à mão. Se um ambiente real tiver o formato antigo, o acerto de dados é um comando Artisan avulso.
 - Risco: com o padrão (e-mail ligado, app desligado) não há linha no banco, então a deduplicação não protege contra e-mail repetido se o evento de publicação for reprocessado. Hoje o gancho dispara uma vez por publicação.
 - O volume de e-mails sobe: todo post publicado gera e-mail para quem não mexer na preferência.

@@ -162,7 +162,8 @@ class NotificationService
     }
 
     /**
-     * Opt-in: só o autor do post, e só se ligou a preferência. Apenas in-app.
+     * Só o autor do post. Por padrão avisa no app (sino + tempo real) e por e-mail; cada canal pode ser
+     * desligado nas preferências e, com os dois desligados, nada é criado.
      */
     public function notifyPostPublished(ScheduledPost $post): void
     {

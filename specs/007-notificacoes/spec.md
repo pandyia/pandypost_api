@@ -46,6 +46,7 @@ O SRGA-Backend já resolveu isso com o mecanismo nativo do Laravel (`database` +
 - **D-2 Destinatários por permissão:** `post_failed` vai para **todos os membros do workspace com permissão de ver/gerenciar posts**, independente de quem postou; o `context` informa o autor (`author_name`). Billing (`payment_failed`, `subscription_canceled`) vai para os membros com permissão de billing do workspace.
 - **D-3 Preferências entram na v1:** e-mail por família (`invite`, `posts`, `social_accounts`) ligável/desligável; `database` e `broadcast` sempre ligados. **Billing não é configurável**: sempre e-mail + database + broadcast.
 - **D-4 Eventos v1:** `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`, `social_account_disconnected`. `post_published` existe como **opt-in** (preferência `post_published`, padrão desligado; decide se a notificação é criada; só o autor do post, só in-app, sem e-mail). Fora da v1: `subscription_expiring`.
+  - *Nota (2026-11-08):* o aviso de `post_published` no app passou a vir **ligado por padrão** (sino + tempo real), além do e-mail, só para o autor. `NotificationType::IN_APP_OFF_BY_DEFAULT` ficou vazio (mecanismo mantido). Dedupe `post_published:<uuid>` inalterada. Preferência já salva (`in_app.post_published=false`) continua respeitada; não há migração de dados.
 - **D-5 Broadcast** só em `App.Models.User.{id}`. **Retenção:** lidas há mais de 30 dias são apagadas por comando agendado; não lidas nunca.
 - **D-6** `notifiable` sempre `User`. `EmailVerification`/`PasswordReset` ficam só e-mail, fora da central. Convidado sem conta: sem notificação na v1.
 
@@ -80,7 +81,7 @@ O SRGA-Backend já resolveu isso com o mecanismo nativo do Laravel (`database` +
 | `workspace_invite` (já existe) | convite criado para usuário **com conta** | convidado | tela de convites |
 | `workspace_invite_accepted` | convite aceito (`InviteService::accept`) | quem enviou o convite (se ainda for membro); família `invite`, in-app + e-mail com layout próprio | `/settings/invites` |
 | `workspace_invite_declined` | convite recusado (`InviteService::decline`) | quem enviou o convite (se ainda for membro); família `invite`, in-app + e-mail com layout próprio | `/settings/invites` |
-| `post_published` | `PublishPostJob`/serviço da rede conclui com sucesso | autor do post (`user_id`) | detalhe do post |
+| `post_published` | `PublishPostJob`/serviço da rede conclui com sucesso | autor do post (`user_id`); sino + e-mail por padrão (2026-11-08), cada canal desligável | detalhe do post |
 | `post_failed` | `PublishPostJob::failed()` | autor do post e membros com permissão de gerenciar posts no workspace (a confirmar) | detalhe do post |
 | `payment_failed` | `invoice.payment_failed` | dono do workspace (a confirmar) | tela de assinatura |
 | `subscription_canceled` / `subscription_expiring` | cancelamento / proximidade do fim do período (a confirmar o gatilho de "expirando") | dono do workspace | tela de assinatura |

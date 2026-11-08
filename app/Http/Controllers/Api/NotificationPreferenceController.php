@@ -34,7 +34,7 @@ class NotificationPreferenceController extends Controller
      *
      * **Permissão:** `notifications.view`
      *
-     * @response 200 {"data": {"invite": true, "posts": true, "social_accounts": true, "post_published": true, "in_app": {"invite": true, "posts": true, "social_accounts": true, "post_published": false}}}
+     * @response 200 {"data": {"invite": true, "posts": true, "social_accounts": true, "post_published": true, "in_app": {"invite": true, "posts": true, "social_accounts": true, "post_published": true}}}
      */
     public function show(Request $request): NotificationPreferenceResource
     {
@@ -56,7 +56,7 @@ class NotificationPreferenceController extends Controller
      * @bodyParam in_app.posts boolean Aviso no app de falha de posts. Example: false
      * @bodyParam in_app.social_accounts boolean Aviso no app de contas sociais. Example: true
      * @bodyParam post_published boolean E-mail quando um post seu é publicado; padrão ligado. Example: true
-     * @bodyParam in_app.post_published boolean Aviso no app quando um post seu é publicado; padrão desligado (opt-in). Example: true
+     * @bodyParam in_app.post_published boolean Aviso no app quando um post seu é publicado; padrão ligado. Example: true
      *
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "notifications.update"}
      * @response 422 {"message": "Os e-mails de cobrança não podem ser desativados.", "errors": {"billing": ["Os e-mails de cobrança não podem ser desativados."]}}

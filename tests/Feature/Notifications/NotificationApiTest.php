@@ -169,12 +169,21 @@ describe('preferências de e-mail', function () {
         $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
 
         $this->withToken($user->test_token)->getJson('/api/notification-preferences')
-            ->assertOk()->assertExactJson(['data' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => true, 'in_app' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => false]]]);
+            ->assertOk()->assertExactJson(['data' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => true, 'in_app' => ['invite' => true, 'posts' => true, 'social_accounts' => true, 'post_published' => true]]]);
 
         $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['posts' => false])
             ->assertOk()->assertJsonPath('data.posts', false)->assertJsonPath('data.invite', true);
 
         expect($user->fresh()->emailPreferences()['posts'])->toBeFalse();
+    });
+
+    it('desligar o aviso de post publicado no app não muda o e-mail', function () {
+        $user = createUserWithPermissions(['notifications.view', 'notifications.update']);
+
+        $this->withToken($user->test_token)->patchJson('/api/notification-preferences', ['in_app' => ['post_published' => false]])
+            ->assertOk()->assertJsonPath('data.in_app.post_published', false)->assertJsonPath('data.post_published', true);
+
+        expect($user->fresh()->emailPreferences()['post_published'])->toBeTrue();
     });
 
     it('não permite desativar billing nem valores inválidos (422)', function () {

@@ -19,8 +19,12 @@ enum NotificationType: string
     /** Famílias cujo e-mail o usuário pode ligar/desligar. */
     public const PREFERENCE_FAMILIES = ['invite', 'posts', 'social_accounts', 'post_published'];
 
-    /** Famílias cujo aviso no app vem desligado por padrão (opt-in). As demais vêm ligadas. */
-    public const IN_APP_OFF_BY_DEFAULT = ['post_published'];
+    /**
+     * Famílias cujo aviso no app vem desligado por padrão (opt-in). As demais vêm ligadas.
+     * Vazio desde 2026-11-08: `post_published` passou a vir ligado no app. O mecanismo é mantido.
+     * Funcionalidade para ativar ou desativar o aviso no app.
+     */
+    public const IN_APP_OFF_BY_DEFAULT = [];
 
     /**
      * Família de preferência. `billing` é fixa (sempre e-mail); transacionais não têm família.

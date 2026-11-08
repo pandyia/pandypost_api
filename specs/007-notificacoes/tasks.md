@@ -28,3 +28,10 @@
 - [x] Gancho central em `ScheduledPost::booted` (`updated` com status -> published), via `NotificationService::notifyPostPublished` (autor, in-app, dedupe `post_published:<uuid>`)
 - [x] Testes em `NotificationHooksTest` e `NotificationApiTest`
 - Divergência: substitui a nota "post_published fora da v1" acima.
+
+## Adendo 2026-11-08: post_published ligado no app por padrão
+
+- [x] `NotificationType::IN_APP_OFF_BY_DEFAULT = []` (constante e mecanismo de opt-in mantidos)
+- [x] Docblocks de `NotificationService::notifyPostPublished` e do Scribe (`in_app.post_published` padrão `true`)
+- [x] Testes: padrão = sino + e-mail só ao autor; contrato exato na central; `in_app.post_published=false` salvo recebe só e-mail; dedupe mantida; `GET /notification-preferences` com `in_app.post_published => true`
+- Divergência: substitui "opt-in" do adendo anterior e do D-4. Preferência já gravada é respeitada (o `PATCH` grava todos os padrões resolvidos, então quem já salvou algo tem `false` gravado); acertar isso em produção exigiria comando Artisan avulso, fora deste escopo.
