@@ -22,6 +22,7 @@ class ScheduledPostResource extends JsonResource
             'caption' => $this->caption,
             'status' => $this->status,
             'scheduled_at' => $this->scheduled_at?->toIso8601String(),
+            'upload_completed_at' => $this->upload_completed_at?->toIso8601String(),
             'published_at' => $this->published_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'platform_post_id' => $this->platform_post_id,

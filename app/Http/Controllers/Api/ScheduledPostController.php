@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\GenerateUploadUrlRequest;
 use App\Http\Requests\RetryScheduledPostRequest;
 use App\Http\Requests\StoreScheduledPostRequest;
+use App\Http\Requests\UploadCompleteRequest;
 use App\Http\Resources\ScheduledPostResource;
 use App\Services\ScheduledPostService;
 use App\Services\Storage\StorageService;
@@ -24,7 +25,24 @@ use Symfony\Component\HttpFoundation\Response;
  * 3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
  *    É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
  *
- * `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+ * **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+ * 1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+ * 2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+ *    (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+ *    Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+ * 3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+ * 4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+ *    (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+ *    Se `late: true`, mostre o `message` ao usuário.
+ *
+ * Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+ *
+ * **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+ * `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+ * (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+ * **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+ *
+ * `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
  * Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
  *
  * **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
@@ -56,7 +74,7 @@ class ScheduledPostController extends BaseController
 
     protected static array $permissionMethods = [
         'view' => ['index'],
-        'create' => ['store', 'uploadUrl', 'retry'],
+        'create' => ['store', 'uploadUrl', 'retry', 'uploadComplete'],
         'delete' => ['destroy'],
     ];
 
@@ -126,7 +144,8 @@ class ScheduledPostController extends BaseController
      * @bodyParam social_account_uuids string[] required UUIDs das contas (mín. 1). Qualquer conta conectada no workspace corrente, por qualquer membro. Example: ["5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f"]
      * @bodyParam title string Título (máx. 100). **Obrigatório para contas do YouTube.** Example: Meu vídeo
      * @bodyParam caption string Legenda/descrição. Limites: YouTube 5.000 bytes, Instagram 2.200 caracteres, TikTok 2.200 caracteres. Example: Descrição do vídeo
-     * @bodyParam scheduled_at string Data/hora da publicação, pelo menos 5 minutos no futuro. Com fuso (ISO 8601) é convertida para America/Sao_Paulo; sem fuso, vale São Paulo. Vazio = publica agora. Example: 2026-10-20T18:00:00-03:00
+     * @bodyParam media_pending boolean Reserva o horário com o vídeo ainda subindo: os posts nascem `awaiting_upload`, sem job, e o arquivo não precisa existir no S3 (formato e prefixo do workspace em `media_storage_path`/`thumbnail_storage_path` continuam validados). Confirme depois em `upload-complete`. Sem a flag, o fluxo é o de sempre (arquivo já no S3, post `pending`). Example: true
+     * @bodyParam scheduled_at string Data/hora da publicação, pelo menos 5 minutos (configurável) no futuro. Com fuso (ISO 8601) é convertida para America/Sao_Paulo; sem fuso, vale São Paulo. Vazio = publica agora. Example: 2026-10-20T18:00:00-03:00
      * @bodyParam is_short boolean YouTube: publicar como Short. Example: false
      * @bodyParam youtube_privacy_status string YouTube: privacidade (ver `GET /youtube-privacy-statuses`). Enum: public, private, unlisted. Example: public
      * @bodyParam youtube_category_id string YouTube: ID da categoria (ver `GET /youtube-categories`). Example: 22
@@ -162,6 +181,25 @@ class ScheduledPostController extends BaseController
      *     }
      *   ]
      * }
+     * @response 201 scenario="com media_pending: true" {
+     *   "message": "Vídeo(s) agendado(s) com sucesso!",
+     *   "data": [
+     *     {
+     *       "uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678",
+     *       "responsible": "Ana Souza",
+     *       "media_url": null,
+     *       "platform": "youtube",
+     *       "title": "Meu vídeo",
+     *       "status": "awaiting_upload",
+     *       "scheduled_at": "2026-10-20T16:50:00-03:00",
+     *       "upload_completed_at": null,
+     *       "published_at": null,
+     *       "created_at": "2026-10-20T16:45:00-03:00",
+     *       "can_retry": false
+     *     }
+     *   ]
+     * }
+     * @response 422 scenario="path inválido (.., //, \\ ou caractere de controle) ou de outro workspace" {"message": "O caminho informado não pertence ao seu workspace.", "errors": {"media_storage_path": ["O caminho informado não pertence ao seu workspace."]}}
      * @response 400 scenario="conta de outro workspace ou inexistente" {"error": "no_account_linked", "message": "A conta selecionada não está disponível neste workspace."}
      * @response 422 scenario="conta do TikTok sem permissão de publicar" {"message": "A conta do TikTok não tem permissão para publicar. Reconecte a conta do TikTok.", "errors": {"social_account_uuids": ["A conta do TikTok não tem permissão para publicar. Reconecte a conta do TikTok."]}}
      * @response 422 scenario="data muito próxima" {"message": "O agendamento precisa ser de pelo menos 5 minutos no futuro.", "errors": {"scheduled_at": ["O agendamento precisa ser de pelo menos 5 minutos no futuro."]}}
@@ -189,9 +227,47 @@ class ScheduledPostController extends BaseController
     }
 
     /**
+     * Confirmar envio do vídeo
+     *
+     * Último passo do envio em segundo plano: depois do `PUT` no S3, confirme aqui. Os posts `awaiting_upload`
+     * daquele `media_storage_path` (do workspace corrente, todas as contas do mesmo vídeo de uma vez) vão para `pending`, ganham `upload_completed_at` e entram na fila de publicação
+     * (horário já passado = publica na hora). A API confere no S3 o vídeo (e a capa, se houver) de cada post e exige arquivo com mais de 0 bytes.
+     *
+     * É idempotente: repetir a chamada sobre posts já confirmados (`pending`, `processing`, `published`) devolve 200 com `late: false` e
+     * `message` "Envio do vídeo já confirmado.", sem job duplicado.
+     * `late: true` quando o envio terminou depois do horário agendado: `message` traz o aviso pronto para exibir ("O envio do vídeo terminou às 16:53, depois do horário agendado (16:50). Estamos publicando agora.") e o autor recebe a notificação `post_upload_late`.
+     * Se der 422 por arquivo ausente, os posts continuam `awaiting_upload`: tente de novo quando o `PUT` terminar.
+     * Posts `awaiting_upload` há mais de 24h viram `failed` sozinhos ("O envio do vídeo não foi concluído. Envie o vídeo novamente."); confirmar depois disso devolve 409 (`upload_deadline_passed`), e 409 `upload_cancelled` se foram cancelados.
+     *
+     * **Permissão:** `posts.create`
+     *
+     * @bodyParam media_storage_path string required `path` usado na reserva. Example: workspaces/58d7d732-10a4-491d-9864-b4d85dfcf833/videos/9f8e7d6c.mp4
+     *
+     * @response 200 scenario="no prazo" {"message": "Envio do vídeo concluído.", "late": false, "data": [{"uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678", "platform": "youtube", "status": "pending", "scheduled_at": "2026-10-20T16:50:00-03:00", "upload_completed_at": "2026-10-20T16:47:00-03:00", "published_at": null}]}
+     * @response 200 scenario="atrasado (late: true)" {"message": "O envio do vídeo terminou às 16:53, depois do horário agendado (16:50). Estamos publicando agora.", "late": true, "data": [{"uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678", "platform": "youtube", "status": "pending", "scheduled_at": "2026-10-20T16:50:00-03:00", "upload_completed_at": "2026-10-20T16:53:00-03:00", "published_at": null}]}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}
+     * @response 404 scenario="sem posts para o path no workspace" {"message": "Recurso não encontrado."}
+     * @response 409 scenario="prazo do envio expirou (posts failed)" {"error": "upload_deadline_passed", "message": "O prazo do envio expirou. Envie o vídeo novamente."}
+     * @response 409 scenario="agendamento cancelado" {"error": "upload_cancelled", "message": "O agendamento foi cancelado."}
+     * @response 422 scenario="path inválido ou de outro workspace" {"message": "O caminho informado não pertence ao seu workspace.", "errors": {"media_storage_path": ["O caminho informado não pertence ao seu workspace."]}}
+     * @response 422 scenario="path ausente" {"message": "Informe o caminho do vídeo enviado.", "errors": {"media_storage_path": ["Informe o caminho do vídeo enviado."]}}
+     * @response 422 scenario="arquivo ainda não está no storage ou está vazio" {"error": "upload_not_found", "message": "O vídeo ainda não foi encontrado no armazenamento. Aguarde o envio terminar e tente novamente."}
+     */
+    public function uploadComplete(UploadCompleteRequest $request): JsonResponse
+    {
+        $result = $this->service->completeUpload($request->validated('media_storage_path'));
+
+        return response()->json([
+            'message' => $result['message'],
+            'late' => $result['late'],
+            'data' => ScheduledPostResource::collection($result['posts']),
+        ]);
+    }
+
+    /**
      * Cancelar agendamento
      *
-     * Só posts `pending`. **Qualquer membro com `posts.delete` no workspace do post pode cancelar**, não só quem agendou (a conta é do workspace).
+     * Só posts `awaiting_upload` ou `pending`. **Qualquer membro com `posts.delete` no workspace do post pode cancelar**, não só quem agendou (a conta é do workspace).
      * Post de outro workspace devolve 404 e nada muda. A mídia só é apagada do storage se nenhum outro post (por exemplo, o mesmo vídeo agendado em outra rede) ainda a usa.
      *
      * **Permissão:** `posts.delete`
@@ -223,7 +299,7 @@ class ScheduledPostController extends BaseController
      *
      * @urlParam scheduledPost string required UUID do post. Example: e1d2c3b4-a5f6-4789-8abc-def012345678
      *
-     * @bodyParam scheduled_at string Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora. Example: 2026-10-25T18:00:00-03:00
+     * @bodyParam scheduled_at string Nova data/hora (ISO 8601, pelo menos 5 minutos (configurável) no futuro). Sem ela, reenvia agora. Example: 2026-10-25T18:00:00-03:00
      *
      * @response 200 {"message": "Post reenviado para a fila.", "data": {"uuid": "e1d2c3b4-...", "status": "pending", "can_retry": false}}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}
@@ -247,6 +323,7 @@ class ScheduledPostController extends BaseController
      *
      * **Permissão:** `posts.view`
      *
+     * @queryParam status string Filtra por status. Enum: awaiting_upload, pending, processing, published, failed, cancelled. Example: awaiting_upload
      * @queryParam per_page integer Itens por página. Sem ele, vem tudo. Example: 15
      * @queryParam page integer Página. Example: 1
      *
@@ -276,7 +353,8 @@ class ScheduledPostController extends BaseController
      *
      * @responseField media_url string|null URL temporária (assinada) para exibir a mídia.
      * @responseField error_message string Só aparece quando `status` = `failed`. Texto fixo em pt-BR por rede, pronto para exibir (ver lista na descrição do grupo).
-     * @responseField status string Enum: pending, processing, published, failed, cancelled.
+     * @responseField upload_completed_at string|null Quando o envio do vídeo foi confirmado em `upload-complete`. `null` enquanto `awaiting_upload` e em posts criados sem `media_pending`.
+     * @responseField status string Enum: awaiting_upload, pending, processing, published, failed, cancelled.
      * @responseField platform string Enum: youtube, instagram, tiktok.
      * @responseField platform_post_url string|null Link do post publicado (YouTube e Instagram; TikTok pode vir `null`).
      * @responseField can_retry boolean `true` quando o post falhou e o arquivo ainda está guardado: mostre o botão Reenviar.

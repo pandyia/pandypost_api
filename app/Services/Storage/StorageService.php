@@ -192,7 +192,7 @@ class StorageService
                 ->where('media_path', $path)
                 ->orWhere('payload->thumbnail_path', $path))
                 ->where(fn ($q) => $q
-                    ->whereIn('status', ['pending', 'processing'])
+                    ->whereIn('status', ['awaiting_upload', 'pending', 'processing'])
                     ->orWhere(fn ($failed) => $failed->where('status', 'failed')->whereNull('media_purged_at')))
                 ->when($currentPostId, fn ($q) => $q->where('id', '!=', $currentPostId))
                 ->exists();

@@ -11,6 +11,10 @@ description: |-
   3. A plataforma chama o callback da API, que redireciona o popup para
      `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
   4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+  A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+  Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+  (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
 endpoints:
   -
     custom: []
@@ -30,6 +34,10 @@ endpoints:
         3. A plataforma chama o callback da API, que redireciona o popup para
            `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
         4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+        A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+        Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+        (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Callback do OAuth'
@@ -39,6 +47,15 @@ endpoints:
 
         - `?success=1` → conta conectada;
         - `?error=<mensagem>` → falha (mensagem pronta para exibir).
+
+        `platform` aceito: `google` (YouTube), `instagram` ou `tiktok`.
+
+        A conta fica no workspace de quem iniciou o fluxo e passa a ser **do workspace**: qualquer membro com a permissão
+        de agendamento pode usá-la, independente de quem conectou. O `state` vale 10 minutos e **uma única vez**;
+        reaproveitado, expirado, adulterado, emitido para **outra plataforma** (o `state` do Google não vale em `/instagram/callback`) ou de quem já saiu do workspace, devolve `?error=Estado OAuth inválido.`.
+        O iniciador precisa ainda ter `social_accounts.connect` no workspace no momento do callback; senão vem `?error=Você não tem permissão para conectar contas neste workspace.`.
+        Erro inesperado (banco, rede) vira `?error=Não foi possível conectar a conta. Tente novamente.`: só mensagens de erro de domínio da API chegam ao `error`.
+        A rota tem limite de 30 requisições por minuto por IP (429).
       authenticated: false
       deprecated: false
     headers:
@@ -50,17 +67,17 @@ endpoints:
         name: platform
         description: Plataforma.
         required: true
-        example: youtube
+        example: google
         type: string
         enumValues:
-          - youtube
+          - 'google (YouTube)'
           - instagram
           - tiktok
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      platform: youtube
+      platform: google
     queryParameters:
       code:
         custom: []
@@ -76,7 +93,7 @@ endpoints:
       state:
         custom: []
         name: state
-        description: 'Estado gerado no passo 1.'
+        description: 'Estado gerado no passo 1 (expira em 10 min e é de uso único).'
         required: true
         example: null
         type: string
@@ -97,6 +114,12 @@ endpoints:
         content: '""'
         headers: []
         description: 'redireciona para o frontend'
+      -
+        custom: []
+        status: 429
+        content: '{"message": "Too Many Attempts."}'
+        headers: []
+        description: 'limite de requisições'
     responseFields: []
     auth: []
     controller: null
@@ -120,6 +143,10 @@ endpoints:
         3. A plataforma chama o callback da API, que redireciona o popup para
            `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
         4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+        A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+        Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+        (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Listar contas conectadas'
@@ -186,6 +213,7 @@ endpoints:
                 "platform_id": "UCx9...",
                 "nickname": "Canal da Ana",
                 "avatar": "https://yt3.ggpht.com/...",
+                "can_publish": true,
                 "expires_at": "2026-10-15T15:00:00-03:00",
                 "connected_at": "2026-10-01T10:00:00-03:00",
                 "is_stale": false,
@@ -204,6 +232,50 @@ endpoints:
         headers: []
         description: 'sem permissão'
     responseFields:
+      platform:
+        custom: []
+        name: platform
+        description: 'Enum: youtube, instagram, tiktok.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      can_publish:
+        custom: []
+        name: can_publish
+        description: '`false` quando a conta não tem a permissão de publicar (hoje só o TikTok exige `video.publish`; YouTube e Instagram sempre `true`). Com `false`, desabilite o agendamento e peça para reconectar a conta; senão o agendamento é recusado com 422 (`social_account_uuids`) e, se já havia post, ele falha com `tiktok_scope_missing`.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      expires_at:
+        custom: []
+        name: expires_at
+        description: 'Quando o token de acesso expira (ISO 8601).'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      connected_at:
+        custom: []
+        name: connected_at
+        description: 'Quando a conta foi conectada (ISO 8601).'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
       is_stale:
         custom: []
         name: is_stale
@@ -251,10 +323,17 @@ endpoints:
         3. A plataforma chama o callback da API, que redireciona o popup para
            `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
         4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+        A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+        Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+        (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Contas com seus agendamentos'
-      description: 'Mesma lista de contas, cada uma com `scheduled_posts` (formato de [Agendamentos](#agendamentos)). Útil para o calendário.'
+      description: |-
+        Mesma lista de contas, cada uma com `scheduled_posts` (formato de [Agendamentos](#agendamentos)). Útil para o calendário.
+
+        **Permissão:** `social_accounts.view` **e** `posts.view` (os posts trazem título, legenda e mídia). Falta de qualquer uma devolve 403; o `required_permission` indica a que faltou.
       authenticated: true
       deprecated: false
     headers:
@@ -317,6 +396,7 @@ endpoints:
                 "platform_id": "UCx9...",
                 "nickname": "Canal da Ana",
                 "avatar": "https://yt3.ggpht.com/...",
+                "can_publish": true,
                 "expires_at": "2026-10-15T15:00:00-03:00",
                 "connected_at": "2026-10-01T10:00:00-03:00",
                 "is_stale": false,
@@ -329,6 +409,12 @@ endpoints:
           }
         headers: []
         description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.view"}'
+        headers: []
+        description: 'sem social_accounts.view ou posts.view'
     responseFields:
       'data[].scheduled_posts[].can_retry':
         custom: []
@@ -388,11 +474,17 @@ endpoints:
         3. A plataforma chama o callback da API, que redireciona o popup para
            `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
         4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+        A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+        Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+        (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Iniciar conexão (URL de OAuth)'
       description: |-
         Devolve a URL de autorização da plataforma. **Não redireciona**: abra a URL num popup (passo 1 do fluxo acima).
+        A URL leva um `state` de **uso único** que vale 10 minutos e registra o usuário e o workspace corrente: a conta
+        conectada vai para esse workspace. Se o usuário trocar de workspace no meio do fluxo, a conta ainda vai para o de origem.
 
         **Permissão:** `social_accounts.connect`
       authenticated: true
@@ -407,17 +499,17 @@ endpoints:
         name: platform
         description: Plataforma.
         required: true
-        example: youtube
+        example: tiktok
         type: string
         enumValues:
-          - youtube
+          - 'google (YouTube)'
           - instagram
           - tiktok
         exampleWasSpecified: true
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      platform: youtube
+      platform: tiktok
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -427,7 +519,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=..."}'
+        content: '{"url": "https://www.tiktok.com/v2/auth/authorize/?client_key=...&state=..."}'
         headers: []
         description: ''
       -
@@ -474,11 +566,15 @@ endpoints:
         3. A plataforma chama o callback da API, que redireciona o popup para
            `{FRONTEND_URL}/social-accounts/callback?success=1` ou `?error=mensagem`.
         4. Nessa página, avise a janela principal (ex.: `window.opener.postMessage`) e recarregue a lista.
+
+        A conta conectada é **do workspace** (não de quem conectou): todos os membros com permissão a enxergam e usam.
+        Contas de TikTok têm o campo `can_publish`; se for `false`, peça para o usuário desconectar e reconectar a conta
+        (falta a permissão `video.publish`). Para montar o formulário de post do TikTok, use `GET /social-accounts/{id}/tiktok/creator-info`.
       subgroup: ''
       subgroupDescription: ''
       title: 'Desconectar conta'
       description: |-
-        Remove a conta e **cancela os agendamentos pendentes** dela.
+        Remove a conta (de qualquer membro do workspace) e **cancela os agendamentos pendentes** dela, apagando a mídia que nenhum outro post ainda usa. Os posts cancelados deixam de aparecer em `GET /scheduled-posts` (o histórico da conta some junto).
 
         **Permissão:** `social_accounts.disconnect`
       authenticated: true
@@ -520,6 +616,161 @@ endpoints:
         headers: []
         description: 'sem permissão'
     responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/social-accounts/{socialAccount_uuid}/tiktok/creator-info'
+    metadata:
+      custom: []
+      groupName: 'Contas sociais'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Opções de publicação do TikTok'
+      description: |-
+        Consulta o TikTok na hora e devolve o que a conta pode usar ao postar. Chame ao abrir o formulário de post do TikTok:
+        monte o seletor de `privacy_level` só com `privacy_level_options` e desabilite os campos `disable_comment`,
+        `disable_duet` e `disable_stitch` quando o respectivo `*_disabled` for `true`. Usar uma privacidade fora da lista
+        faz o post falhar (`tiktok_privacy_not_allowed`).
+
+        **Permissão:** `social_accounts.view`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      socialAccount_uuid:
+        custom: []
+        name: socialAccount_uuid
+        description: 'UUID da conta social do TikTok.'
+        required: true
+        example: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      socialAccount_uuid: 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"creator_nickname": "Ana Souza", "privacy_level_options": ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"], "comment_disabled": false, "duet_disabled": false, "stitch_disabled": true, "max_video_post_duration_sec": 600}}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "social_accounts.view"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 404
+        content: '{"message": "Not Found"}'
+        headers: []
+        description: 'conta não existe neste workspace ou não é do TikTok'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "tiktok_scope_missing", "message": "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."}'
+        headers: []
+        description: 'conta sem permissão de publicar ou token revogado'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "access_token_invalid", "message": "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."}'
+        headers: []
+        description: 'token inválido'
+      -
+        custom: []
+        status: 502
+        content: '{"error": "tiktok_api_unavailable", "message": "Não foi possível se comunicar com o TikTok. Tente novamente em instantes."}'
+        headers: []
+        description: 'TikTok fora do ar ou resposta inesperada'
+    responseFields:
+      data.creator_nickname:
+        custom: []
+        name: data.creator_nickname
+        description: 'Apelido do criador no TikTok.'
+        required: false
+        example: null
+        type: string|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.privacy_level_options:
+        custom: []
+        name: data.privacy_level_options
+        description: 'Valores aceitos em `privacy_level`. Possíveis: PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR, SELF_ONLY. Pode vir vazio.'
+        required: false
+        example: null
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.comment_disabled:
+        custom: []
+        name: data.comment_disabled
+        description: '`true` = a conta desativou comentários; não permita ativá-los.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.duet_disabled:
+        custom: []
+        name: data.duet_disabled
+        description: '`true` = a conta desativou duetos.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.stitch_disabled:
+        custom: []
+        name: data.stitch_disabled
+        description: '`true` = a conta desativou stitch.'
+        required: false
+        example: null
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      data.max_video_post_duration_sec:
+        custom: []
+        name: data.max_video_post_duration_sec
+        description: 'Duração máxima do vídeo, em segundos.'
+        required: false
+        example: null
+        type: integer|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
     auth:
       - headers
       - Authorization

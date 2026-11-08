@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ScheduledPostStatus: string
 {
+    case AWAITING_UPLOAD = 'awaiting_upload';
     case PENDING = 'pending';
     case PROCESSING = 'processing';
     case PUBLISHED = 'published';
@@ -13,6 +14,7 @@ enum ScheduledPostStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::AWAITING_UPLOAD => 'Aguardando envio do vídeo',
             self::PENDING => 'Pendente',
             self::PROCESSING => 'Processando',
             self::PUBLISHED => 'Publicado',

@@ -190,6 +190,33 @@ class NotificationService
         });
     }
 
+    /**
+     * Só o autor: o envio do vídeo terminou depois do horário agendado e o post está saindo agora.
+     * Respeita as preferências da família "posts" (via CentralNotification).
+     */
+    public function notifyPostUploadLate(ScheduledPost $post): void
+    {
+        $this->safely(function () use ($post) {
+            $author = User::withoutGlobalScopes()->find($post->user_id);
+            $account = SocialAccount::withoutGlobalScopes()->find($post->social_account_id);
+
+            if (! $author || ! $account) {
+                return;
+            }
+
+            $this->send($author, NotificationType::POST_UPLOAD_LATE, [
+                'resource' => $post->uuid,
+                'post_title' => (string) $post->title,
+                'platform' => $post->platform->value,
+                'platform_label' => $post->platform->label(),
+                'scheduled_time' => $post->scheduled_at?->format('H:i'),
+                'completed_time' => $post->upload_completed_at?->format('H:i'),
+                'workspace_id' => $account->workspace_id,
+                'workspace_uuid' => Workspace::allAccess()->whereKey($account->workspace_id)->value('uuid'),
+            ]);
+        });
+    }
+
     public function notifyBilling(NotificationType $type, Workspace $workspace, string $resource): void
     {
         $this->safely(function () use ($type, $workspace, $resource) {

@@ -38,7 +38,14 @@ class YouTubeService implements SocialMediaServiceInterface
             $youtube = new YouTube($client);
             $video = $this->createVideoMetadata($post);
 
-            $videoId = $this->streamVideoUpload($client, $youtube, $video, $post);
+            // Vídeo já enviado numa tentativa anterior (job que morreu depois do upload): nunca envia de novo.
+            $videoId = $post->platform_post_id ?: $this->streamVideoUpload($client, $youtube, $video, $post);
+
+            // Grava o ID assim que o YouTube devolve, antes de qualquer etapa seguinte: é o que impede duplicar e
+            // permite ao comando posts:close-stuck confirmar a publicação.
+            if (! $post->platform_post_id) {
+                $post->update(['platform_post_id' => $videoId]);
+            }
 
             $payload = $post->payload ?? [];
 
@@ -48,7 +55,7 @@ class YouTubeService implements SocialMediaServiceInterface
 
             $thumbnailPath = Arr::get($payload, 'thumbnail_path');
 
-            if (! $isShort && $thumbnailPath) {
+            if (! $isShort && $thumbnailPath && $post->wasChanged('platform_post_id')) {
                 $this->streamThumbnailUpload($client, $youtube, $videoId, $thumbnailPath);
             }
 

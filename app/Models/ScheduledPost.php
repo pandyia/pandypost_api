@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Platform;
 use App\Enums\ScheduledPostStatus;
+use App\Events\ScheduledPostEvent;
 use App\Models\Traits\BelongsToWorkspace;
 use App\Models\Traits\HasUuid;
 use App\Services\NotificationService;
@@ -49,6 +50,7 @@ class ScheduledPost extends Model implements Auditable
         'platform_post_url',
         'failed_at',
         'media_purged_at',
+        'upload_completed_at',
     ];
 
     protected $hidden = ['id'];
@@ -60,6 +62,7 @@ class ScheduledPost extends Model implements Auditable
         'container_created_at' => 'datetime',
         'failed_at' => 'datetime',
         'media_purged_at' => 'datetime',
+        'upload_completed_at' => 'datetime',
         'payload' => 'array',
     ];
 
@@ -70,6 +73,13 @@ class ScheduledPost extends Model implements Auditable
         static::updating(function (self $post) {
             if ($post->isDirty('status') && $post->status === ScheduledPostStatus::FAILED->value) {
                 $post->failed_at = now();
+            }
+        });
+
+        // Quem escuta o workspace em tempo real vê o post sair de "aguardando envio" (liberado, falho ou cancelado).
+        static::updated(function (self $post) {
+            if ($post->wasChanged('status') && $post->getOriginal('status') === ScheduledPostStatus::AWAITING_UPLOAD->value) {
+                ScheduledPostEvent::dispatch($post);
             }
         });
 

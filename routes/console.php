@@ -13,3 +13,5 @@ Schedule::command('analytics:snapshot')->dailyAt('03:00'); // snapshot diário d
 Schedule::command('model:prune', ['--model' => [SocialAccountMetricSnapshot::class]])->dailyAt('04:00'); // remove snapshots com mais de 400 dias
 Schedule::command('notifications:prune')->dailyAt('05:00'); // apaga notificações lidas há mais de 30 dias (não lidas nunca)
 Schedule::command('posts:purge-failed-media')->dailyAt('06:00'); // apaga do bucket a mídia de posts com falha há mais de 5 dias sem reenvio
+Schedule::command('posts:close-stuck')->everyFiveMinutes()->withoutOverlapping(); // confere na rede e fecha posts parados em processing (spec 020)
+Schedule::command('posts:expire-awaiting-uploads')->everyFifteenMinutes()->withoutOverlapping(); // posts que ficaram sem o envio do vídeo viram failed (spec 021)

@@ -54,4 +54,44 @@ class ScheduledPostException extends BaseException
     {
         return static::make(ScheduledPostError::ACCOUNT_NOT_FOUND);
     }
+
+    public static function stuckTimeout(): self
+    {
+        return static::make(ScheduledPostError::STUCK_TIMEOUT);
+    }
+
+    public static function unverifiable(): self
+    {
+        return static::make(ScheduledPostError::UNVERIFIABLE);
+    }
+
+    public static function alreadyPublished(): self
+    {
+        return static::make(ScheduledPostError::ALREADY_PUBLISHED);
+    }
+
+    public static function stillProcessing(): self
+    {
+        return static::make(ScheduledPostError::STILL_PROCESSING);
+    }
+
+    public static function uploadExpired(): self
+    {
+        return static::make(ScheduledPostError::UPLOAD_EXPIRED);
+    }
+
+    public static function uploadNotFound(): self
+    {
+        return static::make(ScheduledPostError::UPLOAD_NOT_FOUND);
+    }
+
+    public static function uploadDeadlinePassed(): self
+    {
+        return static::make(ScheduledPostError::UPLOAD_DEADLINE_PASSED);
+    }
+
+    public static function uploadCancelled(): self
+    {
+        return static::make(ScheduledPostError::UPLOAD_CANCELLED);
+    }
 }

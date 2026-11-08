@@ -9,6 +9,7 @@ help:
 	@echo "SUBIR E DERRUBAR"
 	@echo "  up               Sobe os containers"
 	@echo "  down             Derruba os containers (dados são mantidos)"
+	@echo "  stop-all         Para TODOS os containers em execução no Docker (de qualquer projeto)"
 	@echo "  build            Reconstrói as imagens"
 	@echo "  buildup          Build + composer install + sobe tudo (primeira vez)"
 	@echo "  restart          Reinicia todos os containers"
@@ -63,6 +64,10 @@ buildup:
 
 down:
 	docker compose down
+
+# Para todos os containers em execução, inclusive de outros projetos.
+stop-all:
+	@ids=$$(docker ps -q); if [ -n "$$ids" ]; then docker stop $$ids; else echo "Nenhum container em execução."; fi
 
 build:
 	docker compose build

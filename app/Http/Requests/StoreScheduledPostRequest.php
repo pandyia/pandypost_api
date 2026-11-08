@@ -17,21 +17,27 @@ class StoreScheduledPostRequest extends FormRequest
     public function rules(): array
     {
         $workspaceUuid = $this->user()?->resolveCurrentAccess()?->workspace?->uuid ?? '';
+        // Com o vídeo ainda subindo, a existência no S3 só é conferida em upload-complete.
+        $requireExistence = ! $this->boolean('media_pending');
+        $minLead = (int) config('scheduling.min_lead_minutes');
 
         return [
             // O vídeo já foi uploaded direto no S3. O client envia apenas o path.
             'media_storage_path' => [
                 'required',
                 'string',
-                new StoragePathRule($workspaceUuid, ['videos', 'images']),
+                new StoragePathRule($workspaceUuid, ['videos', 'images'], $requireExistence),
             ],
 
             // Thumbnail também é um path no S3 (opcional).
             'thumbnail_storage_path' => [
                 'nullable',
                 'string',
-                new StoragePathRule($workspaceUuid, 'thumbnails'),
+                new StoragePathRule($workspaceUuid, 'thumbnails', $requireExistence),
             ],
+
+            // Reserva o horário no clique; o front envia o vídeo em segundo plano e confirma em upload-complete.
+            'media_pending' => ['nullable', 'boolean'],
 
             'social_account_uuids' => ['required', 'array', 'min:1'],
             'social_account_uuids.*' => ['required', 'uuid', 'exists:social_accounts,uuid'],
@@ -41,7 +47,7 @@ class StoreScheduledPostRequest extends FormRequest
                 'max:100',
             ],
             'caption' => ['nullable', 'string'],
-            'scheduled_at' => ['nullable', 'date', 'after:+5 minutes'],
+            'scheduled_at' => ['nullable', 'date', "after:+{$minLead} minutes"],
             'is_short' => ['nullable', 'boolean'],
 
             // Campos dinâmicos do YouTube
@@ -76,7 +82,7 @@ class StoreScheduledPostRequest extends FormRequest
             'social_account_uuids.*.required' => 'A conta social selecionada é obrigatória.',
             'social_account_uuids.*.uuid' => 'A conta social informada é inválida.',
             'social_account_uuids.*.exists' => 'A conta social selecionada não foi encontrada.',
-            'scheduled_at.after' => 'O agendamento precisa ser de pelo menos 5 minutos no futuro.',
+            'scheduled_at.after' => 'O agendamento precisa ser de pelo menos '.config('scheduling.min_lead_minutes').' minutos no futuro.',
             'youtube_privacy_status.in' => 'A privacidade do YouTube deve ser public, private ou unlisted.',
         ];
     }

@@ -128,3 +128,10 @@ Sem mudança de rotas. Mudanças de comportamento:
 
 ## Adendo — spec 019 (fechamento da publicação, 2026-11-06)
 Corrigidos: VULN-POST-01, VULN-TEN-02, VULN-SCHED-01, VULN-OAUTH-04/05/06/07, VULN-RETRY-03/03b/04 (e o skip obsoleto de VULN-RETRY-02). **Deferidos (D3)**: VULN-SA-01 (tokens em texto puro) e VULN-UP-01 (presigned PUT sem limite de tamanho). Pendência futura (D4): histórico de posts some ao desconectar a conta. Fora de escopo (D5): `consumeQuota`/assinatura no-op.
+
+## Adendo — auditoria da spec 021 (envio em segundo plano, 2026-11-08)
+Abertos (testes com `skip` em `tests/Feature/Security/AwaitingUploadSecurityTest.php`):
+- **VULN-UP-02 (Média/Baixa) — CORRIGIDO (spec 021, RF-4b):** `StoragePathRule` só confere `str_starts_with`; `..` passa em `media_storage_path`/`thumbnail_storage_path` (reserva com `media_pending` e fluxo normal). S3 trata a chave literalmente, então não há leitura entre workspaces comprovada; é defesa em profundidade. Correção: recusar `..`, `//`, `\`, caracteres de controle.
+- **VULN-UP-04 (Média) — CORRIGIDO (spec 021, RF-4b):** `upload-complete` só faz HEAD (existência): arquivo vazio/truncado/de outro tipo libera o post. Mesma raiz do VULN-UP-01 (D3). Correção: conferir `Content-Length` > 0 (e idealmente content-type) no HEAD.
+- **VULN-UP-05 (Baixa) — CORRIGIDO (spec 021, RF-4b):** `completeUpload` confere a thumbnail só do primeiro post `awaiting_upload` do path; thumbnail inexistente dos demais passa. Correção: conferir `mediaStillExists` de cada post.
+Decisões de negócio pendentes: teto de reservas `awaiting_upload` simultâneas por workspace (só há throttle 45/min); reconferir assinatura ativa em `upload-complete` (hoje só no clique; `consumeQuota` é no-op, D5).

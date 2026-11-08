@@ -265,6 +265,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="contas-sociais-DELETEapi-social-accounts--socialAccount-">
                                 <a href="#contas-sociais-DELETEapi-social-accounts--socialAccount-">Desconectar conta</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="contas-sociais-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">
+                                <a href="#contas-sociais-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">Opções de publicação do TikTok</a>
+                            </li>
                                                                         </ul>
                             </ul>
                     <ul id="tocify-header-agendamentos" class="tocify-header">
@@ -280,6 +283,9 @@
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="agendamentos-POSTapi-scheduled-posts">
                                 <a href="#agendamentos-POSTapi-scheduled-posts">Agendar publicação</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="agendamentos-POSTapi-scheduled-posts-upload-complete">
+                                <a href="#agendamentos-POSTapi-scheduled-posts-upload-complete">Confirmar envio do vídeo</a>
                             </li>
                                                                                 <li class="tocify-item level-2" data-unique="agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">
                                 <a href="#agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">Reenviar post que falhou</a>
@@ -509,7 +515,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Atualizado em 20/10/2026 (e0b1c0a)</li>
+        <li>Atualizado em 08/11/2026 (1dd9d48)</li>
     </ul>
 </div>
 
@@ -3116,7 +3122,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar/upload-url"
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar/upload-url"
 );
 
 const headers = {
@@ -3138,7 +3144,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar/upload-url" \
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar/upload-url" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3265,10 +3271,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
-               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
+               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
                data-component="url">
     <br>
-<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
+<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -3311,7 +3317,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar"
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar"
 );
 
 const headers = {
@@ -3333,7 +3339,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar" \
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3459,10 +3465,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
+               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
                data-component="url">
     <br>
-<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
+<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -3505,7 +3511,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar"
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar"
 );
 
 const headers = {
@@ -3523,7 +3529,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:9000/api/workspaces/45171527-92f1-4e21-ab9b-ab94a85acce4/avatar" \
+    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -3635,10 +3641,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
-               value="45171527-92f1-4e21-ab9b-ab94a85acce4"
+               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
                data-component="url">
     <br>
-<p>Example: <code>45171527-92f1-4e21-ab9b-ab94a85acce4</code></p>
+<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -7963,6 +7969,9 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <code>{FRONTEND_URL}/social-accounts/callback?success=1</code> ou <code>?error=mensagem</code>.</li>
 <li>Nessa página, avise a janela principal (ex.: <code>window.opener.postMessage</code>) e recarregue a lista.</li>
 </ol>
+<p>A conta conectada é <strong>do workspace</strong> (não de quem conectou): todos os membros com permissão a enxergam e usam.
+Contas de TikTok têm o campo <code>can_publish</code>; se for <code>false</code>, peça para o usuário desconectar e reconectar a conta
+(falta a permissão <code>video.publish</code>). Para montar o formulário de post do TikTok, use <code>GET /social-accounts/{id}/tiktok/creator-info</code>.</p>
 
                                 <h2 id="contas-sociais-GETapi-social-accounts--platform--callback">Callback do OAuth</h2>
 
@@ -7975,6 +7984,13 @@ o popup para <code>{FRONTEND_URL}/social-accounts/callback</code> com:</p>
 <li><code>?success=1</code> → conta conectada;</li>
 <li><code>?error=&lt;mensagem&gt;</code> → falha (mensagem pronta para exibir).</li>
 </ul>
+<p><code>platform</code> aceito: <code>google</code> (YouTube), <code>instagram</code> ou <code>tiktok</code>.</p>
+<p>A conta fica no workspace de quem iniciou o fluxo e passa a ser <strong>do workspace</strong>: qualquer membro com a permissão
+de agendamento pode usá-la, independente de quem conectou. O <code>state</code> vale 10 minutos e <strong>uma única vez</strong>;
+reaproveitado, expirado, adulterado, emitido para <strong>outra plataforma</strong> (o <code>state</code> do Google não vale em <code>/instagram/callback</code>) ou de quem já saiu do workspace, devolve <code>?error=Estado OAuth inválido.</code>.
+O iniciador precisa ainda ter <code>social_accounts.connect</code> no workspace no momento do callback; senão vem <code>?error=Você não tem permissão para conectar contas neste workspace.</code>.
+Erro inesperado (banco, rede) vira <code>?error=Não foi possível conectar a conta. Tente novamente.</code>: só mensagens de erro de domínio da API chegam ao <code>error</code>.
+A rota tem limite de 30 requisições por minuto por IP (429).</p>
 
 <span id="example-requests-GETapi-social-accounts--platform--callback">
 <blockquote>Exemplo de requisição:</blockquote>
@@ -7982,7 +7998,7 @@ o popup para <code>{FRONTEND_URL}/social-accounts/callback</code> com:</p>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/social-accounts/youtube/callback"
+    "http://localhost:9000/api/social-accounts/google/callback"
 );
 
 const params = {
@@ -8006,7 +8022,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:9000/api/social-accounts/youtube/callback?code=&amp;state=" \
+    --get "http://localhost:9000/api/social-accounts/google/callback?code=&amp;state=" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
@@ -8019,6 +8035,15 @@ fetch(url, {
                 <pre>
 
 <code class="language-json" style="max-height: 300px;">&quot;&quot;</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (429, limite de requisições):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Too Many Attempts.&quot;
+}</code>
  </pre>
     </span>
 <span id="execution-results-GETapi-social-accounts--platform--callback" hidden>
@@ -8099,12 +8124,12 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="platform"                data-endpoint="GETapi-social-accounts--platform--callback"
-               value="youtube"
+               value="google"
                data-component="url">
     <br>
-<p>Plataforma. Example: <code>youtube</code></p>
+<p>Plataforma. Example: <code>google</code></p>
 Must be one of:
-<ul style="list-style-type: square;"><li><code>youtube</code></li> <li><code>instagram</code></li> <li><code>tiktok</code></li></ul>
+<ul style="list-style-type: square;"><li><code>google (YouTube)</code></li> <li><code>instagram</code></li> <li><code>tiktok</code></li></ul>
             </div>
                         <h4 class="fancy-heading-panel"><b>Parâmetros de query</b></h4>
                                     <div style="padding-left: 28px; clear: unset;">
@@ -8129,7 +8154,7 @@ Must be one of:
                value=""
                data-component="query">
     <br>
-<p>Estado gerado no passo 1.</p>
+<p>Estado gerado no passo 1 (expira em 10 min e é de uso único).</p>
             </div>
                 </form>
 
@@ -8194,6 +8219,7 @@ fetch(url, {
             &quot;platform_id&quot;: &quot;UCx9...&quot;,
             &quot;nickname&quot;: &quot;Canal da Ana&quot;,
             &quot;avatar&quot;: &quot;https://yt3.ggpht.com/...&quot;,
+            &quot;can_publish&quot;: true,
             &quot;expires_at&quot;: &quot;2026-10-15T15:00:00-03:00&quot;,
             &quot;connected_at&quot;: &quot;2026-10-01T10:00:00-03:00&quot;,
             &quot;is_stale&quot;: false,
@@ -8349,6 +8375,38 @@ Os detalhes aparecem no console do navegador.</code></pre>
     <h3>Resposta</h3>
     <h4 class="fancy-heading-panel"><b>Campos da resposta</b></h4>
     <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>platform</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Enum: youtube, instagram, tiktok.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>can_publish</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>false</code> quando a conta não tem a permissão de publicar (hoje só o TikTok exige <code>video.publish</code>; YouTube e Instagram sempre <code>true</code>). Com <code>false</code>, desabilite o agendamento e peça para reconectar a conta; senão o agendamento é recusado com 422 (<code>social_account_uuids</code>) e, se já havia post, ele falha com <code>tiktok_scope_missing</code>.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>expires_at</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Quando o token de acesso expira (ISO 8601).</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>connected_at</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Quando a conta foi conectada (ISO 8601).</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_stale</code></b>&nbsp;&nbsp;
 <small>boolean</small>&nbsp;
  &nbsp;
@@ -8371,6 +8429,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 </p>
 
 <p>Mesma lista de contas, cada uma com <code>scheduled_posts</code> (formato de <a href="#agendamentos">Agendamentos</a>). Útil para o calendário.</p>
+<p><strong>Permissão:</strong> <code>social_accounts.view</code> <strong>e</strong> <code>posts.view</code> (os posts trazem título, legenda e mídia). Falta de qualquer uma devolve 403; o <code>required_permission</code> indica a que faltou.</p>
 
 <span id="example-requests-GETapi-social-accounts-schedules">
 <blockquote>Exemplo de requisição:</blockquote>
@@ -8425,6 +8484,7 @@ fetch(url, {
             &quot;platform_id&quot;: &quot;UCx9...&quot;,
             &quot;nickname&quot;: &quot;Canal da Ana&quot;,
             &quot;avatar&quot;: &quot;https://yt3.ggpht.com/...&quot;,
+            &quot;can_publish&quot;: true,
             &quot;expires_at&quot;: &quot;2026-10-15T15:00:00-03:00&quot;,
             &quot;connected_at&quot;: &quot;2026-10-01T10:00:00-03:00&quot;,
             &quot;is_stale&quot;: false,
@@ -8452,6 +8512,16 @@ fetch(url, {
         &quot;per_page&quot;: 15,
         &quot;total&quot;: 1
     }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem social_accounts.view ou posts.view):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.view&quot;
 }</code>
  </pre>
     </span>
@@ -8632,7 +8702,9 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Devolve a URL de autorização da plataforma. <strong>Não redireciona</strong>: abra a URL num popup (passo 1 do fluxo acima).</p>
+<p>Devolve a URL de autorização da plataforma. <strong>Não redireciona</strong>: abra a URL num popup (passo 1 do fluxo acima).
+A URL leva um <code>state</code> de <strong>uso único</strong> que vale 10 minutos e registra o usuário e o workspace corrente: a conta
+conectada vai para esse workspace. Se o usuário trocar de workspace no meio do fluxo, a conta ainda vai para o de origem.</p>
 <p><strong>Permissão:</strong> <code>social_accounts.connect</code></p>
 
 <span id="example-requests-GETapi-social-accounts--platform--auth">
@@ -8641,7 +8713,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/social-accounts/youtube/auth"
+    "http://localhost:9000/api/social-accounts/tiktok/auth"
 );
 
 const headers = {
@@ -8659,7 +8731,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:9000/api/social-accounts/youtube/auth" \
+    --get "http://localhost:9000/api/social-accounts/tiktok/auth" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -8673,7 +8745,7 @@ fetch(url, {
                 <pre>
 
 <code class="language-json" style="max-height: 300px;">{
-    &quot;url&quot;: &quot;https://accounts.google.com/o/oauth2/v2/auth?client_id=...&amp;state=...&quot;
+    &quot;url&quot;: &quot;https://www.tiktok.com/v2/auth/authorize/?client_key=...&amp;state=...&quot;
 }</code>
  </pre>
             <blockquote>
@@ -8797,12 +8869,12 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="platform"                data-endpoint="GETapi-social-accounts--platform--auth"
-               value="youtube"
+               value="tiktok"
                data-component="url">
     <br>
-<p>Plataforma. Example: <code>youtube</code></p>
+<p>Plataforma. Example: <code>tiktok</code></p>
 Must be one of:
-<ul style="list-style-type: square;"><li><code>youtube</code></li> <li><code>instagram</code></li> <li><code>tiktok</code></li></ul>
+<ul style="list-style-type: square;"><li><code>google (YouTube)</code></li> <li><code>instagram</code></li> <li><code>tiktok</code></li></ul>
             </div>
                     </form>
 
@@ -8812,7 +8884,7 @@ Must be one of:
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Remove a conta e <strong>cancela os agendamentos pendentes</strong> dela.</p>
+<p>Remove a conta (de qualquer membro do workspace) e <strong>cancela os agendamentos pendentes</strong> dela, apagando a mídia que nenhum outro post ainda usa. Os posts cancelados deixam de aparecer em <code>GET /scheduled-posts</code> (o histórico da conta some junto).</p>
 <p><strong>Permissão:</strong> <code>social_accounts.disconnect</code></p>
 
 <span id="example-requests-DELETEapi-social-accounts--socialAccount-">
@@ -8964,7 +9036,280 @@ Os detalhes aparecem no console do navegador.</code></pre>
             </div>
                     </form>
 
-                <h1 id="agendamentos">Agendamentos</h1>
+                    <h2 id="contas-sociais-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">Opções de publicação do TikTok</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Consulta o TikTok na hora e devolve o que a conta pode usar ao postar. Chame ao abrir o formulário de post do TikTok:
+monte o seletor de <code>privacy_level</code> só com <code>privacy_level_options</code> e desabilite os campos <code>disable_comment</code>,
+<code>disable_duet</code> e <code>disable_stitch</code> quando o respectivo <code>*_disabled</code> for <code>true</code>. Usar uma privacidade fora da lista
+faz o post falhar (<code>tiktok_privacy_not_allowed</code>).</p>
+<p><strong>Permissão:</strong> <code>social_accounts.view</code></p>
+
+<span id="example-requests-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/social-accounts/5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f/tiktok/creator-info"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:9000/api/social-accounts/5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f/tiktok/creator-info" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: {
+        &quot;creator_nickname&quot;: &quot;Ana Souza&quot;,
+        &quot;privacy_level_options&quot;: [
+            &quot;PUBLIC_TO_EVERYONE&quot;,
+            &quot;MUTUAL_FOLLOW_FRIENDS&quot;,
+            &quot;SELF_ONLY&quot;
+        ],
+        &quot;comment_disabled&quot;: false,
+        &quot;duet_disabled&quot;: false,
+        &quot;stitch_disabled&quot;: true,
+        &quot;max_video_post_duration_sec&quot;: 600
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;social_accounts.view&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, conta não existe neste workspace ou não é do TikTok):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Not Found&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, conta sem permissão de publicar ou token revogado):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;tiktok_scope_missing&quot;,
+    &quot;message&quot;: &quot;A conta do TikTok n&atilde;o tem permiss&atilde;o para publicar. Desconecte e reconecte a conta TikTok.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, token inválido):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;access_token_invalid&quot;,
+    &quot;message&quot;: &quot;O acesso &agrave; conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (502, TikTok fora do ar ou resposta inesperada):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;tiktok_api_unavailable&quot;,
+    &quot;message&quot;: &quot;N&atilde;o foi poss&iacute;vel se comunicar com o TikTok. Tente novamente em instantes.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info" data-method="GET"
+      data-path="api/social-accounts/{socialAccount_uuid}/tiktok/creator-info"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+                    onclick="tryItOut('GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+                    onclick="cancelTryOut('GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/social-accounts/{socialAccount_uuid}/tiktok/creator-info</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>socialAccount_uuid</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="socialAccount_uuid"                data-endpoint="GETapi-social-accounts--socialAccount_uuid--tiktok-creator-info"
+               value="5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f"
+               data-component="url">
+    <br>
+<p>UUID da conta social do TikTok. Example: <code>5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f</code></p>
+            </div>
+                    </form>
+
+    <h3>Resposta</h3>
+    <h4 class="fancy-heading-panel"><b>Campos da resposta</b></h4>
+    <div style=" padding-left: 28px;  clear: unset;">
+        <details>
+            <summary style="padding-bottom: 10px;">
+                <b style="line-height: 2;"><code>data</code></b>&nbsp;&nbsp;
+<small>object</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+
+            </summary>
+                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>creator_nickname</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Apelido do criador no TikTok.</p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>privacy_level_options</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Valores aceitos em <code>privacy_level</code>. Possíveis: PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR, SELF_ONLY. Pode vir vazio.</p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>comment_disabled</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>true</code> = a conta desativou comentários; não permita ativá-los.</p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>duet_disabled</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>true</code> = a conta desativou duetos.</p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>stitch_disabled</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p><code>true</code> = a conta desativou stitch.</p>
+                    </div>
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>max_video_post_duration_sec</code></b>&nbsp;&nbsp;
+<small>integer|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Duração máxima do vídeo, em segundos.</p>
+                    </div>
+                                    </details>
+        </div>
+                    <h1 id="agendamentos">Agendamentos</h1>
 
     <p>Publicação e agendamento de vídeos/imagens nas contas conectadas.</p>
 <p><strong>Fluxo de publicação:</strong></p>
@@ -8975,8 +9320,46 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <li><code>POST /scheduled-posts</code> com o <code>path</code> em <code>media_storage_path</code> e as contas escolhidas.
 É criado <strong>um post por conta</strong>. Sem <code>scheduled_at</code>, publica na hora.</li>
 </ol>
-<p><code>status</code>: <code>pending</code> → <code>processing</code> → <code>published</code> ou <code>failed</code>; <code>cancelled</code> quando cancelado.
+<p><strong>Envio em segundo plano (vídeo ainda subindo):</strong> reserva o horário no clique e envia o vídeo depois, sem prender o usuário.</p>
+<ol>
+<li><code>POST /scheduled-posts/upload-url</code> → <code>url</code> e <code>path</code>.</li>
+<li><code>POST /scheduled-posts</code> com <code>media_pending: true</code>, o <code>path</code> em <code>media_storage_path</code> e <code>scheduled_at</code>. A antecedência mínima
+(<code>config scheduling.min_lead_minutes</code>, padrão 5 min; a mensagem de erro traz o valor vigente) é validada <strong>agora</strong>, no clique.
+Volta 201 com um post por conta em <code>status: awaiting_upload</code>; nenhum job é criado e o arquivo <strong>não</strong> precisa existir no S3 ainda.</li>
+<li><code>PUT {url}</code> com o arquivo direto no S3 (em segundo plano, no navegador).</li>
+<li><code>POST /scheduled-posts/upload-complete</code> com o mesmo <code>path</code>. A API confere o arquivo no S3 e passa os posts para <code>pending</code>
+(grava <code>upload_completed_at</code> e enfileira a publicação; se o horário já passou, publica na hora).
+Se <code>late: true</code>, mostre o <code>message</code> ao usuário.</li>
+</ol>
+<p>Se o upload não terminar em 24h (<code>scheduling.upload_expiration_hours</code>), os posts viram <code>failed</code> sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.</p>
+<p><strong>Tempo real (Reverb):</strong> quando um post sai de <code>awaiting_upload</code> para <code>pending</code>, <code>failed</code> ou <code>cancelled</code>, é emitido o evento
+<code>ScheduledPostUpdated</code> com <code>{"uuid": "e1d2c3b4-...", "status": "pending"}</code> no canal privado <code>workspaces.{uuid do workspace}</code>
+(use o evento para atualizar o card; refaça <code>GET /scheduled-posts</code> se precisar do resto).
+<strong>Notificação:</strong> envio que termina depois do horário agendado gera <code>post_upload_late</code> na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).</p>
+<p><code>status</code>: <code>awaiting_upload</code> ("Aguardando envio do vídeo") → <code>pending</code> → <code>processing</code> → <code>published</code> ou <code>failed</code>; <code>cancelled</code> quando cancelado (permitido em <code>awaiting_upload</code> e <code>pending</code>).
 Post <code>failed</code> guarda o arquivo por 5 dias e pode ser reenviado em <code>POST /scheduled-posts/{uuid}/retry</code>.</p>
+<p><strong>Fuso de <code>scheduled_at</code>:</strong> envie ISO 8601 com fuso (<code>2026-10-20T18:00:00-03:00</code> ou <code>...Z</code>); a API converte para o
+mesmo instante em America/Sao_Paulo. Sem fuso (<code>2026-10-20 18:00:00</code>), vale o horário de America/Sao_Paulo. A resposta
+sempre devolve ISO 8601 com o offset de São Paulo.</p>
+<p><strong>Validação por rede (422 ao criar):</strong> cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+<strong>nenhum</strong> post é criado. O erro vem no formato padrão <code>errors.&lt;campo&gt;</code>.
+Conta do TikTok com <code>can_publish</code> = <code>false</code> (sem a permissão <code>video.publish</code>) também dá 422, em <code>errors.social_account_uuids</code>: peça para reconectar a conta.</p>
+<ul>
+<li><strong>YouTube:</strong> só vídeo (mp4, mov); <code>title</code> obrigatório (máx. 100 caracteres); descrição (<code>caption</code>) até 5.000 bytes
+(acentos e emojis ocupam mais de 1 byte).</li>
+<li><strong>Instagram:</strong> vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); <code>caption</code> até 2.200 caracteres.</li>
+<li><strong>TikTok:</strong> só vídeo (mp4, mov, webm); <code>privacy_level</code> obrigatório; <code>caption</code> (vira o título no TikTok) até 2.200 caracteres.
+<code>brand_content_toggle</code> não pode ser <code>true</code> com <code>privacy_level</code> = SELF_ONLY. Veja as opções válidas em
+<code>GET /social-accounts/{id}/tiktok/creator-info</code>.</li>
+</ul>
+<p><strong><code>error_message</code> de posts <code>failed</code>:</strong> é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+Principais mensagens:</p>
+<ul>
+<li>Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."</li>
+<li>YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."</li>
+<li>Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."</li>
+<li>TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."</li>
+</ul>
 
                                 <h2 id="agendamentos-GETapi-scheduled-posts">Listar agendamentos</h2>
 
@@ -8997,6 +9380,7 @@ Post <code>failed</code> guarda o arquivo por 5 dias e pode ser reenviado em <co
 );
 
 const params = {
+    "status": "awaiting_upload",
     "per_page": "15",
     "page": "1",
 };
@@ -9018,7 +9402,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:9000/api/scheduled-posts?per_page=15&amp;page=1" \
+    --get "http://localhost:9000/api/scheduled-posts?status=awaiting_upload&amp;per_page=15&amp;page=1" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -9166,6 +9550,20 @@ Os detalhes aparecem no console do navegador.</code></pre>
             </div>
                             <h4 class="fancy-heading-panel"><b>Parâmetros de query</b></h4>
                                     <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>status</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="status"                data-endpoint="GETapi-scheduled-posts"
+               value="awaiting_upload"
+               data-component="query">
+    <br>
+<p>Filtra por status. Example: <code>awaiting_upload</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>awaiting_upload</code></li> <li><code>pending</code></li> <li><code>processing</code></li> <li><code>published</code></li> <li><code>failed</code></li> <li><code>cancelled</code></li></ul>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>per_page</code></b>&nbsp;&nbsp;
 <small>integer</small>&nbsp;
 <i>optional</i> &nbsp;
@@ -9202,20 +9600,44 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <p>URL temporária (assinada) para exibir a mídia.</p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>platform_post_url</code></b>&nbsp;&nbsp;
-<small>string|null</small>&nbsp;
- &nbsp;
- &nbsp;
-<br>
-<p>Link do post publicado (YouTube e Instagram).</p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>error_message</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
  &nbsp;
 <br>
-<p>Só aparece quando <code>status</code> = <code>failed</code>.</p>
+<p>Só aparece quando <code>status</code> = <code>failed</code>. Texto fixo em pt-BR por rede, pronto para exibir (ver lista na descrição do grupo).</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>upload_completed_at</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Quando o envio do vídeo foi confirmado em <code>upload-complete</code>. <code>null</code> enquanto <code>awaiting_upload</code> e em posts criados sem <code>media_pending</code>.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>status</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Enum: awaiting_upload, pending, processing, published, failed, cancelled.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>platform</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Enum: youtube, instagram, tiktok.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>platform_post_url</code></b>&nbsp;&nbsp;
+<small>string|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Link do post publicado (YouTube e Instagram; TikTok pode vir <code>null</code>).</p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>can_retry</code></b>&nbsp;&nbsp;
@@ -9457,6 +9879,9 @@ Must be one of:
 </p>
 
 <p>Passo 3 do fluxo. Cria um post para cada conta em <code>social_account_uuids</code>.</p>
+<p>As contas sociais pertencem ao <strong>workspace</strong>: qualquer membro com <code>posts.create</code> agenda em qualquer conta conectada
+nele, independente de quem a conectou. Se alguma conta for de outro workspace, a requisição falha com <code>no_account_linked</code>
+(400) e <strong>nenhum</strong> post é criado (tudo ou nada).</p>
 <p><strong>Permissão:</strong> <code>posts.create</code></p>
 
 <span id="example-requests-POSTapi-scheduled-posts">
@@ -9482,6 +9907,7 @@ let body = {
     ],
     "title": "Meu vídeo",
     "caption": "Descrição do vídeo",
+    "media_pending": true,
     "scheduled_at": "2026-10-20T18:00:00-03:00",
     "is_short": false,
     "youtube_privacy_status": "public",
@@ -9491,6 +9917,12 @@ let body = {
         "viagem"
     ],
     "youtube_made_for_kids": false,
+    "privacy_level": "SELF_ONLY",
+    "disable_comment": false,
+    "disable_duet": false,
+    "disable_stitch": false,
+    "brand_content_toggle": false,
+    "brand_organic_toggle": false,
     "pipeline_card_uuid": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f"
 };
 
@@ -9515,6 +9947,7 @@ fetch(url, {
     ],
     \"title\": \"Meu vídeo\",
     \"caption\": \"Descrição do vídeo\",
+    \"media_pending\": true,
     \"scheduled_at\": \"2026-10-20T18:00:00-03:00\",
     \"is_short\": false,
     \"youtube_privacy_status\": \"public\",
@@ -9524,6 +9957,12 @@ fetch(url, {
         \"viagem\"
     ],
     \"youtube_made_for_kids\": false,
+    \"privacy_level\": \"SELF_ONLY\",
+    \"disable_comment\": false,
+    \"disable_duet\": false,
+    \"disable_stitch\": false,
+    \"brand_content_toggle\": false,
+    \"brand_organic_toggle\": false,
     \"pipeline_card_uuid\": \"3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f\"
 }"
 </code></pre></div>
@@ -9566,13 +10005,37 @@ fetch(url, {
 }</code>
  </pre>
             <blockquote>
-            <p>Exemplo de resposta (400, conta não é do usuário):</p>
+            <p>Exemplo de resposta (201, com media_pending: true):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;V&iacute;deo(s) agendado(s) com sucesso!&quot;,
+    &quot;data&quot;: [
+        {
+            &quot;uuid&quot;: &quot;e1d2c3b4-a5f6-4789-8abc-def012345678&quot;,
+            &quot;responsible&quot;: &quot;Ana Souza&quot;,
+            &quot;media_url&quot;: null,
+            &quot;platform&quot;: &quot;youtube&quot;,
+            &quot;title&quot;: &quot;Meu v&iacute;deo&quot;,
+            &quot;status&quot;: &quot;awaiting_upload&quot;,
+            &quot;scheduled_at&quot;: &quot;2026-10-20T16:50:00-03:00&quot;,
+            &quot;upload_completed_at&quot;: null,
+            &quot;published_at&quot;: null,
+            &quot;created_at&quot;: &quot;2026-10-20T16:45:00-03:00&quot;,
+            &quot;can_retry&quot;: false
+        }
+    ]
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (400, conta de outro workspace ou inexistente):</p>
         </blockquote>
                 <pre>
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;error&quot;: &quot;no_account_linked&quot;,
-    &quot;message&quot;: &quot;...&quot;
+    &quot;message&quot;: &quot;A conta selecionada n&atilde;o est&aacute; dispon&iacute;vel neste workspace.&quot;
 }</code>
  </pre>
             <blockquote>
@@ -9586,7 +10049,35 @@ fetch(url, {
 }</code>
  </pre>
             <blockquote>
-            <p>Exemplo de resposta (422, validação):</p>
+            <p>Exemplo de resposta (422, path inválido (.., //, \\ ou caractere de controle) ou de outro workspace):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O caminho informado n&atilde;o pertence ao seu workspace.&quot;,
+    &quot;errors&quot;: {
+        &quot;media_storage_path&quot;: [
+            &quot;O caminho informado n&atilde;o pertence ao seu workspace.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, conta do TikTok sem permissão de publicar):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;A conta do TikTok n&atilde;o tem permiss&atilde;o para publicar. Reconecte a conta do TikTok.&quot;,
+    &quot;errors&quot;: {
+        &quot;social_account_uuids&quot;: [
+            &quot;A conta do TikTok n&atilde;o tem permiss&atilde;o para publicar. Reconecte a conta do TikTok.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, data muito próxima):</p>
         </blockquote>
                 <pre>
 
@@ -9595,6 +10086,62 @@ fetch(url, {
     &quot;errors&quot;: {
         &quot;scheduled_at&quot;: [
             &quot;O agendamento precisa ser de pelo menos 5 minutos no futuro.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, YouTube sem título):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Para postar no YouTube, voc&ecirc; precisa definir um t&iacute;tulo.&quot;,
+    &quot;errors&quot;: {
+        &quot;title&quot;: [
+            &quot;Para postar no YouTube, voc&ecirc; precisa definir um t&iacute;tulo.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, formato de mídia não aceito pela rede):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O TikTok aceita apenas v&iacute;deo (MP4, MOV ou WebM).&quot;,
+    &quot;errors&quot;: {
+        &quot;media_storage_path&quot;: [
+            &quot;O TikTok aceita apenas v&iacute;deo (MP4, MOV ou WebM).&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, TikTok sem privacidade):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Escolha a privacidade do v&iacute;deo no TikTok.&quot;,
+    &quot;errors&quot;: {
+        &quot;privacy_level&quot;: [
+            &quot;Escolha a privacidade do v&iacute;deo no TikTok.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, legenda longa demais):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;A legenda do Instagram pode ter no m&aacute;ximo 2200 caracteres.&quot;,
+    &quot;errors&quot;: {
+        &quot;caption&quot;: [
+            &quot;A legenda do Instagram pode ter no m&aacute;ximo 2200 caracteres.&quot;
         ]
     }
 }</code>
@@ -9719,7 +10266,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
                name="social_account_uuids[1]"                data-endpoint="POSTapi-scheduled-posts"
                data-component="body">
     <br>
-<p>UUIDs das contas (mín. 1). Só contas conectadas pelo próprio usuário.</p>
+<p>UUIDs das contas (mín. 1). Qualquer conta conectada no workspace corrente, por qualquer membro.</p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>title</code></b>&nbsp;&nbsp;
@@ -9731,7 +10278,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
                value="Meu vídeo"
                data-component="body">
     <br>
-<p>Título (máx. 100). Example: <code>Meu vídeo</code></p>
+<p>Título (máx. 100). <strong>Obrigatório para contas do YouTube.</strong> Example: <code>Meu vídeo</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>caption</code></b>&nbsp;&nbsp;
@@ -9743,7 +10290,29 @@ Os detalhes aparecem no console do navegador.</code></pre>
                value="Descrição do vídeo"
                data-component="body">
     <br>
-<p>Legenda/descrição. Example: <code>Descrição do vídeo</code></p>
+<p>Legenda/descrição. Limites: YouTube 5.000 bytes, Instagram 2.200 caracteres, TikTok 2.200 caracteres. Example: <code>Descrição do vídeo</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>media_pending</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="media_pending"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="media_pending"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Reserva o horário com o vídeo ainda subindo: os posts nascem <code>awaiting_upload</code>, sem job, e o arquivo não precisa existir no S3 (formato e prefixo do workspace em <code>media_storage_path</code>/<code>thumbnail_storage_path</code> continuam validados). Confirme depois em <code>upload-complete</code>. Sem a flag, o fluxo é o de sempre (arquivo já no S3, post <code>pending</code>). Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>scheduled_at</code></b>&nbsp;&nbsp;
@@ -9755,7 +10324,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
                value="2026-10-20T18:00:00-03:00"
                data-component="body">
     <br>
-<p>Data/hora da publicação, pelo menos 5 minutos no futuro. Vazio = publica agora. Example: <code>2026-10-20T18:00:00-03:00</code></p>
+<p>Data/hora da publicação, pelo menos 5 minutos (configurável) no futuro. Com fuso (ISO 8601) é convertida para America/Sao_Paulo; sem fuso, vale São Paulo. Vazio = publica agora. Example: <code>2026-10-20T18:00:00-03:00</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_short</code></b>&nbsp;&nbsp;
@@ -9842,6 +10411,130 @@ Must be one of:
 <p>YouTube: conteúdo infantil. Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>privacy_level</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="privacy_level"                data-endpoint="POSTapi-scheduled-posts"
+               value="SELF_ONLY"
+               data-component="body">
+    <br>
+<p>TikTok: privacidade (<strong>obrigatória</strong> para contas do TikTok; use uma das <code>privacy_level_options</code> do creator-info). Example: <code>SELF_ONLY</code></p>
+Must be one of:
+<ul style="list-style-type: square;"><li><code>PUBLIC_TO_EVERYONE</code></li> <li><code>MUTUAL_FOLLOW_FRIENDS</code></li> <li><code>FOLLOWER_OF_CREATOR</code></li> <li><code>SELF_ONLY</code></li></ul>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>disable_comment</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_comment"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_comment"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>TikTok: desativar comentários. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>disable_duet</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_duet"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_duet"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>TikTok: desativar dueto. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>disable_stitch</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_stitch"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="disable_stitch"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>TikTok: desativar stitch. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>brand_content_toggle</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="brand_content_toggle"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="brand_content_toggle"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>TikTok: conteúdo de marca paga (parceria). Não pode ser <code>true</code> com <code>privacy_level</code> SELF_ONLY. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>brand_organic_toggle</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="brand_organic_toggle"
+                   value="true"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="POSTapi-scheduled-posts" style="display: none">
+            <input type="radio" name="brand_organic_toggle"
+                   value="false"
+                   data-endpoint="POSTapi-scheduled-posts"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>TikTok: promove a própria marca. Example: <code>false</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>pipeline_card_uuid</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
 <i>optional</i> &nbsp;
@@ -9855,14 +10548,287 @@ Must be one of:
         </div>
         </form>
 
+                    <h2 id="agendamentos-POSTapi-scheduled-posts-upload-complete">Confirmar envio do vídeo</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Último passo do envio em segundo plano: depois do <code>PUT</code> no S3, confirme aqui. Os posts <code>awaiting_upload</code>
+daquele <code>media_storage_path</code> (do workspace corrente, todas as contas do mesmo vídeo de uma vez) vão para <code>pending</code>, ganham <code>upload_completed_at</code> e entram na fila de publicação
+(horário já passado = publica na hora). A API confere no S3 o vídeo (e a capa, se houver) de cada post e exige arquivo com mais de 0 bytes.</p>
+<p>É idempotente: repetir a chamada sobre posts já confirmados (<code>pending</code>, <code>processing</code>, <code>published</code>) devolve 200 com <code>late: false</code> e
+<code>message</code> "Envio do vídeo já confirmado.", sem job duplicado.
+<code>late: true</code> quando o envio terminou depois do horário agendado: <code>message</code> traz o aviso pronto para exibir ("O envio do vídeo terminou às 16:53, depois do horário agendado (16:50). Estamos publicando agora.") e o autor recebe a notificação <code>post_upload_late</code>.
+Se der 422 por arquivo ausente, os posts continuam <code>awaiting_upload</code>: tente de novo quando o <code>PUT</code> terminar.
+Posts <code>awaiting_upload</code> há mais de 24h viram <code>failed</code> sozinhos ("O envio do vídeo não foi concluído. Envie o vídeo novamente."); confirmar depois disso devolve 409 (<code>upload_deadline_passed</code>), e 409 <code>upload_cancelled</code> se foram cancelados.</p>
+<p><strong>Permissão:</strong> <code>posts.create</code></p>
+
+<span id="example-requests-POSTapi-scheduled-posts-upload-complete">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/scheduled-posts/upload-complete"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "media_storage_path": "workspaces\/58d7d732-10a4-491d-9864-b4d85dfcf833\/videos\/9f8e7d6c.mp4"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/scheduled-posts/upload-complete" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"media_storage_path\": \"workspaces\\/58d7d732-10a4-491d-9864-b4d85dfcf833\\/videos\\/9f8e7d6c.mp4\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-scheduled-posts-upload-complete">
+            <blockquote>
+            <p>Exemplo de resposta (200, no prazo):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Envio do v&iacute;deo conclu&iacute;do.&quot;,
+    &quot;late&quot;: false,
+    &quot;data&quot;: [
+        {
+            &quot;uuid&quot;: &quot;e1d2c3b4-a5f6-4789-8abc-def012345678&quot;,
+            &quot;platform&quot;: &quot;youtube&quot;,
+            &quot;status&quot;: &quot;pending&quot;,
+            &quot;scheduled_at&quot;: &quot;2026-10-20T16:50:00-03:00&quot;,
+            &quot;upload_completed_at&quot;: &quot;2026-10-20T16:47:00-03:00&quot;,
+            &quot;published_at&quot;: null
+        }
+    ]
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (200, atrasado (late: true)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O envio do v&iacute;deo terminou &agrave;s 16:53, depois do hor&aacute;rio agendado (16:50). Estamos publicando agora.&quot;,
+    &quot;late&quot;: true,
+    &quot;data&quot;: [
+        {
+            &quot;uuid&quot;: &quot;e1d2c3b4-a5f6-4789-8abc-def012345678&quot;,
+            &quot;platform&quot;: &quot;youtube&quot;,
+            &quot;status&quot;: &quot;pending&quot;,
+            &quot;scheduled_at&quot;: &quot;2026-10-20T16:50:00-03:00&quot;,
+            &quot;upload_completed_at&quot;: &quot;2026-10-20T16:53:00-03:00&quot;,
+            &quot;published_at&quot;: null
+        }
+    ]
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.create&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, sem posts para o path no workspace):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Recurso n&atilde;o encontrado.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, prazo do envio expirou (posts failed)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;upload_deadline_passed&quot;,
+    &quot;message&quot;: &quot;O prazo do envio expirou. Envie o v&iacute;deo novamente.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, agendamento cancelado):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;upload_cancelled&quot;,
+    &quot;message&quot;: &quot;O agendamento foi cancelado.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, path inválido ou de outro workspace):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O caminho informado n&atilde;o pertence ao seu workspace.&quot;,
+    &quot;errors&quot;: {
+        &quot;media_storage_path&quot;: [
+            &quot;O caminho informado n&atilde;o pertence ao seu workspace.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, path ausente):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Informe o caminho do v&iacute;deo enviado.&quot;,
+    &quot;errors&quot;: {
+        &quot;media_storage_path&quot;: [
+            &quot;Informe o caminho do v&iacute;deo enviado.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, arquivo ainda não está no storage ou está vazio):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;upload_not_found&quot;,
+    &quot;message&quot;: &quot;O v&iacute;deo ainda n&atilde;o foi encontrado no armazenamento. Aguarde o envio terminar e tente novamente.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-scheduled-posts-upload-complete" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-scheduled-posts-upload-complete"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-scheduled-posts-upload-complete"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-scheduled-posts-upload-complete" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-scheduled-posts-upload-complete">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-scheduled-posts-upload-complete" data-method="POST"
+      data-path="api/scheduled-posts/upload-complete"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-scheduled-posts-upload-complete', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-scheduled-posts-upload-complete"
+                    onclick="tryItOut('POSTapi-scheduled-posts-upload-complete');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-scheduled-posts-upload-complete"
+                    onclick="cancelTryOut('POSTapi-scheduled-posts-upload-complete');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-scheduled-posts-upload-complete"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/scheduled-posts/upload-complete</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-scheduled-posts-upload-complete"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-scheduled-posts-upload-complete"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-scheduled-posts-upload-complete"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>media_storage_path</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="media_storage_path"                data-endpoint="POSTapi-scheduled-posts-upload-complete"
+               value="workspaces/58d7d732-10a4-491d-9864-b4d85dfcf833/videos/9f8e7d6c.mp4"
+               data-component="body">
+    <br>
+<p><code>path</code> usado na reserva. Example: <code>workspaces/58d7d732-10a4-491d-9864-b4d85dfcf833/videos/9f8e7d6c.mp4</code></p>
+        </div>
+        </form>
+
                     <h2 id="agendamentos-POSTapi-scheduled-posts--scheduledPost--retry">Reenviar post que falhou</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Só posts <code>failed</code> do workspace corrente cuja mídia ainda está guardada (<code>can_retry</code> na listagem).
-Sem <code>scheduled_at</code> o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam.</p>
+<p>Só posts <code>failed</code> do workspace corrente (<strong>qualquer membro com <code>posts.create</code> pode reenviar</strong>, não só quem agendou; post de outro workspace dá 404) cuja mídia ainda está guardada (<code>can_retry</code> na listagem).
+Sem <code>scheduled_at</code> o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam, e a mídia/opções
+<strong>não são revalidadas</strong> pelas regras da rede (só <code>scheduled_at</code>). Se o post falhou por token ou permissão, reconecte a conta antes de reenviar.
+<code>scheduled_at</code> segue a mesma regra de fuso do fluxo acima (ISO com fuso é convertido para America/Sao_Paulo).</p>
 <p><strong>Permissão:</strong> <code>posts.create</code></p>
 
 <span id="example-requests-POSTapi-scheduled-posts--scheduledPost--retry">
@@ -10066,7 +11032,8 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Só posts <code>pending</code> criados pelo próprio usuário. A mídia é apagada do storage.</p>
+<p>Só posts <code>awaiting_upload</code> ou <code>pending</code>. <strong>Qualquer membro com <code>posts.delete</code> no workspace do post pode cancelar</strong>, não só quem agendou (a conta é do workspace).
+Post de outro workspace devolve 404 e nada muda. A mídia só é apagada do storage se nenhum outro post (por exemplo, o mesmo vídeo agendado em outra rede) ainda a usa.</p>
 <p><strong>Permissão:</strong> <code>posts.delete</code></p>
 
 <span id="example-requests-DELETEapi-scheduled-posts--scheduledPost-">

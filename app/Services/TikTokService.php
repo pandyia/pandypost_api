@@ -55,18 +55,45 @@ class TikTokService implements SocialMediaServiceInterface
             throw TikTokException::privacyNotAllowed();
         }
 
+        // Já iniciou um Direct Post (job repetido): se o TikTok já recebeu o vídeo, só confere; nunca publica em duplicidade.
+        if ($this->alreadySent($account, $post)) {
+            return;
+        }
+
         $size = $this->storageService->size($post->media_path);
         $totalChunks = max(1, intdiv($size, self::CHUNK_SIZE));
         $chunkSize = $totalChunks === 1 ? $size : self::CHUNK_SIZE;
 
         $init = $this->api->initUpload($token, $this->buildPostInfo($post), $size, $chunkSize, $totalChunks);
 
+        // Grava o publish_id antes dos chunks: se o job morrer no meio, o status ainda pode ser conferido.
+        $post->update(['container_id' => $init['publish_id']]);
+
         $this->sendChunks($init['upload_url'], $post->media_path, $size, $chunkSize, $totalChunks);
 
-        $post->update(['container_id' => $init['publish_id']]);
         CheckTikTokPostStatusJob::dispatch($post, $account, $init['publish_id']);
 
         Log::info("Vídeo do post {$post->id} enviado ao TikTok (publish_id {$init['publish_id']}). Aguardando confirmação.");
+    }
+
+    /** True quando o TikTok já tem o vídeo deste post (e o job de conferência foi despachado). */
+    private function alreadySent(SocialAccount $account, ScheduledPost $post): bool
+    {
+        if (! $post->container_id) {
+            return false;
+        }
+
+        $status = $this->api->fetchStatus($account->getValidToken(), $post->container_id)['status'] ?? null;
+
+        // Envio incompleto ou falho: um novo init é seguro, o anterior nunca vai ao ar.
+        if (in_array($status, [null, 'PROCESSING_UPLOAD', 'FAILED'], true)) {
+            return false;
+        }
+
+        CheckTikTokPostStatusJob::dispatch($post, $account, $post->container_id);
+        Log::warning("Post {$post->id}: o TikTok já recebeu o vídeo (publish_id {$post->container_id}). Reenvio evitado.");
+
+        return true;
     }
 
     private function ensureCanPublish(SocialAccount $account): void

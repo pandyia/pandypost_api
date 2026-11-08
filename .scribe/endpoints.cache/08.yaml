@@ -12,8 +12,46 @@ description: |-
   3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
      É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-  `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+  **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+  1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+  2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+     (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+     Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+  3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+  4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+     (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+     Se `late: true`, mostre o `message` ao usuário.
+
+  Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+  **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+  `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+  (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+  **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+  `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
   Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+  **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+  mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+  sempre devolve ISO 8601 com o offset de São Paulo.
+
+  **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+  **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+  Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+  - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+    (acentos e emojis ocupam mais de 1 byte).
+  - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+  - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+    `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+    `GET /social-accounts/{id}/tiktok/creator-info`.
+
+  **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+  Principais mensagens:
+  - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+  - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+  - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+  - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
 endpoints:
   -
     custom: []
@@ -34,8 +72,46 @@ endpoints:
         3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
         Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
       subgroup: ''
       subgroupDescription: ''
       title: 'Listar agendamentos'
@@ -52,6 +128,23 @@ endpoints:
     urlParameters: []
     cleanUrlParameters: []
     queryParameters:
+      status:
+        custom: []
+        name: status
+        description: 'Filtra por status.'
+        required: false
+        example: awaiting_upload
+        type: string
+        enumValues:
+          - awaiting_upload
+          - pending
+          - processing
+          - published
+          - failed
+          - cancelled
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
       per_page:
         custom: []
         name: per_page
@@ -75,6 +168,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanQueryParameters:
+      status: awaiting_upload
       per_page: 15
       page: 1
     bodyParameters: []
@@ -128,10 +222,21 @@ endpoints:
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      platform_post_url:
+      error_message:
         custom: []
-        name: platform_post_url
-        description: 'Link do post publicado (YouTube e Instagram).'
+        name: error_message
+        description: 'Só aparece quando `status` = `failed`. Texto fixo em pt-BR por rede, pronto para exibir (ver lista na descrição do grupo).'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      upload_completed_at:
+        custom: []
+        name: upload_completed_at
+        description: 'Quando o envio do vídeo foi confirmado em `upload-complete`. `null` enquanto `awaiting_upload` e em posts criados sem `media_pending`.'
         required: false
         example: null
         type: string|null
@@ -139,13 +244,35 @@ endpoints:
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      error_message:
+      status:
         custom: []
-        name: error_message
-        description: 'Só aparece quando `status` = `failed`.'
+        name: status
+        description: 'Enum: awaiting_upload, pending, processing, published, failed, cancelled.'
         required: false
         example: null
         type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      platform:
+        custom: []
+        name: platform
+        description: 'Enum: youtube, instagram, tiktok.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      platform_post_url:
+        custom: []
+        name: platform_post_url
+        description: 'Link do post publicado (YouTube e Instagram; TikTok pode vir `null`).'
+        required: false
+        example: null
+        type: string|null
         enumValues: []
         exampleWasSpecified: false
         nullable: false
@@ -209,8 +336,46 @@ endpoints:
         3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
         Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
       subgroup: ''
       subgroupDescription: ''
       title: 'Gerar URL de upload'
@@ -333,13 +498,55 @@ endpoints:
         3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
         Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
       subgroup: ''
       subgroupDescription: ''
       title: 'Agendar publicação'
       description: |-
         Passo 3 do fluxo. Cria um post para cada conta em `social_account_uuids`.
+
+        As contas sociais pertencem ao **workspace**: qualquer membro com `posts.create` agenda em qualquer conta conectada
+        nele, independente de quem a conectou. Se alguma conta for de outro workspace, a requisição falha com `no_account_linked`
+        (400) e **nenhum** post é criado (tudo ou nada).
 
         **Permissão:** `posts.create`
       authenticated: true
@@ -378,7 +585,7 @@ endpoints:
       social_account_uuids:
         custom: []
         name: social_account_uuids
-        description: 'UUIDs das contas (mín. 1). Só contas conectadas pelo próprio usuário.'
+        description: 'UUIDs das contas (mín. 1). Qualquer conta conectada no workspace corrente, por qualquer membro.'
         required: true
         example:
           - 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
@@ -390,7 +597,7 @@ endpoints:
       title:
         custom: []
         name: title
-        description: 'Título (máx. 100).'
+        description: 'Título (máx. 100). **Obrigatório para contas do YouTube.**'
         required: false
         example: 'Meu vídeo'
         type: string
@@ -401,7 +608,7 @@ endpoints:
       caption:
         custom: []
         name: caption
-        description: Legenda/descrição.
+        description: 'Legenda/descrição. Limites: YouTube 5.000 bytes, Instagram 2.200 caracteres, TikTok 2.200 caracteres.'
         required: false
         example: 'Descrição do vídeo'
         type: string
@@ -409,10 +616,21 @@ endpoints:
         exampleWasSpecified: true
         nullable: false
         deprecated: false
+      media_pending:
+        custom: []
+        name: media_pending
+        description: 'Reserva o horário com o vídeo ainda subindo: os posts nascem `awaiting_upload`, sem job, e o arquivo não precisa existir no S3 (formato e prefixo do workspace em `media_storage_path`/`thumbnail_storage_path` continuam validados). Confirme depois em `upload-complete`. Sem a flag, o fluxo é o de sempre (arquivo já no S3, post `pending`).'
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
       scheduled_at:
         custom: []
         name: scheduled_at
-        description: 'Data/hora da publicação, pelo menos 5 minutos no futuro. Vazio = publica agora.'
+        description: 'Data/hora da publicação, pelo menos 5 minutos (configurável) no futuro. Com fuso (ISO 8601) é convertida para America/Sao_Paulo; sem fuso, vale São Paulo. Vazio = publica agora.'
         required: false
         example: '2026-10-20T18:00:00-03:00'
         type: string
@@ -480,6 +698,76 @@ endpoints:
         exampleWasSpecified: true
         nullable: false
         deprecated: false
+      privacy_level:
+        custom: []
+        name: privacy_level
+        description: 'TikTok: privacidade (**obrigatória** para contas do TikTok; use uma das `privacy_level_options` do creator-info).'
+        required: false
+        example: SELF_ONLY
+        type: string
+        enumValues:
+          - PUBLIC_TO_EVERYONE
+          - MUTUAL_FOLLOW_FRIENDS
+          - FOLLOWER_OF_CREATOR
+          - SELF_ONLY
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      disable_comment:
+        custom: []
+        name: disable_comment
+        description: 'TikTok: desativar comentários.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      disable_duet:
+        custom: []
+        name: disable_duet
+        description: 'TikTok: desativar dueto.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      disable_stitch:
+        custom: []
+        name: disable_stitch
+        description: 'TikTok: desativar stitch.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      brand_content_toggle:
+        custom: []
+        name: brand_content_toggle
+        description: 'TikTok: conteúdo de marca paga (parceria). Não pode ser `true` com `privacy_level` SELF_ONLY.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      brand_organic_toggle:
+        custom: []
+        name: brand_organic_toggle
+        description: 'TikTok: promove a própria marca.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
       pipeline_card_uuid:
         custom: []
         name: pipeline_card_uuid
@@ -498,6 +786,7 @@ endpoints:
         - 5f0c2d1e-7a8b-4c9d-8e0f-1a2b3c4d5e6f
       title: 'Meu vídeo'
       caption: 'Descrição do vídeo'
+      media_pending: true
       scheduled_at: '2026-10-20T18:00:00-03:00'
       is_short: false
       youtube_privacy_status: public
@@ -506,6 +795,12 @@ endpoints:
         - vlog
         - viagem
       youtube_made_for_kids: false
+      privacy_level: SELF_ONLY
+      disable_comment: false
+      disable_duet: false
+      disable_stitch: false
+      brand_content_toggle: false
+      brand_organic_toggle: false
       pipeline_card_uuid: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
     fileParameters: []
     responses:
@@ -539,10 +834,34 @@ endpoints:
         description: ''
       -
         custom: []
-        status: 400
-        content: '{"error": "no_account_linked", "message": "..."}'
+        status: 201
+        content: |-
+          {
+            "message": "Vídeo(s) agendado(s) com sucesso!",
+            "data": [
+              {
+                "uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678",
+                "responsible": "Ana Souza",
+                "media_url": null,
+                "platform": "youtube",
+                "title": "Meu vídeo",
+                "status": "awaiting_upload",
+                "scheduled_at": "2026-10-20T16:50:00-03:00",
+                "upload_completed_at": null,
+                "published_at": null,
+                "created_at": "2026-10-20T16:45:00-03:00",
+                "can_retry": false
+              }
+            ]
+          }
         headers: []
-        description: 'conta não é do usuário'
+        description: 'com media_pending: true'
+      -
+        custom: []
+        status: 400
+        content: '{"error": "no_account_linked", "message": "A conta selecionada não está disponível neste workspace."}'
+        headers: []
+        description: 'conta de outro workspace ou inexistente'
       -
         custom: []
         status: 403
@@ -552,9 +871,207 @@ endpoints:
       -
         custom: []
         status: 422
+        content: '{"message": "O caminho informado não pertence ao seu workspace.", "errors": {"media_storage_path": ["O caminho informado não pertence ao seu workspace."]}}'
+        headers: []
+        description: 'path inválido (.., //, \\ ou caractere de controle) ou de outro workspace'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "A conta do TikTok não tem permissão para publicar. Reconecte a conta do TikTok.", "errors": {"social_account_uuids": ["A conta do TikTok não tem permissão para publicar. Reconecte a conta do TikTok."]}}'
+        headers: []
+        description: 'conta do TikTok sem permissão de publicar'
+      -
+        custom: []
+        status: 422
         content: '{"message": "O agendamento precisa ser de pelo menos 5 minutos no futuro.", "errors": {"scheduled_at": ["O agendamento precisa ser de pelo menos 5 minutos no futuro."]}}'
         headers: []
-        description: validação
+        description: 'data muito próxima'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "Para postar no YouTube, você precisa definir um título.", "errors": {"title": ["Para postar no YouTube, você precisa definir um título."]}}'
+        headers: []
+        description: 'YouTube sem título'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "O TikTok aceita apenas vídeo (MP4, MOV ou WebM).", "errors": {"media_storage_path": ["O TikTok aceita apenas vídeo (MP4, MOV ou WebM)."]}}'
+        headers: []
+        description: 'formato de mídia não aceito pela rede'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "Escolha a privacidade do vídeo no TikTok.", "errors": {"privacy_level": ["Escolha a privacidade do vídeo no TikTok."]}}'
+        headers: []
+        description: 'TikTok sem privacidade'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "A legenda do Instagram pode ter no máximo 2200 caracteres.", "errors": {"caption": ["A legenda do Instagram pode ter no máximo 2200 caracteres."]}}'
+        headers: []
+        description: 'legenda longa demais'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/scheduled-posts/upload-complete
+    metadata:
+      custom: []
+      groupName: Agendamentos
+      groupDescription: |-
+
+        Publicação e agendamento de vídeos/imagens nas contas conectadas.
+
+        **Fluxo de publicação:**
+        1. `POST /scheduled-posts/upload-url` → recebe `url` e `path`.
+        2. Envie o arquivo com `PUT {url}` direto para o S3, com o header `Content-Type` igual ao `content_type` pedido
+           (e os `headers` devolvidos). Não passa pela API.
+        3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
+           É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
+
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
+        Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Confirmar envio do vídeo'
+      description: |-
+        Último passo do envio em segundo plano: depois do `PUT` no S3, confirme aqui. Os posts `awaiting_upload`
+        daquele `media_storage_path` (do workspace corrente, todas as contas do mesmo vídeo de uma vez) vão para `pending`, ganham `upload_completed_at` e entram na fila de publicação
+        (horário já passado = publica na hora). A API confere no S3 o vídeo (e a capa, se houver) de cada post e exige arquivo com mais de 0 bytes.
+
+        É idempotente: repetir a chamada sobre posts já confirmados (`pending`, `processing`, `published`) devolve 200 com `late: false` e
+        `message` "Envio do vídeo já confirmado.", sem job duplicado.
+        `late: true` quando o envio terminou depois do horário agendado: `message` traz o aviso pronto para exibir ("O envio do vídeo terminou às 16:53, depois do horário agendado (16:50). Estamos publicando agora.") e o autor recebe a notificação `post_upload_late`.
+        Se der 422 por arquivo ausente, os posts continuam `awaiting_upload`: tente de novo quando o `PUT` terminar.
+        Posts `awaiting_upload` há mais de 24h viram `failed` sozinhos ("O envio do vídeo não foi concluído. Envie o vídeo novamente."); confirmar depois disso devolve 409 (`upload_deadline_passed`), e 409 `upload_cancelled` se foram cancelados.
+
+        **Permissão:** `posts.create`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      media_storage_path:
+        custom: []
+        name: media_storage_path
+        description: '`path` usado na reserva.'
+        required: true
+        example: workspaces/58d7d732-10a4-491d-9864-b4d85dfcf833/videos/9f8e7d6c.mp4
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      media_storage_path: workspaces/58d7d732-10a4-491d-9864-b4d85dfcf833/videos/9f8e7d6c.mp4
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Envio do vídeo concluído.", "late": false, "data": [{"uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678", "platform": "youtube", "status": "pending", "scheduled_at": "2026-10-20T16:50:00-03:00", "upload_completed_at": "2026-10-20T16:47:00-03:00", "published_at": null}]}'
+        headers: []
+        description: 'no prazo'
+      -
+        custom: []
+        status: 200
+        content: '{"message": "O envio do vídeo terminou às 16:53, depois do horário agendado (16:50). Estamos publicando agora.", "late": true, "data": [{"uuid": "e1d2c3b4-a5f6-4789-8abc-def012345678", "platform": "youtube", "status": "pending", "scheduled_at": "2026-10-20T16:50:00-03:00", "upload_completed_at": "2026-10-20T16:53:00-03:00", "published_at": null}]}'
+        headers: []
+        description: 'atrasado (late: true)'
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 404
+        content: '{"message": "Recurso não encontrado."}'
+        headers: []
+        description: 'sem posts para o path no workspace'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "upload_deadline_passed", "message": "O prazo do envio expirou. Envie o vídeo novamente."}'
+        headers: []
+        description: 'prazo do envio expirou (posts failed)'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "upload_cancelled", "message": "O agendamento foi cancelado."}'
+        headers: []
+        description: 'agendamento cancelado'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "O caminho informado não pertence ao seu workspace.", "errors": {"media_storage_path": ["O caminho informado não pertence ao seu workspace."]}}'
+        headers: []
+        description: 'path inválido ou de outro workspace'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "Informe o caminho do vídeo enviado.", "errors": {"media_storage_path": ["Informe o caminho do vídeo enviado."]}}'
+        headers: []
+        description: 'path ausente'
+      -
+        custom: []
+        status: 422
+        content: '{"error": "upload_not_found", "message": "O vídeo ainda não foi encontrado no armazenamento. Aguarde o envio terminar e tente novamente."}'
+        headers: []
+        description: 'arquivo ainda não está no storage ou está vazio'
     responseFields: []
     auth:
       - headers
@@ -582,14 +1099,54 @@ endpoints:
         3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
         Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
       subgroup: ''
       subgroupDescription: ''
       title: 'Reenviar post que falhou'
       description: |-
-        Só posts `failed` do workspace corrente cuja mídia ainda está guardada (`can_retry` na listagem).
-        Sem `scheduled_at` o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam.
+        Só posts `failed` do workspace corrente (**qualquer membro com `posts.create` pode reenviar**, não só quem agendou; post de outro workspace dá 404) cuja mídia ainda está guardada (`can_retry` na listagem).
+        Sem `scheduled_at` o post sai na hora; com ele, é reagendado. Título, legenda e opções não mudam, e a mídia/opções
+        **não são revalidadas** pelas regras da rede (só `scheduled_at`). Se o post falhou por token ou permissão, reconecte a conta antes de reenviar.
+        `scheduled_at` segue a mesma regra de fuso do fluxo acima (ISO com fuso é convertido para America/Sao_Paulo).
 
         **Permissão:** `posts.create`
       authenticated: true
@@ -681,13 +1238,52 @@ endpoints:
         3. `POST /scheduled-posts` com o `path` em `media_storage_path` e as contas escolhidas.
            É criado **um post por conta**. Sem `scheduled_at`, publica na hora.
 
-        `status`: `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado.
+        **Envio em segundo plano (vídeo ainda subindo):** reserva o horário no clique e envia o vídeo depois, sem prender o usuário.
+        1. `POST /scheduled-posts/upload-url` → `url` e `path`.
+        2. `POST /scheduled-posts` com `media_pending: true`, o `path` em `media_storage_path` e `scheduled_at`. A antecedência mínima
+           (`config scheduling.min_lead_minutes`, padrão 5 min; a mensagem de erro traz o valor vigente) é validada **agora**, no clique.
+           Volta 201 com um post por conta em `status: awaiting_upload`; nenhum job é criado e o arquivo **não** precisa existir no S3 ainda.
+        3. `PUT {url}` com o arquivo direto no S3 (em segundo plano, no navegador).
+        4. `POST /scheduled-posts/upload-complete` com o mesmo `path`. A API confere o arquivo no S3 e passa os posts para `pending`
+           (grava `upload_completed_at` e enfileira a publicação; se o horário já passou, publica na hora).
+           Se `late: true`, mostre o `message` ao usuário.
+
+        Se o upload não terminar em 24h (`scheduling.upload_expiration_hours`), os posts viram `failed` sozinhos com "O envio do vídeo não foi concluído. Envie o vídeo novamente." e o autor recebe a notificação de post falhado.
+
+        **Tempo real (Reverb):** quando um post sai de `awaiting_upload` para `pending`, `failed` ou `cancelled`, é emitido o evento
+        `ScheduledPostUpdated` com `{"uuid": "e1d2c3b4-...", "status": "pending"}` no canal privado `workspaces.{uuid do workspace}`
+        (use o evento para atualizar o card; refaça `GET /scheduled-posts` se precisar do resto).
+        **Notificação:** envio que termina depois do horário agendado gera `post_upload_late` na central (título "Envio do vídeo atrasou", respeita as preferências do usuário).
+
+        `status`: `awaiting_upload` ("Aguardando envio do vídeo") → `pending` → `processing` → `published` ou `failed`; `cancelled` quando cancelado (permitido em `awaiting_upload` e `pending`).
         Post `failed` guarda o arquivo por 5 dias e pode ser reenviado em `POST /scheduled-posts/{uuid}/retry`.
+
+        **Fuso de `scheduled_at`:** envie ISO 8601 com fuso (`2026-10-20T18:00:00-03:00` ou `...Z`); a API converte para o
+        mesmo instante em America/Sao_Paulo. Sem fuso (`2026-10-20 18:00:00`), vale o horário de America/Sao_Paulo. A resposta
+        sempre devolve ISO 8601 com o offset de São Paulo.
+
+        **Validação por rede (422 ao criar):** cada conta é validada pelas regras da sua plataforma e, se qualquer uma falhar,
+        **nenhum** post é criado. O erro vem no formato padrão `errors.<campo>`.
+        Conta do TikTok com `can_publish` = `false` (sem a permissão `video.publish`) também dá 422, em `errors.social_account_uuids`: peça para reconectar a conta.
+        - **YouTube:** só vídeo (mp4, mov); `title` obrigatório (máx. 100 caracteres); descrição (`caption`) até 5.000 bytes
+          (acentos e emojis ocupam mais de 1 byte).
+        - **Instagram:** vídeo mp4/mov (Reels) ou imagem JPEG (png não é aceito); `caption` até 2.200 caracteres.
+        - **TikTok:** só vídeo (mp4, mov, webm); `privacy_level` obrigatório; `caption` (vira o título no TikTok) até 2.200 caracteres.
+          `brand_content_toggle` não pode ser `true` com `privacy_level` = SELF_ONLY. Veja as opções válidas em
+          `GET /social-accounts/{id}/tiktok/creator-info`.
+
+        **`error_message` de posts `failed`:** é sempre um texto fixo em pt-BR, pronto para exibir (nunca o texto cru da rede).
+        Principais mensagens:
+        - Geral: "Não foi possível publicar o post. Tente novamente em instantes."; "Assinatura inativa ou expirada no momento da publicação."; "A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente."
+        - YouTube: "A cota diária do YouTube foi esgotada. Tente novamente amanhã."; "O canal atingiu o limite de uploads do YouTube. Tente novamente mais tarde."; "O YouTube recusou o acesso à conta. Reconecte a conta YouTube e aceite todas as permissões."; "A conta Google conectada não tem um canal do YouTube. Crie o canal e agende de novo."; "Não foi possível renovar o acesso à conta do YouTube. Reconecte a conta YouTube."; "Falha ao fazer upload do vídeo para o YouTube."; "O YouTube recusou a publicação. Tente novamente em instantes."
+        - Instagram: "O acesso à conta do Instagram expirou, foi revogado ou não tem permissão para publicar. Reconecte a conta do Instagram."; "O Instagram não conseguiu processar a mídia. Verifique o formato do arquivo e tente novamente."; "Tempo esgotado: o Instagram não terminou de processar a mídia. Verifique a conta e tente novamente."; "Não foi possível se comunicar com o Instagram. Tente novamente em instantes."; "O Instagram recusou a publicação. Verifique a mídia e tente novamente em instantes."
+        - TikTok: "A conta do TikTok não tem permissão para publicar. Desconecte e reconecte a conta TikTok."; "A privacidade escolhida não está disponível para esta conta do TikTok. Escolha outra e agende de novo."; "A conta atingiu o limite de publicações do TikTok nas últimas 24 horas. Tente novamente mais tarde."; "App do TikTok não auditado: por enquanto só é possível publicar em contas privadas, com visibilidade \"somente eu\"."; "O acesso à conta do TikTok expirou ou foi revogado. Reconecte a conta TikTok."; "O TikTok não aceitou o formato do arquivo. Use um vídeo MP4, MOV ou WebM."; "O vídeo é mais longo do que o TikTok permite para esta conta."; "Tempo esgotado: o TikTok não confirmou a publicação do vídeo. Verifique a conta e tente novamente."; "Não foi possível enviar o vídeo ao TikTok. Tente novamente em instantes."
       subgroup: ''
       subgroupDescription: ''
       title: 'Cancelar agendamento'
       description: |-
-        Só posts `pending` criados pelo próprio usuário. A mídia é apagada do storage.
+        Só posts `awaiting_upload` ou `pending`. **Qualquer membro com `posts.delete` no workspace do post pode cancelar**, não só quem agendou (a conta é do workspace).
+        Post de outro workspace devolve 404 e nada muda. A mídia só é apagada do storage se nenhum outro post (por exemplo, o mesmo vídeo agendado em outra rede) ainda a usa.
 
         **Permissão:** `posts.delete`
       authenticated: true

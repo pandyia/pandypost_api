@@ -75,6 +75,18 @@ class NotificationFactory
                 $workspaceId,
                 $dedupeKey,
             ),
+            NotificationType::POST_UPLOAD_LATE => new CentralNotification(
+                $type,
+                'Envio do vídeo atrasou',
+                "O envio de \"{$payload['post_title']}\" terminou às {$payload['completed_time']}, depois do horário agendado ({$payload['scheduled_time']}). Estamos publicando no {$payload['platform_label']} agora.",
+                '/pipeline',
+                [
+                    'post_uuid' => $payload['resource'],
+                    'platform' => $payload['platform'],
+                ] + $workspaceContext,
+                $workspaceId,
+                $dedupeKey,
+            ),
             NotificationType::PAYMENT_FAILED => new CentralNotification(
                 $type,
                 'Pagamento recusado',

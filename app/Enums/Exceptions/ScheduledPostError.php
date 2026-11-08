@@ -15,6 +15,14 @@ enum ScheduledPostError: string implements ErrorEnumInterface
     case PERMALINK_UNAVAILABLE = 'permalink_unavailable';
     case SUBSCRIPTION_INACTIVE = 'subscription_inactive';
     case ACCOUNT_NOT_FOUND = 'account_not_found';
+    case STUCK_TIMEOUT = 'publish_stuck_timeout';
+    case UNVERIFIABLE = 'publish_unverifiable';
+    case ALREADY_PUBLISHED = 'already_published_on_network';
+    case STILL_PROCESSING = 'still_processing_on_network';
+    case UPLOAD_EXPIRED = 'upload_expired';
+    case UPLOAD_NOT_FOUND = 'upload_not_found';
+    case UPLOAD_DEADLINE_PASSED = 'upload_deadline_passed';
+    case UPLOAD_CANCELLED = 'upload_cancelled';
 
     public function message(?string $platform = null): string
     {
@@ -28,6 +36,14 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::PERMALINK_UNAVAILABLE => 'Não foi possível obter o link do post publicado no Instagram.',
             self::SUBSCRIPTION_INACTIVE => 'Assinatura inativa ou expirada no momento da publicação.',
             self::ACCOUNT_NOT_FOUND => 'A conta vinculada ao agendamento não foi encontrada. Reconecte a conta e tente novamente.',
+            self::STUCK_TIMEOUT => 'A publicação demorou mais que o esperado e foi interrompida. Você pode reenviar o post.',
+            self::UNVERIFIABLE => 'Não foi possível confirmar a publicação. Confira na sua conta da rede antes de reenviar.',
+            self::STILL_PROCESSING => 'A rede social ainda está processando este post. Aguarde alguns minutos antes de reenviar.',
+            self::ALREADY_PUBLISHED => 'Este post já foi publicado na rede social. Não é necessário reenviar.',
+            self::UPLOAD_EXPIRED => 'O envio do vídeo não foi concluído. Envie o vídeo novamente.',
+            self::UPLOAD_NOT_FOUND => 'O vídeo ainda não foi encontrado no armazenamento. Aguarde o envio terminar e tente novamente.',
+            self::UPLOAD_DEADLINE_PASSED => 'O prazo do envio expirou. Envie o vídeo novamente.',
+            self::UPLOAD_CANCELLED => 'O agendamento foi cancelado.',
         };
     }
 
@@ -43,6 +59,9 @@ enum ScheduledPostError: string implements ErrorEnumInterface
             self::PERMALINK_UNAVAILABLE => 502,
             self::SUBSCRIPTION_INACTIVE => 403,
             self::ACCOUNT_NOT_FOUND => 404,
+            self::STUCK_TIMEOUT, self::UNVERIFIABLE => 502,
+            self::ALREADY_PUBLISHED, self::STILL_PROCESSING, self::UPLOAD_DEADLINE_PASSED, self::UPLOAD_CANCELLED => 409,
+            self::UPLOAD_EXPIRED, self::UPLOAD_NOT_FOUND => 422,
         };
     }
 }
