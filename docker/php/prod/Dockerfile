@@ -56,6 +56,7 @@ RUN adduser -u ${uid} -D -h /home/${user} -s /bin/sh ${user} \
 
 COPY docker/php/prod/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --chmod=755 docker/php/prod/supervisor-fatal-listener.sh /usr/local/bin/supervisor-fatal-listener.sh
 COPY docker/php/prod/logrotate.conf /etc/logrotate.d/laravel
 COPY --chmod=755 docker/php/prod/entrypoint.sh /usr/local/bin/entrypoint.sh
 
