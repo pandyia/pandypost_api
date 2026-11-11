@@ -2,6 +2,7 @@
 
 namespace App\Services\Storage;
 
+use App\Enums\ScheduledPostStatus;
 use App\Models\ScheduledPost;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -192,8 +193,8 @@ class StorageService
                 ->where('media_path', $path)
                 ->orWhere('payload->thumbnail_path', $path))
                 ->where(fn ($q) => $q
-                    ->whereIn('status', ['awaiting_upload', 'pending', 'processing'])
-                    ->orWhere(fn ($failed) => $failed->where('status', 'failed')->whereNull('media_purged_at')))
+                    ->whereIn('status', [ScheduledPostStatus::AWAITING_UPLOAD->value, ScheduledPostStatus::PENDING->value, ScheduledPostStatus::PROCESSING->value])
+                    ->orWhere(fn ($failed) => $failed->where('status', ScheduledPostStatus::FAILED->value)->whereNull('media_purged_at')))
                 ->when($currentPostId, fn ($q) => $q->where('id', '!=', $currentPostId))
                 ->exists();
 

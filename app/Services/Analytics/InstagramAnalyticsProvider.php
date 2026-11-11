@@ -2,7 +2,6 @@
 
 namespace App\Services\Analytics;
 
-use App\Contracts\AnalyticsProviderInterface;
 use App\Enums\Platform;
 use App\Exceptions\AnalyticsException;
 use App\Models\SocialAccount;
@@ -14,7 +13,6 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -25,7 +23,7 @@ use Throwable;
  * para alcance; dados com atraso de até 48h; "impressions" foi descontinuado
  * (substituído por "views").
  */
-class InstagramAnalyticsProvider implements AnalyticsProviderInterface
+class InstagramAnalyticsProvider extends AbstractAnalyticsProvider
 {
     private const GRAPH_URL = InstagramApi::GRAPH_URL;
 
@@ -360,30 +358,25 @@ class InstagramAnalyticsProvider implements AnalyticsProviderInterface
         ];
     }
 
-    private function get(PendingRequest $client, string $path, array $query): array
+    /** A Graph API é chamada por caminho relativo: prefixa a URL base. */
+    protected function get(PendingRequest $client, string $path, array $query): array
     {
-        $response = $client->get(self::GRAPH_URL.$path, $query);
-        $this->ensureSuccessful($response);
-
-        return $response->json() ?? [];
+        return parent::get($client, self::GRAPH_URL.$path, $query);
     }
 
-    private function ensureSuccessful(Response $response): void
+    protected function platform(): Platform
     {
-        if ($response->successful()) {
-            return;
-        }
+        return Platform::INSTAGRAM;
+    }
 
+    protected function isReauthError(Response $response): bool
+    {
         $code = (int) $response->json('error.code');
 
-        if ($response->status() === 401 || in_array($code, self::REAUTH_ERROR_CODES, true) || ($code >= 200 && $code <= 299)) {
-            throw AnalyticsException::reauthRequired(Platform::INSTAGRAM);
-        }
-
-        throw new RuntimeException("Instagram API respondeu {$response->status()}: ".$response->body());
+        return $response->status() === 401 || in_array($code, self::REAUTH_ERROR_CODES, true) || ($code >= 200 && $code <= 299);
     }
 
-    private function client(string $token): PendingRequest
+    protected function client(string $token): PendingRequest
     {
         // Mesmo padrão do InstagramService: token como parâmetro access_token.
         return Http::withQueryParameters(['access_token' => $token])->acceptJson()->timeout(20);

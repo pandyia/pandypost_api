@@ -1,0 +1,85 @@
+# 022 — Refatoração geral: base HTTP, controllers e esteira das redes
+
+## Contexto
+
+Auditoria da camada HTTP (BaseController e os 27 controllers), da lógica de negócio que vazou para controllers e da duplicação na esteira das redes (analytics providers, jobs de conferência e literais de status). Três fases ordenadas por risco: a Fase 1 ataca o desvio na base herdado por todos (`$request->all()`/`input()` no `BaseController` e o padrão `app(XRequest::class)->validated()` repetido 25 vezes); a Fase 2 devolve regra de negócio de controllers para services; a Fase 3 mexe na área crítica das redes (duplicação nos 3 analytics providers e nos 2 jobs de conferência, ~16 literais de status e 3 `RuntimeException`).
+
+Áreas críticas tocadas (CLAUDE.md pede spec reversa/caracterização antes): OAuth (callback), permissões/workspace (`authorizeInWorkspace`, base do CRUD) e esteira de publicação (jobs e services das redes). O comportamento atual está travado nos requisitos "não muda" e nas tasks 0.x/2.0/3.0 de caracterização.
+
+**Restrições de partida:**
+
+- Na auditoria (2026-11-10) a árvore estava limpa na `develop` (`cfdd0f7`); a spec 021 está commitada. Se na execução houver trabalho não commitado (inclusive da 021), ele **não pode ser tocado nem revertido**. Os stashes existentes (`stash@{0}`, `stash@{1}`) não são tocados.
+- Comportamento e contrato de API não mudam. Toda exceção a isso está em Questões em aberto e só entra com aprovação explícita.
+
+## Escopo fechado
+
+- **Fase 1:** `app/Http/Controllers/Api/**` (base e filhos), FormRequests novos em `app/Http/Requests` (`Auth/ConfirmEmailRequest`, `StoreRoleRequest`, `UpdateRoleRequest`), `AuthService` (método `logout` novo).
+- **Fase 2:** `SocialAccountController`/`SocialAccountService`, `WorkspaceController`/`WorkspaceService` (+ enum/exception de workspace), `ContentPipelineController`/`ContentPipelineService`, `AccessController`/`AccessService`, `Billing/Admin/PlanController`/`PriceController` e seus services, `Billing/Tenant/SubscriptionController`, `AuthController::logout`.
+- **Fase 3:** `app/Services/Analytics/*AnalyticsProvider.php` (+ classe base nova autorizada), `app/Jobs/CheckInstagramContainerJob.php`, `app/Jobs/CheckTikTokPostStatusJob.php` (+ trait nova autorizada), literais de status em `YouTubeService`, `InstagramService`, `TikTokService`, `PublishPostJob`, `Storage/StorageService`, exceção de domínio nova para os providers.
+- **Testes:** só caracterização nova em `tests/Feature/`; nenhum teste existente é alterado ou removido.
+
+Nada em `routes/`, `database/`, `config/`, Resources (nenhum muda) nem nos demais services/jobs.
+
+## Requisitos
+
+### Fase 1 — Base HTTP
+
+- **RF-1 (base sem request cru).** `BaseController::store` (`BaseController.php:54`) e `::update` (`:72`) deixam de passar `$request->all()` ao service: o filho declara o FormRequest por ação (ver mecânica no plan, D1) e a base resolve e valida. Mensagens e códigos de resposta atuais ("Registro inserido com sucesso." 201 etc.) não mudam. `::index` (`:43`) segue com `$request->input()`: os filtros passam pela whitelist `$normalFilter` do `DynamicFilter`, não pelo Eloquent cru (não é achado). Os 2 únicos endpoints vivos que hoje chegam ao `update` cru — `PATCH /users/{id}` (`UserController.php:182-185`, quebrado por BUG-01) e `PATCH /accesses/{id}` (`AccessController.php:105-108`, sem FormRequest e sem teste) — dependem de Q1.
+- **RF-2 (overrides triviais somem).** Overrides cujo único trabalho é `app(XRequest::class)->validated()` + resposta genérica da base deixam de existir; o controller só declara o FormRequest: `WorkspaceController::store` (`WorkspaceController.php:51-58`), `UserController::store` (`UserController.php:49-56`). Overrides com resposta própria (Role, Plan, Price, ScheduledPost, ContentPipeline, Access, Notification::index em `NotificationController.php:42`) trocam `app(X::class)->validated()` pelo helper protegido da base (D1): some o padrão, fica uma chamada só.
+- **RF-3 (FormRequest na assinatura).** Ações que **não** sobrescrevem método da base (sem restrição de LSP) recebem o FormRequest direto na assinatura, padrão Laravel: `ProfileController.php:49,66,84,118`, `WorkspaceAvatarController.php:45,64`, `Admin/LandingSettingsController.php:36`, `Billing/Tenant/PaymentMethodController.php:71`, `Billing/Tenant/SubscriptionController.php:83,108`, `NotificationPreferenceController.php:66`, `UserController::changeRole` (`:97`), `ContentPipelineController::move` (`:169`). Validação, mensagens 422 e respostas idênticas.
+- **RF-4 (Auth).** `AuthController::login` (`AuthController.php:200`) passa `$request->validated()` ao service — o `LoginRequest` já cobre `email`, `password` e `remember_me`, e o service só lê esses 3 campos, então nada muda. `confirmEmail` (`:101-103`) troca o `$request->validate()` inline por `Auth/ConfirmEmailRequest` com a mesma regra (`token => required|string`; mesma resposta 422). `logout` (`:212-217`) delega a revogação do token a `AuthService::logout(User)` (controller deixa de encadear Eloquent/Sanctum).
+- **RF-5 (Role com FormRequest).** `RoleController::store` (`RoleController.php:86`) e `::update` (`:121`) deixam de passar `$request->all()` ao `RoleService`: `StoreRoleRequest`/`UpdateRoleRequest` com regras mínimas espelhando o que o service já usa (`name`, `permissions` array de strings). Depende de Q2 (payload sem `name` passa de 500 para 422).
+- **RF-6 (uploadUrl).** `ScheduledPostController::uploadUrl` (`ScheduledPostController.php:122-125`) usa `validated()` do `GenerateUploadUrlRequest` (já na assinatura) em vez de `input()`. O guard de workspace (`:114-119`) e o corpo do 404 (`{"message": "Workspace não encontrado."}`) ficam como estão: convertê-lo em exceção de domínio mudaria o corpo (ver Apontamentos).
+
+### Fase 2 — Lógica de negócio em controllers
+
+- **RF-7 (callback OAuth).** A lógica de negócio de `SocialAccountController::callback` (`SocialAccountController.php:118-129`: `Workspace::where('uuid')`, `User::find`, checagem de vínculo e de permissão) vai para o `SocialAccountService`; o controller fica só com a tradução exceção → redirect. Spec reversa (não muda): consumo do state é **antes** de tudo e de uso único; workspace/iniciador ausente ou sem vínculo → `?error=Estado OAuth inválido.`; iniciador sem `social_accounts.connect` no workspace do state → `?error=Você não tem permissão para conectar contas neste workspace.`; `BaseException` → mensagem da exceção; `Throwable` → `?error=Não foi possível conectar a conta. Tente novamente.` com `Log::warning` contendo **só a classe** da exceção (`:139-143`). Caracterização do ramo `Throwable` primeiro (task 2.0; os demais ramos já estão travados por `OAuthStateTest` e `FechamentoPublicacaoTest:329`).
+- **RF-8 (403 de workspace tipado).** `WorkspaceController::authorizeInWorkspace` (`WorkspaceController.php:199-213`) deixa de lançar `HttpResponseException` com JSON manual: a checagem vai para o `WorkspaceService` e a recusa vira enum + `WorkspaceException` no padrão do projeto. O corpo da resposta **não muda**: `{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "..."}`, 403 — exige render próprio na exception (D4, Q3), porque o `BaseException::render` padrão devolve `{"error", "message"}`.
+- **RF-9 (pipeline e access sem montagem de tenant no controller).** `ContentPipelineController::store` (`ContentPipelineController.php:110-114`) e `AccessController::store` (`AccessController.php:72-76`) param de injetar `workspace_id` via `array_merge` no controller: o service resolve o workspace do usuário. `ContentPipelineController::resolveCard` (`:224-233`) e `restore` (`:209-215`) viram métodos do `ContentPipelineService`; o branch `instanceof ContentPipeline` (`:228`) é código morto (não há binding implícito sem type-hint) e sai.
+- **RF-10 (billing: resolvers para o service).** `PlanController::resolvePlan` (`Billing/Admin/PlanController.php:155-164`), `PriceController::resolvePlan` (`Billing/Admin/PriceController.php:142-151`) e `::resolvePrice` (`:153-162`) saem dos controllers: `resolvePlan` é duplicado nos 2 arquivos e equivale ao `findByUuid` que o `BaseService` já dá (reuso ignorado); `resolvePrice` vira método do service de preço (consulta escopada ao plano, mesma 404). Os branches `instanceof` (`PlanController.php:159`, `PriceController.php:146,157`) são código morto e saem. `SubscriptionController::checkout` (`Billing/Tenant/SubscriptionController.php:84`) para de fazer `Price::where('uuid')` no controller: a resolução vai para o service de checkout, mesma 404. **Conferido: `PriceController::resolvePlan` não é bug** — a rota aninhada `plans/{plan}/prices/{price}` precisa do plano para escopar o preço; o achado é só a duplicação.
+
+### Fase 3 — Redes sociais (área crítica)
+
+- **RF-11 (status pelo enum).** Os literais `'processing'`/`'published'`/`'failed'`/`'awaiting_upload'`/`'pending'`/`'cancelled'` passam a vir de `ScheduledPostStatus` (que já existe e já é usado em parte desses arquivos): `YouTubeService.php:34,63`, `InstagramService.php:27,149,171`, `TikTokService.php:45`, `PublishPostJob.php:125`, `CheckInstagramContainerJob.php:81,134`, `CheckTikTokPostStatusJob.php:73,98,114,121`, `StorageService.php:195-196`. Valores gravados e comparados idênticos (`->value`).
+- **RF-12 (RuntimeException dos providers).** Os `throw new RuntimeException` de `TikTokAnalyticsProvider.php:305`, `InstagramAnalyticsProvider.php:383` e `YouTubeAnalyticsProvider.php:348` viram exceção de domínio nova que **não** estende `AnalyticsException` (D6): o `AnalyticsService::callProvider` (`AnalyticsService.php:224-237`) relança `AnalyticsException` ao cliente e converte qualquer outra `Throwable` em log + 502 `providerUnavailable` — a nova exceção precisa continuar caindo nesse segundo ramo para o contrato (502 genérico) e o log (detalhe com status/corpo) ficarem idênticos. A mensagem fica com o mesmo texto de hoje, incluindo o `body()` de terceiro que vai só para o log (ver Apontamentos/Q4).
+- **RF-13 (base comum dos analytics providers — autorizada).** Os 3 providers ganham uma classe base (`AbstractAnalyticsProvider`): `client()` (`TikTokAnalyticsProvider.php:308-311` e `YouTubeAnalyticsProvider.php:366-369` são idênticos; Instagram, `:386-390`, sobrescreve — token via query param), `get()` (`InstagramAnalyticsProvider.php:363-369` ≡ `YouTubeAnalyticsProvider.php:324-330`) e o esqueleto de `ensureSuccessful()` (sucesso → retorno; erro de reauth → `AnalyticsException::reauthRequired`; resto → exceção do RF-12), com a detecção de sucesso/reauth específica de cada rede preservada em métodos abstratos (TikTok confere `error.code === 'ok'`; Instagram códigos 200-299 e `REAUTH_ERROR_CODES`; YouTube 401/403 exceto cota).
+- **RF-14 (base comum dos jobs de conferência — autorizada).** `CheckInstagramContainerJob` e `CheckTikTokPostStatusJob` compartilham via trait: `$tries = 15` (`:24`/`:27`), `backoff()` (`:35-38`/`:37-40`, mesmos `[2,4,8,16,30]`), `retryWithBackoff()` (`:90-98`/`:82-90`) e `failed()` (`:77-88`/`:69-80` — idênticos exceto a exceção de timeout da rede, que vira método abstrato). `markAsFailed` (Instagram, `:131-139`) é renomeado para `markFailed` (nome do TikTok, `:109-126`); **os corpos continuam específicos de cada job** — o do TikTok confere estado final antes de gravar, o do Instagram não — porque unificá-los mudaria comportamento.
+
+## Critérios de aceite
+
+- `docker exec pandypost-php php artisan test` verde **após cada tarefa**; nenhum teste existente alterado, enfraquecido ou removido; só entram as caracterizações 0.x/2.0/3.0.
+- Contrato de API byte a byte: nenhum Resource, rota, código HTTP, corpo de resposta ou `error_message` muda.
+- `docker exec pandypost-php ./vendor/bin/pint --dirty` limpo ao fim de cada tarefa (sem TTY: sempre `docker exec pandypost-php ...`).
+- Mensagens, erros e comentários novos em pt-BR; código em inglês.
+- Balanço esperado: 25 → 0 ocorrências de `app(XRequest::class)->validated()` espalhadas (viram declaração/assinatura/helper), ~2 overrides e 4 helpers privados de controller a menos, ~70-90 linhas a menos nos providers/jobs, 3 `RuntimeException` e 1 `HttpResponseException` manual a menos, 0 `$request->all()` em Eloquent na base (exceto Q1-b, se escolhida).
+
+## Fora de escopo
+
+- `Access` sem `BelongsToWorkspace` (usa `scopeForWorkspace`; dependência circular já mapeada em 013-A8), `Subscription` (Cashier) e `Notification` (`workspace_id` nullable): ficam como estão.
+- `Validator::make` nos PayloadBuilders: validação por rede intencional (spec 011/014), não se mexe.
+- `PostReconciliationService` (`:32-34`): usa constantes privadas próprias para os status — já nomeiam a intenção; trocar por enum é churn sem ganho.
+- Strategy/Factory para os `match` por plataforma remanescentes fora das factories (013-Q3); cast de enum em `ScheduledPost.status`/`SocialAccount.platform` (013-Q4).
+- Lacunas de teste de Access/Permission CRUD, Commands e Observers: caracterização só onde esta spec toca; o resto fica registrado aqui como débito.
+- Qualquer correção dos Apontamentos abaixo.
+
+## Apontamentos (não viram tarefa)
+
+Segurança:
+- **A1 — mass assignment vivo em `PATCH /accesses/{id}`** (`AccessController.php:105-108` → `BaseController.php:72` → `update($request->all())`): qualquer campo de `Access::$fillable` (`user_id`, `role_id`, `workspace_id`) é gravável cru. Sem teste e sem FormRequest. Família 013-A1/A2 e spec 002; fechar isso muda contrato (Q1) e é spec de segurança.
+- **A2 — `PATCH /users/{id}`** (`UserController.php:182-185`) chega ao mesmo `update` cru; hoje quebrado (BUG-01, 500 no PostgreSQL, spec 002). Mesmo tratamento de Q1.
+- **A3 — vazamento para log:** a mensagem dos providers de analytics ("X API respondeu {status}: {body}") carrega o corpo de terceiro e é logada em `AnalyticsService.php:233`. O RF-12 mantém o texto idêntico (refatoração não muda comportamento); trocar por mensagem fixa + contexto é decisão de segurança (Q4). Família VULN-RETRY-02/013-A5.
+- **A4 — `ContentPipelineController` `update`/`destroy`/`restore` sem entrada em `$permissionMethods`** (`:31-34`): já registrado como VULN-04 na spec 002; esta spec não altera permissões.
+
+Contrato inconsistente (mexer = quebrar contrato; fica para spec própria se o front topar):
+- **A5 — respostas sem Resource que não podem ganhar Resource sem mudar o corpo:** `AuthController::login` (`:202`, `user`/`token`/`current_workspace` na raiz), `ScheduledPostController::uploadUrl` (`:128`, `url`/`path`/... na raiz) e o fallback `response($data, 200)` de `BaseController::index`/`show` (`:49,:67`) — usado de verdade por `GET /workspaces` (paginador cru **documentado** no Scribe) e `GET /accesses`. Embrulhar em `JsonResource` adicionaria o wrapper `data`.
+- **A6 — assimetria do `YouTubeApi`** (`app/Services/YouTube/YouTubeApi.php`, 44 linhas: só OAuth; o upload usa o SDK do Google no `YouTubeService`): **intencional e documentada** (decisão D1 da spec 016 — wrapper 1:1 do SDK não tem ganho). Não mexer; registrado para não ser "achado" de novo.
+
+## Questões em aberto
+
+> **Decididas pelo dono em 2026-11-10:** Q1 = (a) override explícito com `$request->all()`, comentado; A1/A2 ficam para a spec 002. Q2 = sim, aceita 500→422 (registrar em Divergências). Q3 = sim, aprovado o override de `render()` na `WorkspaceException`. Q4 = manter mensagem idêntica; A3 fica para a spec 002. Q5 = atualizar o CLAUDE.md após a execução.
+
+1. **Q1 — os 2 consumidores vivos do `update` cru da base.** Com o RF-1, `users.update` e `accesses.update` precisam de destino: **(a)** manter override explícito com `$request->all()` nesses 2 controllers, comentado e apontado (comportamento idêntico, A1/A2 continuam) — default desta spec; **(b)** criar `UpdateUserRequest`/`UpdateAccessRequest` mínimos — fecha o mass assignment, mas muda comportamento (campos fora da whitelist deixam de gravar) e vira correção de segurança. Qual?
+2. **Q2 — FormRequests de Role (RF-5).** Payload sem `name` em `POST /roles` hoje dá 500 (`Undefined array key`); com FormRequest vira 422. Nenhum teste trava o 500. Aceita a divergência (precedente: 014 aceitou 500→400 na plataforma desconhecida)? Se não, RF-5 sai.
+3. **Q3 — render próprio na `WorkspaceException` (RF-8).** Para manter o corpo `{"message", "required_permission"}` do 403 (igual ao middleware `CheckPermission`), a exception precisa sobrescrever o `render()` do `BaseException` (que devolve `{"error", "message"}`). Aprova o override? Alternativa: adotar o corpo padrão com `error` — mudança de contrato, fora de refatoração.
+4. **Q4 — mensagem dos providers (RF-12).** Manter o texto atual com `status` + `body()` de terceiro (comportamento e log idênticos; vazamento A3 continua) ou mensagem fixa com o corpo só em contexto (muda o log; decidir junto com a spec 002)? Default: manter idêntico.
+5. **Q5 — convenção no CLAUDE.md.** O CLAUDE.md documenta `$data = app(StoreXRequest::class)->validated();` para overrides. Com D1 a convenção muda (declaração por ação + helper). Esta spec não edita o CLAUDE.md; atualizar o texto após a execução?

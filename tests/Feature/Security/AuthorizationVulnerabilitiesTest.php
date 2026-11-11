@@ -263,13 +263,13 @@ describe('VULN-04: pipeline exige permissão para editar e remover', function ()
         $this->withToken($this->member->test_token)
             ->patchJson("/api/pipeline/{$this->card->uuid}", ['title' => 'Alterado'])
             ->assertForbidden();
-    })->skip('VULN-04: update/destroy/restore do ContentPipelineController não estão em $permissionMethods.');
+    });
 
     it('retorna 403 ao remover card sem permissão de escrita', function () {
         $this->withToken($this->member->test_token)
             ->deleteJson("/api/pipeline/{$this->card->uuid}")
             ->assertForbidden();
-    })->skip('VULN-04: update/destroy/restore do ContentPipelineController não estão em $permissionMethods.');
+    });
 
 });
 
@@ -331,7 +331,7 @@ describe('BUG-01: show/update genéricos do BaseController', function () {
         $this->withToken($user->test_token)
             ->getJson("/api/users/{$user->uuid}")
             ->assertOk();
-    })->skip('BUG-01: BaseController::show chama findById() com o uuid da rota.');
+    });
 
     it('exibe um workspace do usuário pelo uuid', function () {
         $user = createUserWithPermissions(['workspaces.view']);
@@ -340,7 +340,7 @@ describe('BUG-01: show/update genéricos do BaseController', function () {
         $this->withToken($user->test_token)
             ->getJson("/api/workspaces/{$workspace->uuid}")
             ->assertOk();
-    })->skip('BUG-01: BaseController::show chama findById() com o uuid da rota.');
+    });
 
     it('atualiza um usuário do workspace pelo uuid', function () {
         $user = createUserWithPermissions(['users.update']);
@@ -348,7 +348,57 @@ describe('BUG-01: show/update genéricos do BaseController', function () {
         $this->withToken($user->test_token)
             ->patchJson("/api/users/{$user->uuid}", ['name' => 'Novo Nome'])
             ->assertOk();
-    })->skip('BUG-01: BaseController::update chama BaseService::update(array, id) com assinatura invertida (TypeError).');
+    });
+
+    it('retorna 404 ao exibir ou editar usuário de outro workspace e nada muda', function () {
+        $user = createUserWithPermissions(['users.view', 'users.update']);
+        $other = createUserWithPermissions([]);
+        $originalName = $other->name;
+
+        $this->withToken($user->test_token)
+            ->getJson("/api/users/{$other->uuid}")
+            ->assertNotFound();
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/users/{$other->uuid}", ['name' => 'Invadido'])
+            ->assertNotFound();
+
+        expect(User::withoutGlobalScopes()->find($other->id)->name)->toBe($originalName);
+    });
+
+    it('retorna 404 ao exibir workspace do qual não é membro', function () {
+        $user = createUserWithPermissions(['workspaces.view']);
+        $other = createUserWithPermissions([]);
+        $otherWorkspace = Workspace::withoutGlobalScopes()->find($other->currentAccess->workspace_id);
+
+        $this->withToken($user->test_token)
+            ->getJson("/api/workspaces/{$otherWorkspace->uuid}")
+            ->assertNotFound();
+    });
+
+    it('retorna 422 ao editar usuário sem nome', function () {
+        $user = createUserWithPermissions(['users.update']);
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/users/{$user->uuid}", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    });
+
+    it('retorna 403 ao exibir ou editar usuário sem permissão', function () {
+        $user = createUserWithPermissions([]);
+        $originalName = $user->name;
+
+        $this->withToken($user->test_token)
+            ->getJson("/api/users/{$user->uuid}")
+            ->assertForbidden();
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/users/{$user->uuid}", ['name' => 'X'])
+            ->assertForbidden();
+
+        expect(User::find($user->id)->name)->toBe($originalName);
+    });
 
 });
 

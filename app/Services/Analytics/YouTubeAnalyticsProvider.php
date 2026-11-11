@@ -2,7 +2,6 @@
 
 namespace App\Services\Analytics;
 
-use App\Contracts\AnalyticsProviderInterface;
 use App\Enums\Platform;
 use App\Exceptions\AnalyticsException;
 use App\Models\SocialAccount;
@@ -12,8 +11,6 @@ use Carbon\CarbonImmutable;
 use DateInterval;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -22,7 +19,7 @@ use Throwable;
  * A API não expõe impressões nem CTR de miniatura, e receita exige o escopo
  * yt-analytics-monetary.readonly (não solicitado) — por isso nenhum dos dois aparece.
  */
-class YouTubeAnalyticsProvider implements AnalyticsProviderInterface
+class YouTubeAnalyticsProvider extends AbstractAnalyticsProvider
 {
     private const ANALYTICS_URL = 'https://youtubeanalytics.googleapis.com/v2/reports';
 
@@ -321,31 +318,21 @@ class YouTubeAnalyticsProvider implements AnalyticsProviderInterface
         return array_map(fn (array $row) => array_combine($columns, $row), $response['rows'] ?? []);
     }
 
-    private function get(PendingRequest $client, string $url, array $query): array
+    protected function platform(): Platform
     {
-        $response = $client->get($url, $query);
-        $this->ensureSuccessful($response);
-
-        return $response->json() ?? [];
+        return Platform::YOUTUBE;
     }
 
     /**
      * 401 e 403 de permissão = token sem acesso ao Analytics (reconectar).
      * Cota estourada e demais falhas = indisponibilidade temporária.
      */
-    private function ensureSuccessful(Response $response): void
+    protected function isReauthError(Response $response): bool
     {
-        if ($response->successful()) {
-            return;
-        }
-
         $reason = $response->json('error.errors.0.reason');
 
-        if ($response->status() === 401 || ($response->status() === 403 && ! in_array($reason, ['quotaExceeded', 'rateLimitExceeded', 'dailyLimitExceeded'], true))) {
-            throw AnalyticsException::reauthRequired(Platform::YOUTUBE);
-        }
-
-        throw new RuntimeException("YouTube API respondeu {$response->status()}: ".$response->body());
+        return $response->status() === 401
+            || ($response->status() === 403 && ! in_array($reason, ['quotaExceeded', 'rateLimitExceeded', 'dailyLimitExceeded'], true));
     }
 
     private function durationInSeconds(?string $isoDuration): int
@@ -361,10 +348,5 @@ class YouTubeAnalyticsProvider implements AnalyticsProviderInterface
         }
 
         return ($interval->d * 86400) + ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
-    }
-
-    private function client(string $token): PendingRequest
-    {
-        return Http::withToken($token)->acceptJson()->timeout(20);
     }
 }

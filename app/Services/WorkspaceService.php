@@ -28,6 +28,21 @@ class WorkspaceService extends BaseService
     }
 
     /**
+     * A rota carrega o uuid do workspace-alvo, mas o middleware `permission:` olha o workspace
+     * corrente. Aqui a permissão é conferida no workspace da URL (não-membro = 404 pelo escopo).
+     */
+    public function authorizePermissionInWorkspace(User $user, string $uuid, string $permission): Workspace
+    {
+        $workspace = Workspace::where('uuid', $uuid)->firstOrFail();
+
+        if (! $user->isSuperAdmin() && ! $user->hasPermissionInWorkspace($permission, $workspace->id)) {
+            throw WorkspaceException::permissionDeniedInWorkspace($permission);
+        }
+
+        return $workspace;
+    }
+
+    /**
      * @return array{url: string, headers: array, path: string, content_type: string, max_size: int, expires_in: int}
      */
     public function generateAvatarUploadUrl(Workspace $workspace, string $contentType): array

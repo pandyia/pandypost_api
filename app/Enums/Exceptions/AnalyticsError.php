@@ -9,6 +9,7 @@ enum AnalyticsError: string implements ErrorEnumInterface
     case REAUTH_REQUIRED = 'analytics_reauth_required';
     case PROVIDER_UNAVAILABLE = 'analytics_provider_unavailable';
     case REFRESH_TOO_SOON = 'analytics_refresh_too_soon';
+    case UNEXPECTED_API_RESPONSE = 'analytics_unexpected_api_response';
 
     public function message(?string $context = null): string
     {
@@ -16,6 +17,7 @@ enum AnalyticsError: string implements ErrorEnumInterface
             self::REAUTH_REQUIRED => "Reconecte a conta do {$context} para liberar a leitura das métricas.",
             self::PROVIDER_UNAVAILABLE => "Não foi possível carregar as métricas do {$context} agora. Tente novamente em alguns minutos.",
             self::REFRESH_TOO_SOON => "Você já atualizou os dados recentemente. Tente novamente em {$context} minutos.",
+            self::UNEXPECTED_API_RESPONSE => "Resposta inesperada da API de analytics do {$context}.",
         };
     }
 
@@ -25,6 +27,7 @@ enum AnalyticsError: string implements ErrorEnumInterface
             self::REAUTH_REQUIRED => 409,
             self::PROVIDER_UNAVAILABLE => 502,
             self::REFRESH_TOO_SOON => 429,
+            self::UNEXPECTED_API_RESPONSE => 502,
         };
     }
 }

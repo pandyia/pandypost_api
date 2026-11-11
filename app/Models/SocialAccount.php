@@ -61,8 +61,12 @@ class SocialAccount extends Model implements Auditable
         'token_secret',
     ];
 
+    // Tokens criptografados em repouso com a APP_KEY (specs/002 VULN-SA-01): um dump do banco
+    // não entrega acesso às redes. Trocar a APP_KEY sem APP_PREVIOUS_KEYS invalida as contas conectadas.
     protected $casts = [
         'expires_at' => 'datetime',
+        'access_token' => 'encrypted',
+        'refresh_token' => 'encrypted',
     ];
 
     private const TOKEN_EXPIRY_MARGIN_MINUTES = 5;

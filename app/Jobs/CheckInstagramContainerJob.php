@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\ScheduledPostStatus;
 use App\Exceptions\BaseException;
 use App\Exceptions\InstagramException;
+use App\Jobs\Concerns\ChecksPlatformPostStatus;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Services\Instagram\InstagramApi;
@@ -15,13 +16,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
 class CheckInstagramContainerJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    public int $tries = 15;
+    use ChecksPlatformPostStatus, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
         public ScheduledPost $post,
@@ -30,11 +28,6 @@ class CheckInstagramContainerJob implements ShouldQueue
         public bool $shouldPublish = true
     ) {
         $this->onQueue('instagram');
-    }
-
-    public function backoff(): array
-    {
-        return [2, 4, 8, 16, 30];
     }
 
     public function handle(): void
@@ -73,28 +66,14 @@ class CheckInstagramContainerJob implements ShouldQueue
         };
     }
 
-    /** Esgotou as tentativas (ou erro inesperado): sem estado final, o post não pode ficar em processing para sempre. */
-    public function failed(Throwable $exception): void
+    protected function timeoutException(): BaseException
     {
-        $this->post->refresh();
-
-        if ($this->post->status !== 'processing') {
-            return;
-        }
-
-        $this->markAsFailed($exception instanceof BaseException
-            ? $exception->getMessage()
-            : InstagramException::publishTimeout()->getMessage());
+        return InstagramException::publishTimeout();
     }
 
-    private function retryWithBackoff(): void
+    protected function stillProcessingLogMessage(int $delay): string
     {
-        $backoffValues = $this->backoff();
-        $attempt = min($this->attempts() - 1, count($backoffValues) - 1);
-        $delay = $backoffValues[$attempt] ?? 30;
-
-        Log::info("Container ainda processando. Próxima tentativa em {$delay}s");
-        $this->release($delay);
+        return "Container ainda processando. Próxima tentativa em {$delay}s";
     }
 
     private function handleFinishedContainer(string $accessToken): void
@@ -120,7 +99,7 @@ class CheckInstagramContainerJob implements ShouldQueue
     private function failUnlessWarmup(string $error): void
     {
         if ($this->shouldPublish) {
-            $this->markAsFailed($error);
+            $this->markFailed($error);
 
             return;
         }
@@ -128,10 +107,10 @@ class CheckInstagramContainerJob implements ShouldQueue
         Log::warning("Warmup do post {$this->post->id} falhou ({$error}). O post segue pendente.");
     }
 
-    private function markAsFailed(string $error): void
+    protected function markFailed(string $error): void
     {
         $this->post->update([
-            'status' => 'failed',
+            'status' => ScheduledPostStatus::FAILED->value,
             'error_message' => mb_substr($error, 0, 255),
         ]);
 

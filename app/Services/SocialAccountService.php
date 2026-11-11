@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\SocialAccountException;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Models\User;
@@ -41,6 +42,26 @@ class SocialAccountService extends BaseService
         $provider = $this->factory->make($platform);
 
         return $provider->syncAccount($user, $code, $workspace);
+    }
+
+    /** Revalida o contexto do state já consumido (workspace, iniciador e permissão) e conecta a conta. */
+    public function connectFromCallback(string $platform, ?string $code, array $state): void
+    {
+        $workspace = Workspace::where('uuid', $state['workspace_uuid'])->first();
+        $initiator = User::find($state['user_id']);
+
+        // O iniciador precisa continuar com acesso ao workspace (pode ter saído entre o início e o callback).
+        if (! $workspace || ! $initiator
+            || ! $initiator->accesses()->where('workspace_id', $workspace->id)->exists()) {
+            throw SocialAccountException::oauthStateContextInvalid();
+        }
+
+        // O papel do iniciador pode ter mudado nos 10 minutos do state: precisa ainda poder conectar contas aqui.
+        if (! $initiator->isSuperAdmin() && ! $initiator->hasPermissionInWorkspace('social_accounts.connect', $workspace->id)) {
+            throw SocialAccountException::connectPermissionDenied();
+        }
+
+        $this->syncAccount($initiator, $platform, $code, $workspace);
     }
 
     public function disconnect(string $uuid): void

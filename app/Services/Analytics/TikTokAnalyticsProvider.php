@@ -2,9 +2,7 @@
 
 namespace App\Services\Analytics;
 
-use App\Contracts\AnalyticsProviderInterface;
 use App\Enums\Platform;
-use App\Exceptions\AnalyticsException;
 use App\Models\SocialAccount;
 use App\Support\Analytics\AnalyticsPeriod;
 use App\Support\Analytics\MetricsCalculator;
@@ -12,9 +10,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 /**
  * TikTok Display API v2 (escopos user.info.stats e video.list).
@@ -23,7 +19,7 @@ use RuntimeException;
  * consideram os vídeos PUBLICADOS no período (acumulado desde a publicação),
  * e o crescimento de seguidores/curtidas vem dos snapshots diários.
  */
-class TikTokAnalyticsProvider implements AnalyticsProviderInterface
+class TikTokAnalyticsProvider extends AbstractAnalyticsProvider
 {
     private const API_URL = 'https://open.tiktokapis.com/v2';
 
@@ -287,26 +283,21 @@ class TikTokAnalyticsProvider implements AnalyticsProviderInterface
         return $text === '' ? 'Vídeo sem descrição' : Str::limit($text, 80);
     }
 
-    /**
-     * O TikTok responde {error: {code: "ok"}} no sucesso; qualquer outro código é falha.
-     */
-    private function ensureSuccessful(Response $response): void
+    protected function platform(): Platform
+    {
+        return Platform::TIKTOK;
+    }
+
+    /** O TikTok responde {error: {code: "ok"}} no sucesso; qualquer outro código é falha. */
+    protected function isSuccessful(Response $response): bool
     {
         $code = $response->json('error.code');
 
-        if ($response->successful() && ($code === null || $code === 'ok')) {
-            return;
-        }
-
-        if ($response->status() === 401 || in_array($code, self::REAUTH_ERROR_CODES, true)) {
-            throw AnalyticsException::reauthRequired(Platform::TIKTOK);
-        }
-
-        throw new RuntimeException("TikTok API respondeu {$response->status()}: ".$response->body());
+        return $response->successful() && ($code === null || $code === 'ok');
     }
 
-    private function client(string $token): PendingRequest
+    protected function isReauthError(Response $response): bool
     {
-        return Http::withToken($token)->acceptJson()->timeout(20);
+        return $response->status() === 401 || in_array($response->json('error.code'), self::REAUTH_ERROR_CODES, true);
     }
 }

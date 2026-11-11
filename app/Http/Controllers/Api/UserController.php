@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\ChangeUserRoleRequest;
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,11 @@ class UserController extends BaseController
         'change_role' => ['changeRole'],
     ];
 
+    protected static array $formRequests = [
+        'store' => StoreUserRequest::class,
+        'update' => UpdateUserRequest::class,
+    ];
+
     public function __construct(
         private UserService $userService
     ) {
@@ -48,11 +54,7 @@ class UserController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $data = app(StoreUserRequest::class)->validated();
-
-        $this->userService->store($data);
-
-        return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
+        return parent::store($request);
     }
 
     /**
@@ -92,11 +94,9 @@ class UserController extends BaseController
      * @response 404 scenario="perfil de outro workspace" {"error": "profile_not_found", "message": "Perfil não encontrado no workspace."}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "users.change_role"}
      */
-    public function changeRole(Request $request, string $userUuid): JsonResponse
+    public function changeRole(ChangeUserRoleRequest $request, string $userUuid): JsonResponse
     {
-        $data = app(ChangeUserRoleRequest::class)->validated();
-
-        $this->userService->changeRole($userUuid, $data['role_uuid']);
+        $this->userService->changeRole($userUuid, $request->validated()['role_uuid']);
 
         return response()->json(['message' => 'Perfil do usuário atualizado com sucesso'], 200);
     }
@@ -142,8 +142,6 @@ class UserController extends BaseController
     /**
      * Ver usuário
      *
-     * ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-     *
      * **Permissão:** `users.view`
      *
      * @urlParam id string required UUID do usuário. Example: 2bd8fa57-724f-4cfb-ae33-875afedee0e6
@@ -163,13 +161,14 @@ class UserController extends BaseController
      */
     public function show(int|string $id): Response
     {
-        return parent::show($id);
+        // Busca pelo uuid da rota; o escopo BelongsToWorkspace limita aos membros do workspace corrente.
+        return (new UserResource($this->userService->findByUuid($id)))->response();
     }
 
     /**
      * Editar usuário
      *
-     * ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+     * Só o nome é editável por aqui.
      *
      * **Permissão:** `users.update`
      *
@@ -181,6 +180,9 @@ class UserController extends BaseController
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
-        return parent::update($request, $id);
+        // Só campos validados: is_super_admin, access_id e afins nunca vêm do request (specs/002 VULN-01).
+        $this->userService->updateByUuid($this->validatedInput('update'), $id);
+
+        return response()->json(['message' => 'Registro atualizado com sucesso.'], 200);
     }
 }

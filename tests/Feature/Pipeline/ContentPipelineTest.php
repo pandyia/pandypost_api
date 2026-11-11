@@ -143,7 +143,7 @@ describe('exibir card', function () {
             ->getJson("/api/pipeline/{$card->uuid}")
             ->assertOk()
             ->assertJsonPath('data.uuid', $card->uuid);
-    })->skip('BUG-01: BaseController::show chama findById() com o uuid da rota (ver specs/002-security-hardening).');
+    });
 
     it('retorna 404 para card de outro workspace', function () {
         $user = createUserWithPermissions(['posts.view']);
@@ -156,7 +156,7 @@ describe('exibir card', function () {
     });
 
     it('retorna 404 ao editar, mover ou remover card de outro workspace', function () {
-        $user = createUserWithPermissions(['posts.view', 'posts.create']);
+        $user = createUserWithPermissions(['posts.view', 'posts.create', 'posts.update', 'posts.delete']);
         $other = createUserWithPermissions([]);
         $card = pipelineCard($other->currentAccess->workspace_id, $other->id);
 
@@ -248,7 +248,7 @@ describe('mover card de etapa', function () {
 describe('remover e restaurar card', function () {
 
     it('faz soft delete e depois restaura o card', function () {
-        $user = createUserWithPermissions(['posts.view', 'posts.create']);
+        $user = createUserWithPermissions(['posts.view', 'posts.delete']);
         $card = pipelineCard($user->currentAccess->workspace_id, $user->id);
 
         $this->withToken($user->test_token)
@@ -265,7 +265,7 @@ describe('remover e restaurar card', function () {
     });
 
     it('não restaura card removido de outro workspace', function () {
-        $user = createUserWithPermissions(['posts.view', 'posts.create']);
+        $user = createUserWithPermissions(['posts.view', 'posts.delete']);
         $other = createUserWithPermissions([]);
         $card = pipelineCard($other->currentAccess->workspace_id, $other->id);
         $card->delete();
@@ -273,6 +273,18 @@ describe('remover e restaurar card', function () {
         $this->withToken($user->test_token)
             ->patchJson("/api/pipeline/{$card->uuid}/restore")
             ->assertNotFound();
+
+        $this->assertSoftDeleted('content_pipelines', ['id' => $card->id]);
+    });
+
+    it('retorna 403 ao restaurar card sem a permissão posts.delete', function () {
+        $user = createUserWithPermissions(['posts.view', 'posts.create', 'posts.update']);
+        $card = pipelineCard($user->currentAccess->workspace_id, $user->id);
+        $card->delete();
+
+        $this->withToken($user->test_token)
+            ->patchJson("/api/pipeline/{$card->uuid}/restore")
+            ->assertForbidden();
 
         $this->assertSoftDeleted('content_pipelines', ['id' => $card->id]);
     });

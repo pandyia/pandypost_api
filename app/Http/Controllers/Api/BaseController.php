@@ -16,7 +16,11 @@ class BaseController extends Controller implements HasMiddleware
     protected ?string $resourceClass = null;
 
     protected static string $permissionGroup = '';
+
     protected static array $permissionMethods = [];
+
+    /** FormRequest por ação, declarado pelo filho: ['store' => StoreXRequest::class, ...]. */
+    protected static array $formRequests = [];
 
     public static function middleware(): array
     {
@@ -51,7 +55,7 @@ class BaseController extends Controller implements HasMiddleware
 
     public function store(Request $request): JsonResponse
     {
-        $this->service->store($request->all());
+        $this->service->store($this->validatedInput('store'));
 
         return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
     }
@@ -68,8 +72,8 @@ class BaseController extends Controller implements HasMiddleware
     }
 
     public function update(Request $request, int|string $id): JsonResponse
-    {   
-        $this->service->update($request->all(), $id);
+    {
+        $this->service->update($this->validatedInput('update'), $id);
 
         return response()->json(['message' => 'Registro atualizado com sucesso.'], 200);
     }
@@ -86,5 +90,22 @@ class BaseController extends Controller implements HasMiddleware
         $this->service->restore($id);
 
         return response()->json(['message' => 'Registro restaurado com sucesso.'], 200);
+    }
+
+    /**
+     * Resolve e valida o FormRequest declarado pelo filho para a ação.
+     * Sem declaração não há fallback para o request cru: erro claro em dev.
+     */
+    protected function validatedInput(string $action): array
+    {
+        $requestClass = static::$formRequests[$action] ?? null;
+
+        if ($requestClass === null) {
+            throw new \LogicException(
+                "Nenhum FormRequest declarado para a ação '{$action}' em ".static::class.'; declare-o em $formRequests.'
+            );
+        }
+
+        return app($requestClass)->validated();
     }
 }

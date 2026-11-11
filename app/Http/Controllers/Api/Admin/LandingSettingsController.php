@@ -31,11 +31,9 @@ class LandingSettingsController extends Controller
      * @response 403 {"message": "Você não tem permissão para acessar este recurso."}
      * @response 422 {"message": "Esse tema não está disponível para a landing.", "errors": {"brand": ["Esse tema não está disponível para a landing."]}}
      */
-    public function update(): JsonResponse
+    public function update(UpdateLandingSettingsRequest $request): JsonResponse
     {
-        $data = app(UpdateLandingSettingsRequest::class)->validated();
-
-        $brand = $this->service->updateBrand(LandingBrand::from($data['brand']));
+        $brand = $this->service->updateBrand(LandingBrand::from($request->validated()['brand']));
 
         return response()->json([
             'message' => 'Tema da landing atualizado.',

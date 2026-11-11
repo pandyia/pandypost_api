@@ -122,7 +122,7 @@ class PublishPostJob implements ShouldQueue
             : 'Não foi possível publicar o post. Tente novamente em instantes.';
 
         $this->post->update([
-            'status' => 'failed',
+            'status' => ScheduledPostStatus::FAILED->value,
             'error_message' => substr($message, 0, 255),
         ]);
 

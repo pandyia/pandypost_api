@@ -7,7 +7,6 @@ use App\Http\Requests\Workspace\SetWorkspaceAvatarRequest;
 use App\Http\Requests\Workspace\WorkspaceAvatarUploadUrlRequest;
 use App\Models\Workspace;
 use App\Services\WorkspaceService;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -38,13 +37,9 @@ class WorkspaceAvatarController extends Controller
      * @response 200 {"url": "https://storage.exemplo.com/pandypost/workspaces/7f3c.../avatar/a1b2....jpg?X-Amz-Signature=...", "headers": {}, "path": "workspaces/7f3c.../avatar/a1b2....jpg", "content_type": "image/jpeg", "max_size": 5242880, "expires_in": 86400}
      * @response 403 scenario="sem permissão neste workspace" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "workspaces.update"}
      */
-    public function uploadUrl(Workspace $workspace): JsonResponse
+    public function uploadUrl(WorkspaceAvatarUploadUrlRequest $request, Workspace $workspace): JsonResponse
     {
-        $this->authorizeUpdate($workspace);
-
-        $data = app(WorkspaceAvatarUploadUrlRequest::class)->validated();
-
-        return response()->json($this->service->generateAvatarUploadUrl($workspace, $data['content_type']));
+        return response()->json($this->service->generateAvatarUploadUrl($workspace, $request->validated()['content_type']));
     }
 
     /**
@@ -57,13 +52,9 @@ class WorkspaceAvatarController extends Controller
      * @response 200 {"data": {"uuid": "7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c", "name": "Agência Aurora", "avatar": "https://storage.exemplo.com/...assinada..."}}
      * @response 422 {"error": "workspace_avatar_too_large", "message": "A foto é maior que o limite de 5 MB. Escolha uma imagem menor."}
      */
-    public function set(Workspace $workspace): JsonResponse
+    public function set(SetWorkspaceAvatarRequest $request, Workspace $workspace): JsonResponse
     {
-        $this->authorizeUpdate($workspace);
-
-        $data = app(SetWorkspaceAvatarRequest::class)->validated();
-
-        return $this->respond($this->service->setAvatar($workspace, $data['path']));
+        return $this->respond($this->service->setAvatar($workspace, $request->validated()['path']));
     }
 
     /**
@@ -77,7 +68,7 @@ class WorkspaceAvatarController extends Controller
      */
     public function remove(Workspace $workspace): JsonResponse
     {
-        $this->authorizeUpdate($workspace);
+        $this->service->authorizePermissionInWorkspace(request()->user(), $workspace->uuid, 'workspaces.update');
 
         return $this->respond($this->service->removeAvatar($workspace));
     }
@@ -89,20 +80,5 @@ class WorkspaceAvatarController extends Controller
             'name' => $workspace->name,
             'avatar' => $workspace->avatar,
         ]]);
-    }
-
-    /** A permissão tem que ser do workspace da URL: `hasPermission` vale para qualquer workspace do usuário. */
-    private function authorizeUpdate(Workspace $workspace): void
-    {
-        $user = request()->user();
-
-        if ($user->isSuperAdmin() || $user->hasPermissionInWorkspace('workspaces.update', $workspace->id)) {
-            return;
-        }
-
-        throw new HttpResponseException(response()->json([
-            'message' => 'Você não tem permissão para acessar este recurso.',
-            'required_permission' => 'workspaces.update',
-        ], 403));
     }
 }

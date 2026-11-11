@@ -44,11 +44,9 @@ class ProfileController extends Controller
      * @response 200 {"data": {"id": 12, "name": "Maria Souza", "email": "maria@exemplo.com", "avatar": null, "phone": "11912345678", "bio": "Crio conteúdo sobre receitas.", "timezone": "America/Sao_Paulo", "created_at": "2026-03-02T14:20:00-03:00", "email_verified_at": "2026-03-02T14:25:10-03:00", "is_active": true, "is_super_admin": false, "permissions": []}}
      * @response 422 {"message": "Esse fuso horário não é válido.", "errors": {"timezone": ["Esse fuso horário não é válido."]}}
      */
-    public function update(): MeResource
+    public function update(UpdateProfileRequest $request): MeResource
     {
-        $data = app(UpdateProfileRequest::class)->validated();
-
-        return new MeResource($this->service->update(request()->user(), $data));
+        return new MeResource($this->service->update($request->user(), $request->validated()));
     }
 
     /**
@@ -61,11 +59,9 @@ class ProfileController extends Controller
      * @response 200 {"url": "https://storage.exemplo.com/pandypost/users/5f0c.../avatars/a1b2....jpg?X-Amz-Signature=...", "headers": {}, "path": "users/5f0c.../avatars/a1b2....jpg", "content_type": "image/jpeg", "max_size": 5242880, "expires_in": 86400}
      * @response 422 {"message": "Use uma imagem JPG, PNG ou WebP.", "errors": {"content_type": ["Use uma imagem JPG, PNG ou WebP."]}}
      */
-    public function avatarUploadUrl(): JsonResponse
+    public function avatarUploadUrl(AvatarUploadUrlRequest $request): JsonResponse
     {
-        $data = app(AvatarUploadUrlRequest::class)->validated();
-
-        return response()->json($this->service->generateAvatarUploadUrl(request()->user(), $data['content_type']));
+        return response()->json($this->service->generateAvatarUploadUrl($request->user(), $request->validated()['content_type']));
     }
 
     /**
@@ -79,11 +75,9 @@ class ProfileController extends Controller
      * @response 200 {"data": {"id": 12, "name": "Maria Souza", "avatar": "https://storage.exemplo.com/...assinada...", "email": "maria@exemplo.com"}}
      * @response 422 {"error": "profile_avatar_too_large", "message": "A foto é maior que o limite de 5 MB. Escolha uma imagem menor."}
      */
-    public function setAvatar(): MeResource
+    public function setAvatar(SetAvatarRequest $request): MeResource
     {
-        $data = app(SetAvatarRequest::class)->validated();
-
-        return new MeResource($this->service->setAvatar(request()->user(), $data['path']));
+        return new MeResource($this->service->setAvatar($request->user(), $request->validated()['path']));
     }
 
     /**
@@ -113,11 +107,9 @@ class ProfileController extends Controller
      * @response 200 {"message": "Senha atualizada com sucesso."}
      * @response 422 {"message": "A senha atual está incorreta.", "errors": {"current_password": ["A senha atual está incorreta."]}}
      */
-    public function changePassword(): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        $data = app(ChangePasswordRequest::class)->validated();
-
-        $this->service->changePassword(request()->user(), $data['password']);
+        $this->service->changePassword($request->user(), $request->validated()['password']);
 
         return response()->json(['message' => 'Senha atualizada com sucesso.']);
     }

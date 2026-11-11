@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Enums\ScheduledPostStatus;
 use App\Exceptions\BaseException;
 use App\Exceptions\TikTokException;
+use App\Jobs\Concerns\ChecksPlatformPostStatus;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
 use App\Services\Storage\StorageService;
@@ -14,7 +16,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
 /**
  * Confere o resultado do Direct Post e é o único a marcar `published` (ou `failed`) depois do
@@ -22,9 +23,7 @@ use Throwable;
  */
 class CheckTikTokPostStatusJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    public int $tries = 15;
+    use ChecksPlatformPostStatus, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
         public ScheduledPost $post,
@@ -32,11 +31,6 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         public string $publishId
     ) {
         $this->onQueue('tiktok');
-    }
-
-    public function backoff(): array
-    {
-        return [2, 4, 8, 16, 30];
     }
 
     public function handle(StorageService $storageService, TikTokApi $api): void
@@ -65,28 +59,14 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         };
     }
 
-    /** Esgotou as tentativas (ou erro inesperado): sem estado final, o post não pode ficar em processing para sempre. */
-    public function failed(Throwable $exception): void
+    protected function timeoutException(): BaseException
     {
-        $this->post->refresh();
-
-        if ($this->post->status !== 'processing') {
-            return;
-        }
-
-        $this->markFailed($exception instanceof BaseException
-            ? $exception->getMessage()
-            : TikTokException::publishTimeout()->getMessage());
+        return TikTokException::publishTimeout();
     }
 
-    private function retryWithBackoff(): void
+    protected function stillProcessingLogMessage(int $delay): string
     {
-        $backoffValues = $this->backoff();
-        $attempt = min($this->attempts() - 1, count($backoffValues) - 1);
-        $delay = $backoffValues[$attempt] ?? 30;
-
-        Log::info("TikTok post ainda processando. Próxima tentativa em {$delay}s");
-        $this->release($delay);
+        return "TikTok post ainda processando. Próxima tentativa em {$delay}s";
     }
 
     private function handleSuccess(array $data, StorageService $storageService): void
@@ -95,7 +75,7 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         $videoId = $data['publicaly_available_post_id'][0] ?? null;
 
         $this->post->update([
-            'status' => 'published',
+            'status' => ScheduledPostStatus::PUBLISHED->value,
             'platform_post_id' => $videoId ? (string) $videoId : null,
             'published_at' => now(),
             'error_message' => null,
@@ -106,19 +86,19 @@ class CheckTikTokPostStatusJob implements ShouldQueue
         $storageService->deleteIfUnused($this->post->mediaPaths(), $this->post->id);
     }
 
-    private function markFailed(string $message): void
+    protected function markFailed(string $message): void
     {
         // Estado final nunca é sobrescrito: o post pode ter sido publicado ou cancelado enquanto o job rodava.
         $current = ScheduledPost::withoutGlobalScopes()->whereKey($this->post->getKey())->value('status');
 
-        if (in_array($current, ['published', 'cancelled'], true)) {
+        if (in_array($current, [ScheduledPostStatus::PUBLISHED->value, ScheduledPostStatus::CANCELLED->value], true)) {
             Log::warning("Post TikTok {$this->post->id} já está {$current}. Falha ignorada.");
 
             return;
         }
 
         $this->post->update([
-            'status' => 'failed',
+            'status' => ScheduledPostStatus::FAILED->value,
             'error_message' => mb_substr($message, 0, 255),
         ]);
 

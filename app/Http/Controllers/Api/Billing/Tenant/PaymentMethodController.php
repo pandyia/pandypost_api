@@ -66,9 +66,9 @@ class PaymentMethodController extends Controller
      * @response 201 {"message": "Cartão adicionado com sucesso."}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePaymentMethodRequest $request): JsonResponse
     {
-        $data = app(StorePaymentMethodRequest::class)->validated();
+        $data = $request->validated();
 
         $this->service->add(
             $this->workspace($request),

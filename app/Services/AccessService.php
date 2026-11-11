@@ -15,6 +15,14 @@ class AccessService extends BaseService
         parent::__construct($access);
     }
 
+    /** O vínculo é sempre criado no workspace corrente do usuário autenticado. */
+    public function store(array $data): Model
+    {
+        $workspaceId = auth()->user()->resolveCurrentAccess()->workspace_id;
+
+        return parent::store(array_merge($data, ['workspace_id' => $workspaceId]));
+    }
+
     public function workspaceAccesses(array $data): LengthAwarePaginator
     {
         $workspaceId = auth()->user()->resolveCurrentAccess()->workspace_id;

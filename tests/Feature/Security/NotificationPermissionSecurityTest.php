@@ -73,6 +73,6 @@ describe('spec 009: permissão de preferências de notificação', function () {
 
         // Comportamento seguro: sem workspace corrente resolvido, não conceder por perfis de workspaces arbitrários.
         $this->withToken($user->test_token)->getJson('/api/notification-preferences')->assertForbidden();
-    })->skip('VULN-09: sem currentAccess o scope de Role falha aberto e hasPermission() vale para qualquer workspace do usuário');
+    });
 
 });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ConfirmEmailRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
@@ -96,13 +97,9 @@ class AuthController extends Controller
      * @response 400 scenario="código inválido" {"error": "invalid_token", "message": "Token inválido."}
      * @response 400 scenario="código expirado" {"error": "expired_token", "message": "Token expirado."}
      */
-    public function confirmEmail(Request $request)
+    public function confirmEmail(ConfirmEmailRequest $request)
     {
-        $request->validate([
-            'token' => 'required|string',
-        ]);
-
-        $this->authService->confirmEmail($request->input('token'));
+        $this->authService->confirmEmail($request->validated()['token']);
 
         return response()->json(['message' => 'Email verificado com sucesso.'], 200);
     }
@@ -197,7 +194,7 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $data = $this->authService->login($request->all());
+        $data = $this->authService->login($request->validated());
 
         return response()->json($data, 200);
     }
@@ -211,7 +208,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $this->authService->logout($request->user());
 
         return response()->noContent();
     }

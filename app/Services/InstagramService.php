@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Enums\ScheduledPostStatus;
 use App\Exceptions\BaseException;
 use App\Exceptions\InstagramException;
 use App\Exceptions\ScheduledPostException;
@@ -24,7 +25,7 @@ class InstagramService implements SocialMediaServiceInterface
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload Instagram. Post ID: {$post->id}");
-        $post->update(['status' => 'processing']);
+        $post->update(['status' => ScheduledPostStatus::PROCESSING->value]);
 
         $this->processContainer($account, $post, true);
     }
@@ -146,7 +147,7 @@ class InstagramService implements SocialMediaServiceInterface
             }
 
             Log::error("Falha ao publicar no Instagram (post {$post->id}): {$e->getMessage()}");
-            $post->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
+            $post->update(['status' => ScheduledPostStatus::FAILED->value, 'error_message' => $e->getMessage()]);
 
             return;
         }
@@ -168,7 +169,7 @@ class InstagramService implements SocialMediaServiceInterface
     private function finishPublished(ScheduledPost $post, ?string $mediaId, ?string $permalink): void
     {
         $post->update([
-            'status' => 'published',
+            'status' => ScheduledPostStatus::PUBLISHED->value,
             'platform_post_id' => $mediaId,
             'platform_post_url' => $permalink,
             'published_at' => now(),
