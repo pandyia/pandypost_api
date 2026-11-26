@@ -25,7 +25,7 @@ class InstagramOAuthProvider extends AbstractOAuthProvider
             'redirect_uri' => config('services.meta.redirect'),
             'response_type' => 'code',
             // manage_insights: leitura das métricas do dashboard (specs/003 RF-13).
-            'scope' => 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_insights',
+            'scope' => 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights',
             'state' => $state,
         ];
 
