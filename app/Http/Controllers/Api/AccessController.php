@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\StoreAccessRequest;
+use App\Http\Requests\UpdateAccessRequest;
 use App\Services\AccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,11 @@ class AccessController extends BaseController
         'create' => ['store'],
         'update' => ['update'],
         'delete' => ['destroy'],
+    ];
+
+    protected static array $formRequests = [
+        'store' => StoreAccessRequest::class,
+        'update' => UpdateAccessRequest::class,
     ];
 
     public function __construct(
@@ -69,14 +75,7 @@ class AccessController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $formRequest = app(StoreAccessRequest::class);
-        $workspaceId = $request->user()->resolveCurrentAccess()->workspace_id;
-
-        $this->accessService->store(
-            array_merge($formRequest->validated(), ['workspace_id' => $workspaceId])
-        );
-
-        return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
+        return parent::store($request);
     }
 
     /**
@@ -96,15 +95,27 @@ class AccessController extends BaseController
     /**
      * Editar acesso
      *
-     * ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+     * Troca o perfil do acesso. Só `role_id` é aceito, e o perfil precisa ser do workspace corrente.
      *
      * **Permissão:** `accesses.update`
      *
      * @urlParam id integer required ID do acesso. Example: 2
+     *
+     * @bodyParam role_id integer required ID de um perfil do workspace corrente. Example: 3
+     *
+     * @response 200 {"message": "Registro atualizado com sucesso."}
+     * @response 422 {"message": "O perfil informado não existe neste workspace.", "errors": {"role_id": ["O perfil informado não existe neste workspace."]}}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "accesses.update"}
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
-        return parent::update($request, $id);
+        // Só o perfil, validado no workspace corrente; findById já filtra pelo workspace corrente.
+        $data = $this->validatedInput('update');
+        $access = $this->accessService->findById($id);
+
+        $this->accessService->update($access, $data);
+
+        return response()->json(['message' => 'Registro atualizado com sucesso.'], 200);
     }
 
     /**

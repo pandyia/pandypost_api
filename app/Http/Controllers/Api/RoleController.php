@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\StoreRoleRequest;
+use App\Http\Requests\UpdateRoleRequest;
 use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +27,11 @@ class RoleController extends BaseController
         'create' => ['store'],
         'update' => ['update'],
         'delete' => ['destroy'],
+    ];
+
+    protected static array $formRequests = [
+        'store' => StoreRoleRequest::class,
+        'update' => UpdateRoleRequest::class,
     ];
 
     public function __construct(
@@ -83,7 +90,7 @@ class RoleController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $role = $this->roleService->createRole($request->all());
+        $role = $this->roleService->createRole($this->validatedInput('store'));
 
         return response()->json([
             'message' => 'Perfil criado com sucesso',
@@ -118,7 +125,7 @@ class RoleController extends BaseController
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $updated = $this->roleService->updateRole($request->all(), $id);
+        $updated = $this->roleService->updateRole($this->validatedInput('update'), $id);
 
         return response()->json([
             'message' => 'Perfil editado com sucesso',

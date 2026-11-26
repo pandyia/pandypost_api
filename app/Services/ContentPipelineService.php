@@ -7,7 +7,6 @@ use App\Exceptions\ContentPipelineException;
 use App\Models\ContentPipeline;
 use App\Models\ScheduledPost;
 use App\Models\User;
-use Illuminate\Support\Collection;
 
 class ContentPipelineService extends BaseService
 {
@@ -65,7 +64,7 @@ class ContentPipelineService extends BaseService
     public function markAsScheduled(ContentPipeline $card, ScheduledPost $scheduledPost): void
     {
         $this->update($card, [
-            'stage'             => PipelineStage::SCHEDULED->value,
+            'stage' => PipelineStage::SCHEDULED->value,
             'scheduled_post_id' => $scheduledPost->id,
         ]);
     }
@@ -74,8 +73,18 @@ class ContentPipelineService extends BaseService
     {
         /** @var ContentPipeline */
         return $this->store(array_merge($data, [
-            'user_id'  => $user->id,
-            'stage'    => PipelineStage::IDEA->value,
+            'user_id' => $user->id,
+            'workspace_id' => $user->resolveCurrentAccess()->workspace_id,
+            'stage' => PipelineStage::IDEA->value,
         ]));
+    }
+
+    /** Desfaz a remoção (soft delete) do card da rota. */
+    public function restoreByUuid(string $uuid): void
+    {
+        ContentPipeline::withTrashed()
+            ->where('uuid', $uuid)
+            ->firstOrFail()
+            ->restore();
     }
 }

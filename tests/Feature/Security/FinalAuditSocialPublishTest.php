@@ -322,7 +322,7 @@ describe('Armazenamento e tokens', function () {
         $raw = DB::table('social_accounts')->where('id', $conta->id)->first();
 
         expect($raw->access_token)->not->toBe('TOKEN-PURO-ABC')->and($raw->refresh_token)->not->toBe('REFRESH-PURO-DEF');
-    })->skip('VULN-SA-01: SocialAccount::$casts não usa "encrypted" para access_token/refresh_token/token_secret; um dump do banco entrega acesso às redes de todos os tenants.');
+    });
 
     it('VULN-UP-01: a presigned PUT de upload limita o tamanho (Content-Length assinado ou POST com content-length-range)', function () {
         config([

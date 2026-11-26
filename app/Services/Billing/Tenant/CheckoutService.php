@@ -17,8 +17,11 @@ class CheckoutService
      *
      * Regra: uma assinatura ativa por workspace.
      */
-    public function start(Workspace $workspace, Price $price): string
+    public function start(Workspace $workspace, string $priceUuid): string
     {
+        // A resolução vem antes das regras: preço inexistente responde 404, como sempre foi.
+        $price = Price::where('uuid', $priceUuid)->firstOrFail();
+
         if ($workspace->subscribed('default')) {
             throw BillingException::alreadySubscribed();
         }

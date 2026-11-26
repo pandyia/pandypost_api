@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\BaseException;
 use App\Exceptions\SocialAccountException;
 use App\Http\Resources\SocialAccountResource;
-use App\Models\User;
-use App\Models\Workspace;
 use App\Services\OAuthStateService;
 use App\Services\SocialAccountService;
 use Illuminate\Http\JsonResponse;
@@ -115,22 +113,10 @@ class SocialAccountController extends BaseController
             return redirect($frontendCallbackUrl.'?error='.urlencode($message));
         }
 
-        $workspace = Workspace::where('uuid', $state['workspace_uuid'])->first();
-        $initiator = User::find($state['user_id']);
-
-        // O iniciador precisa continuar com acesso ao workspace (pode ter saído entre o início e o callback).
-        if (! $workspace || ! $initiator
-            || ! $initiator->accesses()->where('workspace_id', $workspace->id)->exists()) {
-            return redirect($frontendCallbackUrl.'?error='.urlencode('Estado OAuth inválido.'));
-        }
-
-        // O papel do iniciador pode ter mudado nos 10 minutos do state: precisa ainda poder conectar contas aqui.
-        if (! $initiator->isSuperAdmin() && ! $initiator->hasPermissionInWorkspace('social_accounts.connect', $workspace->id)) {
-            return redirect($frontendCallbackUrl.'?error='.urlencode('Você não tem permissão para conectar contas neste workspace.'));
-        }
-
         try {
-            $this->socialAccountService->syncAccount($initiator, $platform, $request->input('code'), $workspace);
+            // Guards de workspace/iniciador/permissão e o sync vivem no service; as exceções de
+            // domínio já carregam os textos de hoje ('Estado OAuth inválido.' etc.) para o redirect.
+            $this->socialAccountService->connectFromCallback($platform, $request->input('code'), $state);
 
             return redirect($frontendCallbackUrl.'?success=1');
         } catch (BaseException $e) {

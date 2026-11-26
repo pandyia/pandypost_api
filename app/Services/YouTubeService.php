@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Enums\ScheduledPostStatus;
 use App\Enums\YouTubePrivacyStatus;
 use App\Exceptions\YouTubeException;
 use App\Models\ScheduledPost;
@@ -31,7 +32,7 @@ class YouTubeService implements SocialMediaServiceInterface
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload YouTube. Post ID: {$post->id}");
-        $post->update(['status' => 'processing']);
+        $post->update(['status' => ScheduledPostStatus::PROCESSING->value]);
 
         try {
             $client = $this->getAuthenticatedClient($account);
@@ -60,7 +61,7 @@ class YouTubeService implements SocialMediaServiceInterface
             }
 
             $post->update([
-                'status' => 'published',
+                'status' => ScheduledPostStatus::PUBLISHED->value,
                 'platform_post_id' => $videoId,
                 'published_at' => now(),
             ]);

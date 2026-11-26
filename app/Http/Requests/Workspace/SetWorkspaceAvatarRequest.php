@@ -3,12 +3,19 @@
 namespace App\Http\Requests\Workspace;
 
 use App\Rules\WorkspaceAvatarPathRule;
+use App\Services\WorkspaceService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SetWorkspaceAvatarRequest extends FormRequest
 {
-    public function authorize(): bool
+    /**
+     * A permissão é checada antes das regras: a WorkspaceAvatarPathRule consulta o storage,
+     * e rodá-la sem autorização revelaria a existência de arquivos (VULN-AV-01).
+     */
+    public function authorize(WorkspaceService $service): bool
     {
+        $service->authorizePermissionInWorkspace($this->user(), $this->route('workspace')->uuid, 'workspaces.update');
+
         return true;
     }
 

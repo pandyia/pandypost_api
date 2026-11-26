@@ -123,11 +123,11 @@ class TikTokIntegrationTest extends TestCase
         $token = $account->getValidToken();
 
         $this->assertEquals('new_refreshed_tiktok_access_token', $token);
-        $this->assertDatabaseHas('social_accounts', [
-            'id' => $account->id,
-            'access_token' => 'new_refreshed_tiktok_access_token',
-            'refresh_token' => 'new_refreshed_tiktok_refresh_token',
-        ]);
+        // Tokens ficam criptografados no banco (VULN-SA-01): confere o valor persistido pelo model.
+        $fresh = \App\Models\SocialAccount::withoutGlobalScopes()->find($account->id);
+        $this->assertEquals('new_refreshed_tiktok_access_token', $fresh->access_token);
+        $this->assertEquals('new_refreshed_tiktok_refresh_token', $fresh->refresh_token);
+        $this->assertNotEquals('new_refreshed_tiktok_access_token', \DB::table('social_accounts')->where('id', $account->id)->value('access_token'));
     }
 
     public function test_tiktok_service_upload_initializes_post_and_dispatches_job(): void

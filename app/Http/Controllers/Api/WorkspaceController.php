@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\StoreWorkspaceRequest;
 use App\Http\Requests\UpdateWorkspaceRequest;
 use App\Http\Resources\SwitchWorkspaceResource;
-use App\Models\Workspace;
 use App\Services\WorkspaceService;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +25,11 @@ class WorkspaceController extends BaseController
         'create' => ['store'],
         'update' => ['update'],
         'delete' => ['destroy'],
+    ];
+
+    protected static array $formRequests = [
+        'store' => StoreWorkspaceRequest::class,
+        'update' => UpdateWorkspaceRequest::class,
     ];
 
     public function __construct(
@@ -50,11 +53,7 @@ class WorkspaceController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $data = app(StoreWorkspaceRequest::class)->validated();
-
-        $this->workspaceService->store($data);
-
-        return response()->json(['message' => 'Registro inserido com sucesso.'], 201);
+        return parent::store($request);
     }
 
     /**
@@ -71,11 +70,9 @@ class WorkspaceController extends BaseController
      */
     public function update(Request $request, $uuid): JsonResponse
     {
-        $this->authorizeInWorkspace($uuid, 'workspaces.update');
+        $this->workspaceService->authorizePermissionInWorkspace($request->user(), $uuid, 'workspaces.update');
 
-        $data = app(UpdateWorkspaceRequest::class)->validated();
-
-        $this->workspaceService->updateByUuid($data, $uuid);
+        $this->workspaceService->updateByUuid($this->validatedInput('update'), $uuid);
 
         return response()->json(['message' => 'Registro atualizado com sucesso.'], 200);
     }
@@ -95,7 +92,7 @@ class WorkspaceController extends BaseController
      */
     public function destroy($uuid): JsonResponse
     {
-        $this->authorizeInWorkspace($uuid, 'workspaces.delete');
+        $this->workspaceService->authorizePermissionInWorkspace(request()->user(), $uuid, 'workspaces.delete');
 
         $this->workspaceService->destroyByUuid($uuid);
 
@@ -169,8 +166,6 @@ class WorkspaceController extends BaseController
     /**
      * Ver workspace
      *
-     * ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-     *
      * **Permissão:** `workspaces.view`
      *
      * @urlParam id string required UUID do workspace. Example: 58d7d732-10a4-491d-9864-b4d85dfcf833
@@ -189,25 +184,7 @@ class WorkspaceController extends BaseController
      */
     public function show(int|string $id): Response
     {
-        return parent::show($id);
-    }
-
-    /**
-     * A rota carrega o uuid do workspace-alvo, mas o middleware `permission:` olha o workspace
-     * corrente. Aqui a permissão é conferida no workspace da URL (não-membro = 404 pelo escopo).
-     */
-    private function authorizeInWorkspace(string $uuid, string $permission): void
-    {
-        $user = request()->user();
-        $workspace = Workspace::where('uuid', $uuid)->firstOrFail();
-
-        if ($user->isSuperAdmin() || $user->hasPermissionInWorkspace($permission, $workspace->id)) {
-            return;
-        }
-
-        throw new HttpResponseException(response()->json([
-            'message' => 'Você não tem permissão para acessar este recurso.',
-            'required_permission' => $permission,
-        ], 403));
+        // Busca pelo uuid da rota; o escopo 'member' limita aos workspaces do usuário.
+        return response($this->workspaceService->findByUuid($id), 200);
     }
 }

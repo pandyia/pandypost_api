@@ -11,6 +11,7 @@ enum WorkspaceError: string implements ErrorEnumInterface
     case WORKSPACE_NAME_ALREADY_EXISTS = 'workspace_name_already_exists';
     case INVALID_AVATAR_FILE = 'workspace_invalid_avatar_file';
     case AVATAR_TOO_LARGE = 'workspace_avatar_too_large';
+    case PERMISSION_DENIED_IN_WORKSPACE = 'permission_denied_in_workspace';
 
     public function message(?string $context = null): string
     {
@@ -20,6 +21,7 @@ enum WorkspaceError: string implements ErrorEnumInterface
             self::WORKSPACE_NAME_ALREADY_EXISTS => 'Já existe um workspace com esse nome.',
             self::INVALID_AVATAR_FILE => 'O arquivo enviado não é uma imagem válida. Use JPG, PNG ou WebP.',
             self::AVATAR_TOO_LARGE => "A foto é maior que o limite de {$context} MB. Escolha uma imagem menor.",
+            self::PERMISSION_DENIED_IN_WORKSPACE => 'Você não tem permissão para acessar este recurso.',
         };
     }
 
@@ -27,7 +29,7 @@ enum WorkspaceError: string implements ErrorEnumInterface
     {
         return match ($this) {
             self::WORKSPACE_CANNOT_DELETED => 400,
-            self::USER_NOT_LINKED_TO_WORKSPACE => 403,
+            self::USER_NOT_LINKED_TO_WORKSPACE, self::PERMISSION_DENIED_IN_WORKSPACE => 403,
             self::WORKSPACE_NAME_ALREADY_EXISTS, self::INVALID_AVATAR_FILE, self::AVATAR_TOO_LARGE => 422,
         };
     }

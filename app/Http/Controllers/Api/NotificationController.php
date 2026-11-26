@@ -24,6 +24,10 @@ class NotificationController extends BaseController
 {
     protected ?string $resourceClass = NotificationResource::class;
 
+    protected static array $formRequests = [
+        'index' => ListNotificationsRequest::class,
+    ];
+
     public function __construct(
         private NotificationService $notificationService,
     ) {
@@ -39,7 +43,7 @@ class NotificationController extends BaseController
      */
     public function index(Request $request): Response
     {
-        $filters = app(ListNotificationsRequest::class)->validated();
+        $filters = $this->validatedInput('index');
         $user = $request->user();
 
         return NotificationResource::collection($this->notificationService->paginate($user, $filters))

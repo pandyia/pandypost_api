@@ -61,13 +61,11 @@ class NotificationPreferenceController extends Controller
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "notifications.update"}
      * @response 422 {"message": "Os e-mails de cobrança não podem ser desativados.", "errors": {"billing": ["Os e-mails de cobrança não podem ser desativados."]}}
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateNotificationPreferencesRequest $request): JsonResponse
     {
-        $data = app(UpdateNotificationPreferencesRequest::class)->validated();
-
         return response()->json([
             'message' => 'Preferências atualizadas.',
-            'data' => new NotificationPreferenceResource($this->service->updatePreferences($request->user(), $data)),
+            'data' => new NotificationPreferenceResource($this->service->updatePreferences($request->user(), $request->validated())),
         ]);
     }
 }

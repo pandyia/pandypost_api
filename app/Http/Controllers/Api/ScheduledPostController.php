@@ -78,6 +78,10 @@ class ScheduledPostController extends BaseController
         'delete' => ['destroy'],
     ];
 
+    protected static array $formRequests = [
+        'store' => StoreScheduledPostRequest::class,
+    ];
+
     public function __construct(
         private ScheduledPostService $service,
         private StorageService $storageService,
@@ -118,10 +122,12 @@ class ScheduledPostController extends BaseController
             return response()->json(['message' => 'Workspace não encontrado.'], 404);
         }
 
+        $data = $request->validated();
+
         $result = $this->storageService->generateUploadUrl(
-            directory: $request->input('directory'),
+            directory: $data['directory'],
             workspaceUuid: $access->workspace->uuid,
-            contentType: $request->input('content_type'),
+            contentType: $data['content_type'],
             extension: $request->extension(),
         );
 
@@ -211,11 +217,9 @@ class ScheduledPostController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $formRequest = app(StoreScheduledPostRequest::class);
-
         $posts = $this->service->schedule(
-            $formRequest->user(),
-            $formRequest->validated(),
+            $request->user(),
+            $this->validatedInput('store'),
         );
 
         $posts->each->load('socialAccount');

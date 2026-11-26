@@ -8,7 +8,7 @@ Tudo roda em Docker; **não há `vendor/` no host**. Sem TTY: use `docker exec p
 
 ## Fluxo SDD
 
-Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **022**). Modelo de referência: `specs/001-billing/`.
+Toda feature nova ou mudança relevante começa em `specs/NNN-nome/` (próxima: **023**). Modelo de referência: `specs/001-billing/`.
 
 1. **`spec.md`** — o quê e por quê, sem detalhe técnico. Seções: Contexto, Escopo, Requisitos (RF-n), Contrato de API, Critérios de aceite, Fora de escopo, Questões em aberto.
 2. **`plan.md`** — como: decisões (+ alternativa descartada), modelo de dados, arquivos, efeitos colaterais, testes, riscos.
@@ -57,7 +57,7 @@ Achados abertos e decisões pendentes: `specs/002-security-hardening/spec.md`.
 ## Convenções
 
 - Código em inglês; mensagens, erros e comentários em **pt-BR**.
-- **Validação:** FormRequest. Ao sobrescrever método do `BaseController`: `$data = app(StoreXRequest::class)->validated();`. Nunca `$request->validate()` inline.
+- **Validação:** FormRequest. Controller que herda o CRUD do `BaseController` declara o FormRequest por ação em `protected static array $formRequests = ['store' => StoreXRequest::class, 'update' => UpdateXRequest::class];` e a base valida (sem declaração ela lança `LogicException`, nunca usa request cru). Em override de método da base, use `$data = $this->validatedInput('store');`. Ação que não sobrescreve a base recebe o FormRequest na assinatura. Quando a validação consulta serviço externo (S3 etc.), a permissão vai no `authorize()` do FormRequest para rodar antes das regras. Nunca `$request->validate()` inline nem `app(XRequest::class)` no controller.
 - **Respostas:** sempre `JsonResource`. Escrita: `response()->json(['message' => '...', 'data' => new XResource($m)], 201)`.
 - **Migrations:** uma responsabilidade cada; SQL compatível com PostgreSQL **e** SQLite.
 - Evitar N+1 (`with()`/`$with`). Octane: nada de estado de request em estático/singleton.

@@ -64,6 +64,11 @@ class AuthService
         return $user->accessWithWorkspace($user->loginExpiration());
     }
 
+    public function logout(User $user): void
+    {
+        $user->currentAccessToken()->delete();
+    }
+
     public function resendVerification(User $user): void
     {
         if ($user->hasVerifiedEmail()) {

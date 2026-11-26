@@ -1,0 +1,41 @@
+# Tasks 022 — Refatoração geral
+
+> Uma mudança por tarefa, do menor risco/maior valor para o maior risco. Ao fim de cada uma: `docker exec pandypost-php php artisan test` (suíte inteira, verde) e `docker exec pandypost-php ./vendor/bin/pint --dirty`. Nenhum teste existente é alterado ou removido. Só começa após aprovação da spec (Q1-Q4 respondidas). Se houver trabalho não commitado na árvore, não tocar nem reverter.
+
+## 0. Caracterização (sem tocar em `app/`)
+
+- [x] 0.1 `PATCH /accesses/{id}`: travar o comportamento atual de sucesso (200 + "Registro atualizado com sucesso." + campo gravado) e o isolamento já coberto em `AuthorizationVulnerabilitiesTest` (não duplicar) — teste: `tests/Feature/Users/AccessUpdateCharacterizationTest.php`
+- [x] 0.2 Conferir que `AuthenticationTest` cobre `confirmEmail` com token ausente (422) e `LoginRememberMeTest` cobre login com e sem `remember_me`; completar **só o que faltar**, em arquivo novo — teste: `tests/Feature/Auth/*`
+
+## 1. Base HTTP
+
+- [x] 1.1 `Auth/ConfirmEmailRequest` (`token => required|string`) e `AuthController::confirmEmail` o recebe na assinatura; some o `$request->validate()` inline (`AuthController.php:101`) — teste: 0.2 + `AuthenticationTest`
+- [x] 1.2 `AuthController::login` passa `$request->validated()` (`:200`); `logout` delega a `AuthService::logout(User)` (`:214`) — teste: `Auth/*` (`LoginRememberMeTest`, `TokenSecurityTest`)
+- [x] 1.3 FormRequest direto na assinatura das ações sem LSP (D2): `ProfileController` (4), `WorkspaceAvatarController` (2), `Admin/LandingSettingsController`, `PaymentMethodController`, `SubscriptionController` (2), `NotificationPreferenceController`, `UserController::changeRole`, `ContentPipelineController::move` — teste: `Profile/*`, `Workspaces/WorkspaceAvatarTest`, `LandingSettings/*`, `Billing/*`, `Notifications/*`, `Users/UserTest`, `Pipeline/*`
+- [x] 1.4 `BaseController`: `$formRequests` por ação + helper `validatedInput()`; `store()`/`update()` deixam de usar `$request->all()` (D1); `users.update` e `accesses.update` conforme Q1 (default: override explícito, D3) — teste: 0.1 + suíte inteira
+- [x] 1.5 Overrides triviais somem (`WorkspaceController::store`, `UserController::store` declaram o FormRequest); os demais overrides trocam `app(X::class)->validated()` por `$this->validatedInput(...)` (Workspace::update, Access::store, ScheduledPost::store, ContentPipeline::store/update, Notification::index, Plan::store/update, Price::store/update, Subscription fica no D2) — teste: suíte inteira; conferir `grep -rn "app(.*Request::class)" app/Http/Controllers` = 0
+- [x] 1.6 (Q2 = sim) `StoreRoleRequest`/`UpdateRoleRequest` mínimos; `RoleController::store/update` param de passar `$request->all()` (`RoleController.php:86,121`) — teste: `RoleCrudTest` (20 casos, intactos)
+- [x] 1.7 `ScheduledPostController::uploadUrl` usa `validated()` em vez de `input()` (`:122-125`); guard do workspace e corpo do 404 intactos — teste: `ScheduledPosts/*` (upload-url)
+
+## 2. Lógica de negócio em controllers
+
+- [x] 2.0 Caracterização: ramo `Throwable` do callback OAuth → redirect `?error=Não foi possível conectar a conta. Tente novamente.` e `Log::warning` só com a classe da exceção — teste: `tests/Feature/SocialAccounts/OAuthCallbackUnexpectedErrorTest.php`
+- [x] 2.1 Billing: `resolvePlan` (2 cópias) e `resolvePrice` saem dos controllers para os services (reusar `findByUuid` do `BaseService`); branches `instanceof` mortos removidos; `SubscriptionController::checkout` para de resolver `Price` (`:84`) — teste: `Billing/*`
+- [x] 2.2 `ContentPipelineService` absorve `resolveCard` (sem o `instanceof` morto), o `restore` e a injeção de `workspace_id` do `store`; `AccessService` absorve a injeção de `workspace_id` do `AccessController::store` — teste: `Pipeline/*`, `Users/*`, `Security/AuthorizationVulnerabilitiesTest`
+- [x] 2.3 (Q3 = sim) `WorkspaceService::authorizePermissionInWorkspace` + `WorkspaceException::permissionDeniedInWorkspace` com render que mantém `{"message", "required_permission"}` 403 (D4); `authorizeInWorkspace` e o `HttpResponseException` manual somem do controller — teste: `WorkspaceCrudTest` (403/404 de update/destroy)
+- [x] 2.4 `SocialAccountService::connectFromCallback` absorve os guards do callback (`SocialAccountController.php:118-129`); controller mantém consumo do state, catches e redirects com os mesmos textos (D5) — teste: 2.0 + `Security/OAuthStateTest`, `SocialAccounts/OAuthProvidersTest`, `FechamentoPublicacaoTest`
+
+## 3. Redes sociais
+
+- [x] 3.0 Caracterização: erro inesperado da API de analytics do TikTok e do Instagram → 502 `analytics_provider_unavailable` sem vazar detalhes (espelho de `YouTubeAnalyticsTest:193`) — teste: `tests/Feature/Analytics/AnalyticsProviderErrorTest.php`
+- [x] 3.1 Literais de status → `ScheduledPostStatus::X->value` em `YouTubeService:34,63`, `InstagramService:27,149,171`, `TikTokService:45`, `PublishPostJob:125`, `CheckInstagramContainerJob:81,134`, `CheckTikTokPostStatusJob:73,98,114,121`, `StorageService:195-196`; grep de conferência antes/depois — teste: suíte inteira (`TikTok/*`, `Instagram/*`, `YouTube/*`, `ScheduledPosts/*`)
+- [x] 3.2 `AnalyticsApiException` (fora da hierarquia de `AnalyticsException`, D6) substitui os 3 `RuntimeException` com a mesma mensagem (Q4); 502 e log idênticos — teste: 3.0 + `Analytics/*`
+- [x] 3.3 `AbstractAnalyticsProvider` (D7): `client()`, `get()` e template de `ensureSuccessful()`; os 3 providers herdam, mantendo a detecção de sucesso/reauth própria — teste: `Analytics/*` (4 arquivos)
+- [x] 3.4 Trait `ChecksPlatformPostStatus` (D8): `$tries`, `backoff()`, `retryWithBackoff()`, `failed()` com `timeoutException()` abstrato; `markAsFailed` → `markFailed` no Instagram, corpos preservados — teste: `CheckTikTokPostStatusJobTest`, `InstagramContainerJobTest`, `TikTokEndToEndTest`, `InstagramWarmupTest`, `ScheduledPosts/*`
+
+## Divergências
+
+- **1.6 (Q2 aceita) — `POST /roles` e `PATCH /roles/{uuid}` agora validam o payload.** Sem `name` no `POST /roles` a resposta passa de 500 (`Undefined array key "name"`) para 422; `name` não-string e `permissions` que não seja array de strings também passam a responder 422. `RoleCrudTest` (20 casos) segue intacto e verde.
+- **1.5 — `WorkspaceController::store` e `UserController::store` viraram override fino (`return parent::store($request)`) em vez de sumir.** Removê-los apagaria também os docblocks do Scribe (`/docs` perderia a documentação de `POST /workspaces` e `POST /users`). O projeto já usa esse padrão para `show`/`index` (override fino só para carregar o docblock); a lógica duplicada (validação + resposta) sumiu como o RF-2 pedia — ficou só a declaração em `$formRequests` + o repasse.
+- **1.3 — `WorkspaceAvatarController`: ordem 403×422 (revertida).** Com o FormRequest na assinatura, a validação passou a rodar antes do guard `authorizeUpdate` (sem permissão + corpo inválido: 403 → 422). A auditoria de segurança mostrou um efeito colateral, o **VULN-AV-01**: a `WorkspaceAvatarPathRule` consulta o S3 antes da autorização, o que abre um oráculo de existência de arquivo (422×403) para membros sem `workspaces.update` e gera chamadas S3 não autorizadas. **Decisão do dono (2026-11-11): corrigir.** A permissão foi para o `authorize()` de `SetWorkspaceAvatarRequest`/`WorkspaceAvatarUploadUrlRequest`, que reaproveita `WorkspaceService::authorizePermissionInWorkspace` e responde com o corpo 403 idêntico via `WorkspaceException::render`. O `remove` usa o mesmo método. Com isso a ordem original (403 primeiro) voltou e o `HttpResponseException` manual do controller saiu. Testes: `WorkspaceAvatarValidationOrderTest` (403 vence) e `Refactor022SecurityTest` (VULN-AV-01, regressão ativa, storage nunca consultado).
+- **0.1 — `PATCH /accesses/{id}` não tem caminho de sucesso hoje.** A spec presumia 200 + "Registro atualizado com sucesso."; na prática `BaseController::update` chama `service->update($request->all(), $id)` e a assinatura real é `BaseService::update(object $entity, array $data)` — TypeError → **500 em qualquer banco** (não só PostgreSQL, como o docblock BUG-01 sugere). O mesmo vale para `PATCH /users/{id}`. A caracterização trava o 500 + nada gravado. A correção é segurança/bugfix (A1/A2, spec 002), fora desta refatoração; o Q1-a (override explícito com `$request->all()`) preserva o 500 byte a byte.

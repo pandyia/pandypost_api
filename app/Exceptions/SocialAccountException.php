@@ -35,6 +35,16 @@ class SocialAccountException extends BaseException
         return static::make(SocialAccountError::INVALID_OAUTH_STATE);
     }
 
+    public static function oauthStateContextInvalid(): self
+    {
+        return static::make(SocialAccountError::OAUTH_STATE_CONTEXT_INVALID);
+    }
+
+    public static function connectPermissionDenied(): self
+    {
+        return static::make(SocialAccountError::CONNECT_PERMISSION_DENIED);
+    }
+
     public static function oauthTokenExchangeFailed(): self
     {
         return static::make(SocialAccountError::OAUTH_TOKEN_EXCHANGE_FAILED);

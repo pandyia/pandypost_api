@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Billing\Admin\StorePlanRequest;
 use App\Http\Requests\Billing\Admin\UpdatePlanRequest;
 use App\Http\Resources\Billing\Admin\PlanResource;
-use App\Models\Plan;
 use App\Services\Billing\Admin\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +26,11 @@ class PlanController extends BaseController
     protected static array $permissionMethods = [
         'view' => ['index', 'show'],
         'manage' => ['store', 'update', 'destroy'],
+    ];
+
+    protected static array $formRequests = [
+        'store' => StorePlanRequest::class,
+        'update' => UpdatePlanRequest::class,
     ];
 
     public function __construct(
@@ -56,7 +60,7 @@ class PlanController extends BaseController
      */
     public function show(int|string $id): JsonResponse
     {
-        $plan = $this->resolvePlan($id)->load('prices');
+        $plan = $this->service->findByUuid($id)->load('prices');
 
         return (new PlanResource($plan))->response();
     }
@@ -87,9 +91,7 @@ class PlanController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $data = app(StorePlanRequest::class)->validated();
-
-        $plan = $this->service->createPlan($data);
+        $plan = $this->service->createPlan($this->validatedInput('store'));
 
         return response()->json([
             'message' => 'Plano criado com sucesso.',
@@ -124,8 +126,8 @@ class PlanController extends BaseController
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
-        $data = app(UpdatePlanRequest::class)->validated();
-        $plan = $this->resolvePlan($id);
+        $data = $this->validatedInput('update');
+        $plan = $this->service->findByUuid($id);
 
         $plan = $this->service->updatePlan($plan, $data);
 
@@ -147,20 +149,9 @@ class PlanController extends BaseController
      */
     public function destroy(int|string $id): JsonResponse
     {
-        $this->service->deletePlan($this->resolvePlan($id));
+        $this->service->deletePlan($this->service->findByUuid($id));
 
         return response()->json(['message' => 'Plano removido com sucesso.']);
-    }
-
-    private function resolvePlan(int|string $id): Plan
-    {
-        $param = request()->route('plan');
-
-        if ($param instanceof Plan) {
-            return $param;
-        }
-
-        return Plan::where('uuid', $param)->firstOrFail();
     }
 
     /**

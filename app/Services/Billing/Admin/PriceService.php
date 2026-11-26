@@ -20,6 +20,17 @@ class PriceService extends BaseService
         parent::__construct($price);
     }
 
+    public function planByUuid(string $uuid): Plan
+    {
+        return Plan::where('uuid', $uuid)->firstOrFail();
+    }
+
+    /** Preço escopado ao plano da rota: uuid de outro plano responde 404. */
+    public function priceForPlan(Plan $plan, string $uuid): Price
+    {
+        return $plan->prices()->where('uuid', $uuid)->firstOrFail();
+    }
+
     public function forPlan(Plan $plan): Collection
     {
         return $plan->prices()->orderByDesc('created_at')->get();
@@ -129,6 +140,7 @@ class PriceService extends BaseService
             if ($this->isInUse($price)) {
                 $price->update(['is_active' => false]);
                 $price->delete(); // soft delete
+
                 return;
             }
 

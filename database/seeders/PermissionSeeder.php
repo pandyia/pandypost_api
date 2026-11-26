@@ -20,8 +20,8 @@ class PermissionSeeder extends Seeder
             // Posts Agendados
             ['name' => 'posts.view', 'description' => 'Visualizar posts agendados', 'group' => 'posts'],
             ['name' => 'posts.create', 'description' => 'Criar posts agendados', 'group' => 'posts'],
-            ['name' => 'posts.update', 'description' => 'Editar posts agendados', 'group' => 'posts'],
-            ['name' => 'posts.delete', 'description' => 'Excluir posts agendados', 'group' => 'posts'],
+            ['name' => 'posts.update', 'description' => 'Editar posts agendados e cards do pipeline', 'group' => 'posts'],
+            ['name' => 'posts.delete', 'description' => 'Excluir/cancelar posts agendados e remover/restaurar cards do pipeline', 'group' => 'posts'],
 
             // Workspaces
             ['name' => 'workspaces.view', 'description' => 'Visualizar workspaces', 'group' => 'workspaces'],

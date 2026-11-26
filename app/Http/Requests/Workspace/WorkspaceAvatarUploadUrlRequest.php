@@ -2,12 +2,16 @@
 
 namespace App\Http\Requests\Workspace;
 
+use App\Services\WorkspaceService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class WorkspaceAvatarUploadUrlRequest extends FormRequest
 {
-    public function authorize(): bool
+    /** A permissão no workspace da URL vem antes da validação do corpo (403 antes de 422). */
+    public function authorize(WorkspaceService $service): bool
     {
+        $service->authorizePermissionInWorkspace($this->user(), $this->route('workspace')->uuid, 'workspaces.update');
+
         return true;
     }
 

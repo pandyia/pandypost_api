@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Billing\Tenant\ConfirmCheckoutRequest;
 use App\Http\Requests\Billing\Tenant\StoreCheckoutRequest;
 use App\Http\Resources\Billing\Tenant\SubscriptionResource;
-use App\Models\Price;
 use App\Models\Workspace;
 use App\Services\Billing\Tenant\CheckoutService;
 use App\Services\Billing\Tenant\ConfirmCheckoutService;
@@ -78,12 +77,9 @@ class SubscriptionController extends Controller
      * @response 502 scenario="falha no Stripe" {"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}
      */
-    public function checkout(Request $request): JsonResponse
+    public function checkout(StoreCheckoutRequest $request): JsonResponse
     {
-        $data = app(StoreCheckoutRequest::class)->validated();
-        $price = Price::where('uuid', $data['price'])->firstOrFail();
-
-        $url = $this->checkout->start($this->workspace($request), $price);
+        $url = $this->checkout->start($this->workspace($request), $request->validated()['price']);
 
         return response()->json(['checkout_url' => $url]);
     }
@@ -103,11 +99,9 @@ class SubscriptionController extends Controller
      * @response 404 scenario="checkout não concluído" {"error": "no_active_subscription", "message": "Nenhuma assinatura ativa para este workspace."}
      * @response 502 scenario="falha no Stripe" {"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}
      */
-    public function confirm(Request $request): JsonResponse
+    public function confirm(ConfirmCheckoutRequest $request): JsonResponse
     {
-        $data = app(ConfirmCheckoutRequest::class)->validated();
-
-        $subscription = $this->confirmCheckout->confirm($this->workspace($request), $data['session_id']);
+        $subscription = $this->confirmCheckout->confirm($this->workspace($request), $request->validated()['session_id']);
 
         // O JsonResource responderia 201 na primeira chamada (model recém-criado);
         // o contrato é 200 sempre, já que a confirmação é idempotente.

@@ -174,13 +174,19 @@ class User extends Authenticatable implements Auditable
         return $access;
     }
 
+    /**
+     * Permissão no workspace corrente. Sem workspace corrente nega: perfis de outros workspaces
+     * do usuário nunca valem (specs/002 VULN-09), sem depender do escopo do Role.
+     */
     public function hasPermission(string $permissionName): bool
     {
-        return $this->accesses()
-            ->whereHas('role.permissions', function ($query) use ($permissionName) {
-                $query->where('name', $permissionName);
-            })
-            ->exists();
+        $access = $this->currentAccess;
+
+        if (! $access) {
+            return false;
+        }
+
+        return $this->hasPermissionInWorkspace($permissionName, $access->workspace_id);
     }
 
     /**

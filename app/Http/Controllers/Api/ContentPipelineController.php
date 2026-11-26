@@ -7,7 +7,6 @@ use App\Http\Requests\MoveStageRequest;
 use App\Http\Requests\StoreContentPipelineRequest;
 use App\Http\Requests\UpdateContentPipelineRequest;
 use App\Http\Resources\ContentPipelineResource;
-use App\Models\ContentPipeline;
 use App\Services\ContentPipelineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +30,13 @@ class ContentPipelineController extends BaseController
     protected static array $permissionMethods = [
         'view' => ['index', 'show', 'board'],
         'create' => ['store', 'move'],
+        'update' => ['update'],
+        'delete' => ['destroy', 'restore'],
+    ];
+
+    protected static array $formRequests = [
+        'store' => StoreContentPipelineRequest::class,
+        'update' => UpdateContentPipelineRequest::class,
     ];
 
     public function __construct(private readonly ContentPipelineService $service)
@@ -106,13 +112,7 @@ class ContentPipelineController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $formRequest = app(StoreContentPipelineRequest::class);
-        $workspaceId = $request->user()->resolveCurrentAccess()->workspace_id;
-
-        $card = $this->service->createCard(
-            $request->user(),
-            array_merge($formRequest->validated(), ['workspace_id' => $workspaceId])
-        );
+        $card = $this->service->createCard($request->user(), $this->validatedInput('store'));
 
         $card->load('user');
 
@@ -127,7 +127,7 @@ class ContentPipelineController extends BaseController
      *
      * Envie só os campos que mudam. Para mudar de etapa use `move`.
      *
-     * **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+     * **Permissão:** `posts.update`
      *
      * @urlParam contentPipeline string required UUID do card. Example: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
      *
@@ -137,13 +137,14 @@ class ContentPipelineController extends BaseController
      * @bodyParam due_date string Data-alvo (`Y-m-d`), hoje ou futura. Example: 2026-11-05
      *
      * @response 200 {"message": "Card atualizado com sucesso."}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.update"}
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
-        $formRequest = app(UpdateContentPipelineRequest::class);
-        $contentPipeline = $this->resolveCard($request);
+        $data = $this->validatedInput('update');
+        $contentPipeline = $this->service->findByUuid($request->route('contentPipeline'));
 
-        $this->service->update($contentPipeline, $formRequest->validated());
+        $this->service->update($contentPipeline, $data);
 
         return response()->json(['message' => 'Card atualizado com sucesso.']);
     }
@@ -164,11 +165,10 @@ class ContentPipelineController extends BaseController
      * @response 422 scenario="destino scheduled" {"error": "scheduled_stage_forbidden", "message": "A etapa 'scheduled' não pode ser definida manualmente. Ela é atribuída automaticamente ao agendar um post."}
      * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.create"}
      */
-    public function move(Request $request): JsonResponse
+    public function move(MoveStageRequest $request): JsonResponse
     {
-        $formRequest = app(MoveStageRequest::class);
-        $contentPipeline = $this->resolveCard($request);
-        $targetStage = PipelineStage::from($formRequest->validated('stage'));
+        $contentPipeline = $this->service->findByUuid($request->route('contentPipeline'));
+        $targetStage = PipelineStage::from($request->validated('stage'));
 
         $this->service->moveStage($contentPipeline, $targetStage);
 
@@ -180,15 +180,16 @@ class ContentPipelineController extends BaseController
      *
      * Exclusão reversível: dá para desfazer com `restore`.
      *
-     * **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+     * **Permissão:** `posts.delete`
      *
      * @urlParam contentPipeline string required UUID do card. Example: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
      *
      * @response 200 {"message": "Card removido com sucesso."}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.delete"}
      */
     public function destroy(int|string $id): JsonResponse
     {
-        $this->resolveCard(request())->delete();
+        $this->service->destroyByUuid(request()->route('contentPipeline'));
 
         return response()->json(['message' => 'Card removido com sucesso.']);
     }
@@ -198,44 +199,22 @@ class ContentPipelineController extends BaseController
      *
      * Desfaz a remoção.
      *
-     * **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+     * **Permissão:** `posts.delete`
      *
      * @urlParam contentPipeline string required UUID do card. Example: 3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f
      *
      * @response 200 {"message": "Card restaurado com sucesso."}
+     * @response 403 scenario="sem permissão" {"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.delete"}
      */
     public function restore(int|string $id): JsonResponse
     {
-        ContentPipeline::withTrashed()
-            ->where('uuid', request()->route('contentPipeline'))
-            ->firstOrFail()
-            ->restore();
+        $this->service->restoreByUuid(request()->route('contentPipeline'));
 
         return response()->json(['message' => 'Card restaurado com sucesso.']);
     }
 
-    // ─── Private Helpers ──────────────────────────────────────────────────────
-
-    /**
-     * Resolves the ContentPipeline model from the route parameter UUID.
-     * Needed because implicit model binding requires a type-hint in the method
-     * signature, which we cannot use here due to BaseController compatibility.
-     */
-    private function resolveCard(Request $request): ContentPipeline
-    {
-        $param = $request->route('contentPipeline');
-
-        if ($param instanceof ContentPipeline) {
-            return $param;
-        }
-
-        return ContentPipeline::where('uuid', $param)->firstOrFail();
-    }
-
     /**
      * Ver card
-     *
-     * ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
      *
      * **Permissão:** `posts.view`
      *
@@ -256,6 +235,8 @@ class ContentPipelineController extends BaseController
      */
     public function show(int|string $id): Response
     {
-        return parent::show($id);
+        $contentPipeline = $this->service->findByUuid(request()->route('contentPipeline'));
+
+        return (new ContentPipelineResource($contentPipeline))->response();
     }
 }

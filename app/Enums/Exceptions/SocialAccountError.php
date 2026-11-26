@@ -11,6 +11,8 @@ enum SocialAccountError: string implements ErrorEnumInterface
     case TOKEN_EXCHANGE_FAILED = 'token_exchange_failed';
     case PLATFORM_NOT_SUPPORTED = 'platform_not_supported';
     case INVALID_OAUTH_STATE = 'invalid_oauth_state';
+    case OAUTH_STATE_CONTEXT_INVALID = 'oauth_state_context_invalid';
+    case CONNECT_PERMISSION_DENIED = 'connect_permission_denied';
     case OAUTH_TOKEN_EXCHANGE_FAILED = 'oauth_token_exchange_failed';
     case OAUTH_INITIALIZATION_FAILED = 'oauth_initialization_failed';
     case REFRESH_TOKEN_MISSING = 'refresh_token_missing';
@@ -24,6 +26,9 @@ enum SocialAccountError: string implements ErrorEnumInterface
             self::TOKEN_EXCHANGE_FAILED => 'Falha ao obter token de acesso.',
             self::PLATFORM_NOT_SUPPORTED => "Plataforma '{$platform}' não é suportada.",
             self::INVALID_OAUTH_STATE => 'State OAuth inválido ou expirado.',
+            // Textos casados com o redirect do callback (o front exibe a mensagem como veio).
+            self::OAUTH_STATE_CONTEXT_INVALID => 'Estado OAuth inválido.',
+            self::CONNECT_PERMISSION_DENIED => 'Você não tem permissão para conectar contas neste workspace.',
             self::OAUTH_TOKEN_EXCHANGE_FAILED => 'Falha ao trocar o código pelo token de acesso.',
             self::OAUTH_INITIALIZATION_FAILED => 'Falha ao iniciar o fluxo OAuth.',
             self::REFRESH_TOKEN_MISSING => 'Refresh token ausente. O usuário precisa reconectar a conta.',
@@ -39,6 +44,8 @@ enum SocialAccountError: string implements ErrorEnumInterface
             self::TOKEN_EXCHANGE_FAILED => 502,
             self::PLATFORM_NOT_SUPPORTED => 400,
             self::INVALID_OAUTH_STATE => 400,
+            self::OAUTH_STATE_CONTEXT_INVALID => 400,
+            self::CONNECT_PERMISSION_DENIED => 403,
             self::OAUTH_TOKEN_EXCHANGE_FAILED => 400,
             self::OAUTH_INITIALIZATION_FAILED => 500,
             self::REFRESH_TOKEN_MISSING => 401,

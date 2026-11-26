@@ -7,8 +7,6 @@ use App\Http\Requests\Billing\Admin\StorePriceRequest;
 use App\Http\Requests\Billing\Admin\UpdatePriceRequest;
 use App\Http\Resources\Billing\Admin\PriceHistoryResource;
 use App\Http\Resources\Billing\Admin\PriceResource;
-use App\Models\Plan;
-use App\Models\Price;
 use App\Services\Billing\Admin\PriceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +25,11 @@ class PriceController extends BaseController
         'manage' => ['store', 'update', 'destroy'],
     ];
 
+    protected static array $formRequests = [
+        'store' => StorePriceRequest::class,
+        'update' => UpdatePriceRequest::class,
+    ];
+
     public function __construct(
         private readonly PriceService $service
     ) {
@@ -42,7 +45,9 @@ class PriceController extends BaseController
      */
     public function index(Request $request): Response
     {
-        return PriceResource::collection($this->service->forPlan($this->resolvePlan()))->response();
+        $plan = $this->service->planByUuid(request()->route('plan'));
+
+        return PriceResource::collection($this->service->forPlan($plan))->response();
     }
 
     /**
@@ -57,7 +62,8 @@ class PriceController extends BaseController
      */
     public function versions(Request $request): AnonymousResourceCollection
     {
-        $price = $this->resolvePrice($this->resolvePlan());
+        $plan = $this->service->planByUuid(request()->route('plan'));
+        $price = $this->service->priceForPlan($plan, request()->route('price'));
 
         return PriceHistoryResource::collection($this->service->versions($price));
     }
@@ -79,9 +85,9 @@ class PriceController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $data = app(StorePriceRequest::class)->validated();
+        $data = $this->validatedInput('store');
 
-        $price = $this->service->createPrice($this->resolvePlan(), $data);
+        $price = $this->service->createPrice($this->service->planByUuid(request()->route('plan')), $data);
 
         return response()->json([
             'message' => 'Preço adicionado com sucesso.',
@@ -108,9 +114,9 @@ class PriceController extends BaseController
      */
     public function update(Request $request, int|string $id): JsonResponse
     {
-        $data = app(UpdatePriceRequest::class)->validated();
-        $plan = $this->resolvePlan();
-        $price = $this->resolvePrice($plan);
+        $data = $this->validatedInput('update');
+        $plan = $this->service->planByUuid(request()->route('plan'));
+        $price = $this->service->priceForPlan($plan, request()->route('price'));
 
         $price = $this->service->updatePrice($plan, $price, $data);
 
@@ -133,31 +139,9 @@ class PriceController extends BaseController
      */
     public function destroy(int|string $id): JsonResponse
     {
-        $plan = $this->resolvePlan();
-        $this->service->deletePrice($plan, $this->resolvePrice($plan));
+        $plan = $this->service->planByUuid(request()->route('plan'));
+        $this->service->deletePrice($plan, $this->service->priceForPlan($plan, request()->route('price')));
 
         return response()->json(['message' => 'Preço removido com sucesso.']);
-    }
-
-    private function resolvePlan(): Plan
-    {
-        $param = request()->route('plan');
-
-        if ($param instanceof Plan) {
-            return $param;
-        }
-
-        return Plan::where('uuid', $param)->firstOrFail();
-    }
-
-    private function resolvePrice(Plan $plan): Price
-    {
-        $param = request()->route('price');
-
-        if ($param instanceof Price) {
-            return $param;
-        }
-
-        return $plan->prices()->where('uuid', $param)->firstOrFail();
     }
 }

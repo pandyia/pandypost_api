@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\SocialMediaServiceInterface;
+use App\Enums\ScheduledPostStatus;
 use App\Exceptions\TikTokException;
 use App\Jobs\CheckTikTokPostStatusJob;
 use App\Models\ScheduledPost;
@@ -42,7 +43,7 @@ class TikTokService implements SocialMediaServiceInterface
     public function upload(SocialAccount $account, ScheduledPost $post): void
     {
         Log::info("Iniciando upload para TikTok. Post ID: {$post->id}");
-        $post->update(['status' => 'processing']);
+        $post->update(['status' => ScheduledPostStatus::PROCESSING->value]);
 
         $this->ensureCanPublish($account);
 
