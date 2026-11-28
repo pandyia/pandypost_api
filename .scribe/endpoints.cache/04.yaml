@@ -67,7 +67,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       bio:
         custom: []
@@ -78,7 +78,7 @@ endpoints:
         type: string
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
       timezone:
         custom: []
@@ -176,76 +176,6 @@ endpoints:
         custom: []
         status: 422
         content: '{"message": "Use uma imagem JPG, PNG ou WebP.", "errors": {"content_type": ["Use uma imagem JPG, PNG ou WebP."]}}'
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PUT
-    uri: api/me/avatar
-    metadata:
-      custom: []
-      groupName: 'Meu perfil'
-      groupDescription: |-
-
-        Dados, foto e senha do **próprio** usuário autenticado. Não exigem e-mail verificado.
-
-        **Foto de perfil (3 passos, mesmo padrão dos uploads de post):**
-        1. `POST /me/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
-        2. `PUT` do arquivo direto na `url` (envie os `headers` e o mesmo `Content-Type`; sem token da API).
-        3. `PUT /me/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
-
-        O campo `avatar` do usuário é uma URL assinada que **muda a cada `GET /me`** (válida por ~6 dias).
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Confirmar a foto enviada'
-      description: |-
-        Confere que o arquivo é do próprio usuário, existe, é imagem JPG/PNG/WebP de até 5 MB, troca a foto
-        e apaga a anterior. Arquivo inválido é apagado do storage.
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      path:
-        custom: []
-        name: path
-        description: '`path` recebido em `POST /me/avatar/upload-url`.'
-        required: true
-        example: users/5f0c.../avatars/a1b2....jpg
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      path: users/5f0c.../avatars/a1b2....jpg
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"data": {"id": 12, "name": "Maria Souza", "avatar": "https://storage.exemplo.com/...assinada...", "email": "maria@exemplo.com"}}'
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 422
-        content: '{"error": "profile_avatar_too_large", "message": "A foto é maior que o limite de 5 MB. Escolha uma imagem menor."}'
         headers: []
         description: ''
     responseFields: []

@@ -23,6 +23,9 @@ class HandleStripeWebhook
         'checkout.session.expired',
         'customer.subscription.updated',
         'customer.subscription.deleted',
+        'subscription_schedule.completed',
+        'subscription_schedule.released',
+        'subscription_schedule.canceled',
     ];
 
     public function handle(WebhookReceived $event): void

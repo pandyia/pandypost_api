@@ -235,6 +235,29 @@ class NotificationService
     }
 
     /**
+     * Mudança de plano (spec 024): `$event` é `upgrade`, `scheduled` ou `applied`. Família billing (fixa):
+     * avisa quem tem permissão de billing, uma vez por pessoa e por ocorrência.
+     */
+    public function notifySubscriptionChanged(Workspace $workspace, string $event, string $resource, string $planName, ?\DateTimeInterface $effectiveAt = null): void
+    {
+        $this->safely(function () use ($workspace, $event, $resource, $planName, $effectiveAt) {
+            $payload = [
+                'event' => $event,
+                'resource' => $event.':'.$resource,
+                'plan_name' => $planName,
+                'effective_date' => $effectiveAt?->format('d/m/Y'),
+                'workspace_id' => $workspace->id,
+                'workspace_uuid' => $workspace->uuid,
+                'workspace_name' => $workspace->name,
+            ];
+
+            foreach ($this->recipientsWithPermission($workspace->id, self::BILLING_PERMISSIONS) as $user) {
+                $this->sendSafely($user, NotificationType::SUBSCRIPTION_CHANGED, $payload);
+            }
+        });
+    }
+
+    /**
      * A conta é do workspace (spec 017): avisa quem conectou por último (se ainda é membro) e os membros com
      * permissão de gerir contas ou agendar posts, uma vez por pessoa. Nunca inclui a mensagem do erro da plataforma.
      */

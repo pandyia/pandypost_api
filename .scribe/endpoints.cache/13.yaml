@@ -221,10 +221,7 @@ endpoints:
       subgroup: ''
       subgroupDescription: ''
       title: 'Ver card'
-      description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-
-        **Permissão:** `posts.view`
+      description: '**Permissão:** `posts.view`'
       authenticated: true
       deprecated: false
     headers:
@@ -298,7 +295,7 @@ endpoints:
       description: |-
         Envie só os campos que mudam. Para mudar de etapa use `move`.
 
-        **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+        **Permissão:** `posts.update`
       authenticated: true
       deprecated: false
     headers:
@@ -382,6 +379,12 @@ endpoints:
         content: '{"message": "Card atualizado com sucesso."}'
         headers: []
         description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.update"}'
+        headers: []
+        description: 'sem permissão'
     responseFields: []
     auth:
       - headers
@@ -411,7 +414,7 @@ endpoints:
       description: |-
         Exclusão reversível: dá para desfazer com `restore`.
 
-        **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+        **Permissão:** `posts.delete`
       authenticated: true
       deprecated: false
     headers:
@@ -444,6 +447,12 @@ endpoints:
         content: '{"message": "Card removido com sucesso."}'
         headers: []
         description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.delete"}'
+        headers: []
+        description: 'sem permissão'
     responseFields: []
     auth:
       - headers
@@ -570,7 +579,7 @@ endpoints:
       description: |-
         Desfaz a remoção.
 
-        **Permissão:** nenhuma além de ser membro. ⚠️ VULN-04 (`specs/002`): a permissão ainda será definida.
+        **Permissão:** `posts.delete`
       authenticated: true
       deprecated: false
     headers:
@@ -603,6 +612,12 @@ endpoints:
         content: '{"message": "Card restaurado com sucesso."}'
         headers: []
         description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "posts.delete"}'
+        headers: []
+        description: 'sem permissão'
     responseFields: []
     auth:
       - headers

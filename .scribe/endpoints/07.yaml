@@ -50,7 +50,12 @@ endpoints:
               "trial_ends_at": null,
               "ends_at": null,
               "plan": {"id": "1a2b3c4d-...", "name": "Pro"},
-              "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}
+              "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"},
+              "pending_change": {
+                "price": {"id": "3c4d5e6f-1111-4222-8333-444455556666", "amount": 2990, "currency": "brl", "frequency": "monthly"},
+                "plan": {"id": "7a8b9c0d-1111-4222-8333-444455556666", "name": "Básico"},
+                "effective_at": "2026-12-26T14:00:00.000000Z"
+              }
             }
           }
         headers: []
@@ -68,6 +73,17 @@ endpoints:
         headers: []
         description: 'sem assinatura'
     responseFields:
+      pending_change:
+        custom: []
+        name: pending_change
+        description: 'Troca de plano agendada (downgrade ou anual→mensal), aplicada em `effective_at` (fim do ciclo atual). `null` quando não há agendamento. Enquanto existir, `plan`/`price` continuam sendo o plano atual. Veja `POST /billing/subscription/change`.'
+        required: false
+        example: null
+        type: object|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
       billing_status:
         custom: []
         name: billing_status
@@ -265,6 +281,246 @@ endpoints:
   -
     custom: []
     httpMethods:
+      - POST
+    uri: api/billing/subscription/change
+    metadata:
+      custom: []
+      groupName: 'Assinatura e pagamentos'
+      groupDescription: |-
+
+        Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
+
+        **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
+        → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Trocar de plano ou frequência'
+      description: |-
+        Muda o preço (plano e/ou frequência) da assinatura atual. A resposta diz se a troca já valeu ou ficou agendada:
+
+        - **Imediata** (`pending_change` = `null` na resposta; `message` "Plano alterado com sucesso."): upgrade (mesma
+          frequência e valor maior), mensal→anual e **qualquer troca durante o trial**. O Stripe cobra a diferença
+          pro-rata na hora, no cartão padrão. Se a assinatura estava em trial, o trial **termina** e a cobrança começa agora.
+        - **Agendada** (`pending_change` preenchido; `message` "Mudança de plano agendada para o fim do ciclo atual."):
+          downgrade (mesma frequência e valor menor) e anual→mensal. Nada é cobrado nem muda agora; o plano atual vale
+          até `pending_change.effective_at`. Uma nova troca substitui o agendamento anterior; repetir o mesmo downgrade
+          já agendado devolve 200 sem alterar nada. Para desfazer, use `DELETE /billing/subscription/change`.
+
+        Uma troca imediata cancela qualquer agendamento existente. Só assinaturas `active` ou `trialing`, sem cancelamento
+        pedido, podem trocar. Os avisos de pagamento (402) deixam a assinatura no plano antigo: não há troca parcial.
+        Os usuários com permissão de billing recebem a notificação `subscription_changed`.
+
+        **Permissão:** `billing.manage`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      price:
+        custom: []
+        name: price
+        description: '`id` (uuid) de um preço ativo de um plano ativo (de `GET /plans`).'
+        required: true
+        example: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      price: 9f8e7d6c-5b4a-4321-8fed-cba987654321
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Plano alterado com sucesso.", "data": {"billing_status": "active", "stripe_status": "active", "on_trial": false, "trial_ends_at": null, "ends_at": null, "plan": {"id": "1a2b3c4d-...", "name": "Pro"}, "price": {"id": "9f8e7d6c-5b4a-4321-8fed-cba987654321", "amount": 4990, "currency": "brl", "frequency": "monthly"}, "pending_change": null}}'
+        headers: []
+        description: 'troca imediata (upgrade)'
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Mudança de plano agendada para o fim do ciclo atual.", "data": {"billing_status": "active", "stripe_status": "active", "on_trial": false, "trial_ends_at": null, "ends_at": null, "plan": {"id": "1a2b3c4d-...", "name": "Pro"}, "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}, "pending_change": {"price": {"id": "3c4d5e6f-1111-4222-8333-444455556666", "amount": 2990, "currency": "brl", "frequency": "monthly"}, "plan": {"id": "7a8b9c0d-1111-4222-8333-444455556666", "name": "Básico"}, "effective_at": "2026-12-26T14:00:00.000000Z"}}}'
+        headers: []
+        description: 'troca agendada (downgrade)'
+      -
+        custom: []
+        status: 402
+        content: '{"error": "payment_failed", "message": "Não foi possível cobrar a diferença no cartão. A assinatura continua no plano atual."}'
+        headers: []
+        description: 'cartão recusado'
+      -
+        custom: []
+        status: 402
+        content: '{"error": "payment_action_required", "message": "O banco exige uma autorização para concluir a troca de plano. Autorize o pagamento e tente novamente.", "action_url": "https://invoice.stripe.com/i/acct_1Abc/test_YWNjdF8x"}'
+        headers: []
+        description: 'banco exige autorização (3DS)'
+      -
+        custom: []
+        status: 402
+        content: '{"error": "payment_action_required", "message": "O banco exige uma autorização para concluir a troca de plano. Autorize o pagamento e tente novamente."}'
+        headers: []
+        description: 'banco exige autorização, sem link'
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 404
+        content: '{"error": "no_active_subscription", "message": "Nenhuma assinatura ativa para este workspace."}'
+        headers: []
+        description: 'sem assinatura'
+      -
+        custom: []
+        status: 404
+        content: '{"message": "No query results for model [App\\Models\\Price]."}'
+        headers: []
+        description: 'preço inexistente, inativo ou de plano inativo'
+      -
+        custom: []
+        status: 409
+        content: '{"error": "subscription_change_not_allowed", "message": "Não é possível trocar o plano agora: regularize o pagamento ou retome a assinatura antes."}'
+        headers: []
+        description: 'assinatura não pode trocar agora'
+      -
+        custom: []
+        status: 422
+        content: '{"error": "same_price", "message": "Este já é o preço atual da assinatura."}'
+        headers: []
+        description: 'mesmo preço da assinatura'
+      -
+        custom: []
+        status: 422
+        content: '{"error": "price_currency_mismatch", "message": "O preço escolhido está em outra moeda e não pode substituir o atual."}'
+        headers: []
+        description: 'moeda diferente'
+      -
+        custom: []
+        status: 422
+        content: '{"error": "price_not_synced", "message": "Este preço ainda não foi sincronizado com o gateway de pagamento."}'
+        headers: []
+        description: 'preço não sincronizado'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "O preço é obrigatório.", "errors": {"price": ["O preço é obrigatório."]}}'
+        headers: []
+        description: 'price ausente ou não é uuid'
+      -
+        custom: []
+        status: 502
+        content: '{"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}'
+        headers: []
+        description: 'falha no Stripe'
+    responseFields:
+      action_url:
+        custom: []
+        name: action_url
+        description: '(só no 402 `payment_action_required`, na **raiz** do JSON, não dentro de `data`) Link da fatura hospedada do Stripe para o usuário autorizar o pagamento. **Pode estar ausente**: se faltar, mostre só a `message` e peça para tentar de novo ou revisar o cartão.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      pending_change:
+        custom: []
+        name: pending_change
+        description: 'Preenchido quando a troca ficou agendada. Veja `GET /billing/subscription`.'
+        required: false
+        example: null
+        type: object|null
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: api/billing/subscription/change
+    metadata:
+      custom: []
+      groupName: 'Assinatura e pagamentos'
+      groupDescription: |-
+
+        Assinatura, cartões e faturas **do workspace corrente** (a cobrança é por workspace, via Stripe).
+
+        **Fluxo de assinatura:** `POST /billing/subscription/checkout` → redirecione para `checkout_url` (página do Stripe)
+        → o Stripe volta para o frontend → consulte `GET /billing/subscription`.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Desfazer mudança agendada'
+      description: |-
+        Cancela o downgrade / anual→mensal agendado e mantém o plano atual. Devolve a assinatura com `pending_change: null`.
+
+        **Permissão:** `billing.manage`
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Mudança de plano agendada cancelada.", "data": {"billing_status": "active", "stripe_status": "active", "on_trial": false, "trial_ends_at": null, "ends_at": null, "plan": {"id": "1a2b3c4d-...", "name": "Pro"}, "price": {"id": "9f8e7d6c-...", "amount": 4990, "currency": "brl", "frequency": "monthly"}, "pending_change": null}}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "billing.manage"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 404
+        content: '{"error": "no_pending_change", "message": "Não há mudança de plano agendada para este workspace."}'
+        headers: []
+        description: 'nada agendado (ou sem assinatura)'
+      -
+        custom: []
+        status: 502
+        content: '{"error": "gateway_error", "message": "Falha ao comunicar com o gateway de pagamento. Tente novamente."}'
+        headers: []
+        description: 'falha no Stripe'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
       - GET
     uri: api/billing/setup-intent
     metadata:
@@ -409,7 +665,7 @@ endpoints:
         type: boolean
         enumValues: []
         exampleWasSpecified: true
-        nullable: false
+        nullable: true
         deprecated: false
     cleanBodyParameters:
       payment_method: pm_1Q2w3E4r5T6y

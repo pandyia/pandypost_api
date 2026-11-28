@@ -131,6 +131,19 @@ services:
                 aliases:
                     - minio.localtest.me
 
+    # Stripe CLI (só dev): recebe os eventos do Stripe (modo teste) e encaminha para o webhook local.
+    # Usa STRIPE_SECRET do .env. O STRIPE_WEBHOOK_SECRET do .env deve ser o de
+    # `docker compose run --rm stripe listen --api-key $STRIPE_SECRET --print-secret`.
+    stripe:
+        image: stripe/stripe-cli:latest
+        container_name: pandypost-stripe
+        restart: unless-stopped
+        command: listen --api-key ${STRIPE_SECRET:-} --all-snapshot --forward-to http://nginx/api/stripe/webhook
+        depends_on:
+            - nginx
+        networks:
+            - pandypost-network
+
     # Cria o bucket de dev no MinIO local, com proteção para Produção
     bucket-init:
         image: bitnamilegacy/minio:latest

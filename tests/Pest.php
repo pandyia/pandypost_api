@@ -3,9 +3,12 @@
 use App\Jobs\PublishPostJob;
 use App\Models\Access;
 use App\Models\Permission;
+use App\Models\Plan;
+use App\Models\Price;
 use App\Models\Role;
 use App\Models\ScheduledPost;
 use App\Models\SocialAccount;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Factories\OAuthProviderFactory;
@@ -16,10 +19,14 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Monolog\Handler\TestHandler;
+use Stripe\StripeClient;
+use Tests\Support\ChangeStripeFake;
 use Tests\TestCase;
 
 /*
@@ -449,4 +456,86 @@ function oauthStateSeal(array $payload, string $mode): string
     return $mode === 'json'
         ? Crypt::encryptString(json_encode($payload))
         : encrypt($payload);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Spec 024 - mudança de assinatura (helpers)
+|--------------------------------------------------------------------------
+*/
+
+/** Cria plano + preço ativo e sincronizado (gateway_price_id único). */
+function chgPrice(string $planName = 'Pro', int $amount = 4990, string $frequency = 'monthly', string $currency = 'brl', array $overrides = []): Price
+{
+    $plan = Plan::create(['name' => $planName, 'gateway_product_id' => 'prod_'.uniqid()]);
+
+    return $plan->prices()->create(array_merge([
+        'amount' => $amount,
+        'currency' => $currency,
+        'frequency' => $frequency,
+        'trial_period_days' => 0,
+        'gateway_price_id' => 'price_'.uniqid(),
+        'is_active' => true,
+    ], $overrides));
+}
+
+/** Liga o StripeClient falso (Tests\Support\ChangeStripeFake) no container. */
+function chgFakeStripe(?Price $current = null): ChangeStripeFake
+{
+    $fake = new ChangeStripeFake;
+    if ($current) {
+        $fake->currentPrice = $current->gateway_price_id;
+    }
+    app()->bind(StripeClient::class, fn () => $fake);
+
+    return $fake;
+}
+
+/** Assinatura local `default` do workspace no preço informado. */
+function chgSubscribe(Workspace $workspace, Price $price, string $status = 'active', array $overrides = []): Subscription
+{
+    if (! $workspace->stripe_id) {
+        $workspace->forceFill(['stripe_id' => 'cus_'.uniqid()])->save();
+    }
+
+    return Subscription::forceCreate(array_merge([
+        'workspace_id' => $workspace->id,
+        'type' => 'default',
+        'stripe_id' => 'sub_chg_1',
+        'stripe_status' => $status,
+        'stripe_price' => $price->gateway_price_id,
+        'quantity' => 1,
+        'trial_ends_at' => $status === 'trialing' ? now()->addDays(5) : null,
+    ], $overrides));
+}
+
+/**
+ * Cenário padrão: usuário com permissões + assinatura no preço atual + Stripe falso.
+ *
+ * @return array{0: User, 1: Workspace, 2: Subscription, 3: ChangeStripeFake, 4: Price}
+ */
+function chgScenario(Price $current, string $status = 'active', array $permissions = ['billing.view', 'billing.manage'], array $subOverrides = []): array
+{
+    $user = createUserWithPermissions($permissions);
+    $workspace = Workspace::withoutGlobalScopes()->find($user->currentAccess->workspace_id);
+    $sub = chgSubscribe($workspace, $current, $status, $subOverrides);
+    $fake = chgFakeStripe($current);
+    $fake->subscriptionStatus = $status;
+
+    return [$user, $workspace, $sub, $fake, $current];
+}
+
+/** Insere uma mudança agendada direto no banco (sem depender de model/factory). */
+function chgPendingChange(Subscription $sub, Price $target, string $status = 'pending', string $schedule = 'sch_pending_1'): int
+{
+    return DB::table('subscription_changes')->insertGetId([
+        'uuid' => (string) Str::uuid(),
+        'subscription_id' => $sub->id,
+        'price_id' => $target->id,
+        'stripe_schedule_id' => $schedule,
+        'effective_at' => Carbon\Carbon::createFromTimestamp(ChangeStripeFake::PERIOD_END),
+        'status' => $status,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 }

@@ -190,10 +190,7 @@ endpoints:
       subgroup: ''
       subgroupDescription: ''
       title: 'Ver workspace'
-      description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-
-        **Permissão:** `workspaces.view`
+      description: '**Permissão:** `workspaces.view`'
       authenticated: true
       deprecated: false
     headers:
@@ -498,7 +495,7 @@ endpoints:
         name: workspace_uuid
         description: ''
         required: true
-        example: c66640bf-e624-4c4d-8057-c34b8af056b8
+        example: 9abc2ff2-6335-4e8b-aaaf-6944e5500ae4
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -516,7 +513,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      workspace_uuid: c66640bf-e624-4c4d-8057-c34b8af056b8
+      workspace_uuid: 9abc2ff2-6335-4e8b-aaaf-6944e5500ae4
       workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
     queryParameters: []
     cleanQueryParameters: []
@@ -559,98 +556,6 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - PUT
-    uri: 'api/workspaces/{workspace_uuid}/avatar'
-    metadata:
-      custom: []
-      groupName: Workspaces
-      groupDescription: |-
-
-        Foto do workspace, no mesmo fluxo da foto do perfil (URL pré-assinada):
-
-        1. `POST /workspaces/{uuid}/avatar/upload-url` com o `content_type` → recebe `url`, `headers` e `path`.
-        2. O front faz `PUT` direto na `url` com o arquivo (sem token).
-        3. `PUT /workspaces/{uuid}/avatar` com o `path` → a API confere tipo e tamanho (até 5 MB), troca a foto e apaga a antiga.
-
-        **Permissão:** `workspaces.update` **no workspace da URL** (ser admin de outro workspace não vale).
-        O campo `avatar` do workspace é uma URL assinada que muda a cada resposta (válida por ~6 dias).
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Confirmar a foto enviada'
-      description: ''
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {TOKEN}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      workspace_uuid:
-        custom: []
-        name: workspace_uuid
-        description: ''
-        required: true
-        example: c66640bf-e624-4c4d-8057-c34b8af056b8
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      workspace:
-        custom: []
-        name: workspace
-        description: 'UUID do workspace.'
-        required: true
-        example: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      workspace_uuid: c66640bf-e624-4c4d-8057-c34b8af056b8
-      workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      path:
-        custom: []
-        name: path
-        description: '`path` recebido em `upload-url`.'
-        required: true
-        example: workspaces/7f3c.../avatar/a1b2....jpg
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      path: workspaces/7f3c.../avatar/a1b2....jpg
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 200
-        content: '{"data": {"uuid": "7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c", "name": "Agência Aurora", "avatar": "https://storage.exemplo.com/...assinada..."}}'
-        headers: []
-        description: ''
-      -
-        custom: []
-        status: 422
-        content: '{"error": "workspace_avatar_too_large", "message": "A foto é maior que o limite de 5 MB. Escolha uma imagem menor."}'
-        headers: []
-        description: ''
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
       - DELETE
     uri: 'api/workspaces/{workspace_uuid}/avatar'
     metadata:
@@ -682,7 +587,7 @@ endpoints:
         name: workspace_uuid
         description: ''
         required: true
-        example: c66640bf-e624-4c4d-8057-c34b8af056b8
+        example: 9abc2ff2-6335-4e8b-aaaf-6944e5500ae4
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -700,7 +605,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      workspace_uuid: c66640bf-e624-4c4d-8057-c34b8af056b8
+      workspace_uuid: 9abc2ff2-6335-4e8b-aaaf-6944e5500ae4
       workspace: 7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c
     queryParameters: []
     cleanQueryParameters: []

@@ -247,7 +247,7 @@ endpoints:
       subgroupDescription: ''
       title: 'Editar acesso'
       description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+        Troca o perfil do acesso. Só `role_id` é aceito, e o perfil precisa ser do workspace corrente.
 
         **Permissão:** `accesses.update`
       authenticated: true
@@ -272,10 +272,40 @@ endpoints:
       id: 2
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    bodyParameters:
+      role_id:
+        custom: []
+        name: role_id
+        description: 'ID de um perfil do workspace corrente.'
+        required: true
+        example: 3
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role_id: 3
     fileParameters: []
-    responses: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message": "Registro atualizado com sucesso."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 403
+        content: '{"message": "Você não tem permissão para acessar este recurso.", "required_permission": "accesses.update"}'
+        headers: []
+        description: 'sem permissão'
+      -
+        custom: []
+        status: 422
+        content: '{"message": "O perfil informado não existe neste workspace.", "errors": {"role_id": ["O perfil informado não existe neste workspace."]}}'
+        headers: []
+        description: ''
     responseFields: []
     auth:
       - headers

@@ -140,9 +140,6 @@
                                                                                 <li class="tocify-item level-2" data-unique="workspaces-POSTapi-workspaces--workspace_uuid--avatar-upload-url">
                                 <a href="#workspaces-POSTapi-workspaces--workspace_uuid--avatar-upload-url">Pedir URL de upload da foto</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="workspaces-PUTapi-workspaces--workspace_uuid--avatar">
-                                <a href="#workspaces-PUTapi-workspaces--workspace_uuid--avatar">Confirmar a foto enviada</a>
-                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="workspaces-DELETEapi-workspaces--workspace_uuid--avatar">
                                 <a href="#workspaces-DELETEapi-workspaces--workspace_uuid--avatar">Remover a foto</a>
                             </li>
@@ -376,6 +373,12 @@
                                                                                 <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-POSTapi-billing-subscription-checkout-confirm">
                                 <a href="#assinatura-e-pagamentos-POSTapi-billing-subscription-checkout-confirm">Confirmar checkout</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-POSTapi-billing-subscription-change">
+                                <a href="#assinatura-e-pagamentos-POSTapi-billing-subscription-change">Trocar de plano ou frequência</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-DELETEapi-billing-subscription-change">
+                                <a href="#assinatura-e-pagamentos-DELETEapi-billing-subscription-change">Desfazer mudança agendada</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="assinatura-e-pagamentos-GETapi-billing-setup-intent">
                                 <a href="#assinatura-e-pagamentos-GETapi-billing-setup-intent">Preparar cadastro de cartão</a>
                             </li>
@@ -467,9 +470,6 @@
                                                                                 <li class="tocify-item level-2" data-unique="meu-perfil-POSTapi-me-avatar-upload-url">
                                 <a href="#meu-perfil-POSTapi-me-avatar-upload-url">Pedir URL de upload da foto</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="meu-perfil-PUTapi-me-avatar">
-                                <a href="#meu-perfil-PUTapi-me-avatar">Confirmar a foto enviada</a>
-                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="meu-perfil-DELETEapi-me-avatar">
                                 <a href="#meu-perfil-DELETEapi-me-avatar">Remover a foto</a>
                             </li>
@@ -515,7 +515,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Atualizado em 08/11/2026 (1dd9d48)</li>
+        <li>Atualizado em 26/11/2026 (ad3f8dd)</li>
     </ul>
 </div>
 
@@ -2442,7 +2442,6 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>⚠️ <strong>BUG-01:</strong> hoje este endpoint falha (500 no PostgreSQL), ver <code>specs/002-security-hardening</code>. Não use até a correção.</p>
 <p><strong>Permissão:</strong> <code>workspaces.view</code></p>
 
 <span id="example-requests-GETapi-workspaces--id-">
@@ -3122,7 +3121,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar/upload-url"
+    "http://localhost:9000/api/workspaces/9abc2ff2-6335-4e8b-aaaf-6944e5500ae4/avatar/upload-url"
 );
 
 const headers = {
@@ -3144,7 +3143,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar/upload-url" \
+    "http://localhost:9000/api/workspaces/9abc2ff2-6335-4e8b-aaaf-6944e5500ae4/avatar/upload-url" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
@@ -3271,10 +3270,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="POSTapi-workspaces--workspace_uuid--avatar-upload-url"
-               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
+               value="9abc2ff2-6335-4e8b-aaaf-6944e5500ae4"
                data-component="url">
     <br>
-<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
+<p>Example: <code>9abc2ff2-6335-4e8b-aaaf-6944e5500ae4</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -3303,200 +3302,6 @@ Os detalhes aparecem no console do navegador.</code></pre>
         </div>
         </form>
 
-                    <h2 id="workspaces-PUTapi-workspaces--workspace_uuid--avatar">Confirmar a foto enviada</h2>
-
-<p>
-<small class="badge badge-darkred">requires authentication</small>
-</p>
-
-
-
-<span id="example-requests-PUTapi-workspaces--workspace_uuid--avatar">
-<blockquote>Exemplo de requisição:</blockquote>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar"
-);
-
-const headers = {
-    "Authorization": "Bearer {TOKEN}",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-let body = {
-    "path": "workspaces\/7f3c...\/avatar\/a1b2....jpg"
-};
-
-fetch(url, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify(body),
-}).then(response =&gt; response.json());</code></pre></div>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar" \
-    --header "Authorization: Bearer {TOKEN}" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"path\": \"workspaces\\/7f3c...\\/avatar\\/a1b2....jpg\"
-}"
-</code></pre></div>
-
-</span>
-
-<span id="example-responses-PUTapi-workspaces--workspace_uuid--avatar">
-            <blockquote>
-            <p>Exemplo de resposta (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;data&quot;: {
-        &quot;uuid&quot;: &quot;7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c&quot;,
-        &quot;name&quot;: &quot;Ag&ecirc;ncia Aurora&quot;,
-        &quot;avatar&quot;: &quot;https://storage.exemplo.com/...assinada...&quot;
-    }
-}</code>
- </pre>
-            <blockquote>
-            <p>Exemplo de resposta (422):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;error&quot;: &quot;workspace_avatar_too_large&quot;,
-    &quot;message&quot;: &quot;A foto &eacute; maior que o limite de 5 MB. Escolha uma imagem menor.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-PUTapi-workspaces--workspace_uuid--avatar" hidden>
-    <blockquote>Resposta recebida<span
-                id="execution-response-status-PUTapi-workspaces--workspace_uuid--avatar"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-PUTapi-workspaces--workspace_uuid--avatar"
-      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-PUTapi-workspaces--workspace_uuid--avatar" hidden>
-    <blockquote>A requisição falhou com o erro:</blockquote>
-    <pre><code id="execution-error-message-PUTapi-workspaces--workspace_uuid--avatar">
-
-Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
-Os detalhes aparecem no console do navegador.</code></pre>
-</span>
-<form id="form-PUTapi-workspaces--workspace_uuid--avatar" data-method="PUT"
-      data-path="api/workspaces/{workspace_uuid}/avatar"
-      data-authed="1"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('PUTapi-workspaces--workspace_uuid--avatar', this);">
-    <h3>
-        Requisição&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-PUTapi-workspaces--workspace_uuid--avatar"
-                    onclick="tryItOut('PUTapi-workspaces--workspace_uuid--avatar');">Testar ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-PUTapi-workspaces--workspace_uuid--avatar"
-                    onclick="cancelTryOut('PUTapi-workspaces--workspace_uuid--avatar');" hidden>Cancelar
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-PUTapi-workspaces--workspace_uuid--avatar"
-                    data-initial-text="Enviar"
-                    data-loading-text="⏱ Enviando..."
-                    hidden>Enviar
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-darkblue">PUT</small>
-            <b><code>api/workspaces/{workspace_uuid}/avatar</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="Bearer {TOKEN}"
-               data-component="header">
-    <br>
-<p>Example: <code>Bearer {TOKEN}</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>Parâmetros de URL</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>workspace_uuid</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="workspace_uuid"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
-               data-component="url">
-    <br>
-<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
-            </div>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="workspace"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c"
-               data-component="url">
-    <br>
-<p>UUID do workspace. Example: <code>7f3c9a1e-2b4d-4c8e-9a10-5d6e7f8a9b0c</code></p>
-            </div>
-                            <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>path</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="path"                data-endpoint="PUTapi-workspaces--workspace_uuid--avatar"
-               value="workspaces/7f3c.../avatar/a1b2....jpg"
-               data-component="body">
-    <br>
-<p><code>path</code> recebido em <code>upload-url</code>. Example: <code>workspaces/7f3c.../avatar/a1b2....jpg</code></p>
-        </div>
-        </form>
-
                     <h2 id="workspaces-DELETEapi-workspaces--workspace_uuid--avatar">Remover a foto</h2>
 
 <p>
@@ -3511,7 +3316,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar"
+    "http://localhost:9000/api/workspaces/9abc2ff2-6335-4e8b-aaaf-6944e5500ae4/avatar"
 );
 
 const headers = {
@@ -3529,7 +3334,7 @@ fetch(url, {
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:9000/api/workspaces/c66640bf-e624-4c4d-8057-c34b8af056b8/avatar" \
+    "http://localhost:9000/api/workspaces/9abc2ff2-6335-4e8b-aaaf-6944e5500ae4/avatar" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -3641,10 +3446,10 @@ Os detalhes aparecem no console do navegador.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="workspace_uuid"                data-endpoint="DELETEapi-workspaces--workspace_uuid--avatar"
-               value="c66640bf-e624-4c4d-8057-c34b8af056b8"
+               value="9abc2ff2-6335-4e8b-aaaf-6944e5500ae4"
                data-component="url">
     <br>
-<p>Example: <code>c66640bf-e624-4c4d-8057-c34b8af056b8</code></p>
+<p>Example: <code>9abc2ff2-6335-4e8b-aaaf-6944e5500ae4</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>workspace</code></b>&nbsp;&nbsp;
@@ -4069,7 +3874,6 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>⚠️ <strong>BUG-01:</strong> hoje este endpoint falha (500 no PostgreSQL), ver <code>specs/002-security-hardening</code>. Não use até a correção.</p>
 <p><strong>Permissão:</strong> <code>users.view</code></p>
 
 <span id="example-requests-GETapi-users--id-">
@@ -4231,7 +4035,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>⚠️ <strong>BUG-01:</strong> hoje este endpoint falha (500 no PostgreSQL), ver <code>specs/002-security-hardening</code>. Não use até a correção.</p>
+<p>Só o nome é editável por aqui.</p>
 <p><strong>Permissão:</strong> <code>users.update</code></p>
 
 <span id="example-requests-PUTapi-users--id-">
@@ -6668,7 +6472,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>⚠️ <strong>BUG-01:</strong> hoje este endpoint falha (500 no PostgreSQL), ver <code>specs/002-security-hardening</code>. Não use até a correção.</p>
+<p>Troca o perfil do acesso. Só <code>role_id</code> é aceito, e o perfil precisa ser do workspace corrente.</p>
 <p><strong>Permissão:</strong> <code>accesses.update</code></p>
 
 <span id="example-requests-PUTapi-accesses--id-">
@@ -6686,10 +6490,14 @@ const headers = {
     "Accept": "application/json",
 };
 
+let body = {
+    "role_id": 3
+};
 
 fetch(url, {
     method: "PUT",
     headers,
+    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 
@@ -6698,12 +6506,49 @@ fetch(url, {
     "http://localhost:9000/api/accesses/2" \
     --header "Authorization: Bearer {TOKEN}" \
     --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
+    --header "Accept: application/json" \
+    --data "{
+    \"role_id\": 3
+}"
+</code></pre></div>
 
 </span>
 
 <span id="example-responses-PUTapi-accesses--id-">
-</span>
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Registro atualizado com sucesso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;accesses.update&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O perfil informado n&atilde;o existe neste workspace.&quot;,
+    &quot;errors&quot;: {
+        &quot;role_id&quot;: [
+            &quot;O perfil informado n&atilde;o existe neste workspace.&quot;
+        ]
+    }
+}</code>
+ </pre>
+    </span>
 <span id="execution-results-PUTapi-accesses--id-" hidden>
     <blockquote>Resposta recebida<span
                 id="execution-response-status-PUTapi-accesses--id-"></span>:
@@ -6803,7 +6648,20 @@ Os detalhes aparecem no console do navegador.</code></pre>
     <br>
 <p>ID do acesso. Example: <code>2</code></p>
             </div>
-                    </form>
+                            <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>role_id</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="role_id"                data-endpoint="PUTapi-accesses--id-"
+               value="3"
+               data-component="body">
+    <br>
+<p>ID de um perfil do workspace corrente. Example: <code>3</code></p>
+        </div>
+        </form>
 
                     <h2 id="acessos-DELETEapi-accesses--id-">Excluir acesso</h2>
 
@@ -11022,7 +10880,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
                value="2026-10-25T18:00:00-03:00"
                data-component="body">
     <br>
-<p>Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora. Example: <code>2026-10-25T18:00:00-03:00</code></p>
+<p>Nova data/hora (ISO 8601, pelo menos 5 minutos (configurável) no futuro). Sem ela, reenvia agora. Example: <code>2026-10-25T18:00:00-03:00</code></p>
         </div>
         </form>
 
@@ -11883,7 +11741,6 @@ Must be one of:
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>⚠️ <strong>BUG-01:</strong> hoje este endpoint falha (500 no PostgreSQL), ver <code>specs/002-security-hardening</code>. Não use até a correção.</p>
 <p><strong>Permissão:</strong> <code>posts.view</code></p>
 
 <span id="example-requests-GETapi-pipeline--contentPipeline-">
@@ -12043,7 +11900,7 @@ Os detalhes aparecem no console do navegador.</code></pre>
 </p>
 
 <p>Envie só os campos que mudam. Para mudar de etapa use <code>move</code>.</p>
-<p><strong>Permissão:</strong> nenhuma além de ser membro. ⚠️ VULN-04 (<code>specs/002</code>): a permissão ainda será definida.</p>
+<p><strong>Permissão:</strong> <code>posts.update</code></p>
 
 <span id="example-requests-PATCHapi-pipeline--contentPipeline-">
 <blockquote>Exemplo de requisição:</blockquote>
@@ -12098,6 +11955,16 @@ fetch(url, {
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;message&quot;: &quot;Card atualizado com sucesso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.update&quot;
 }</code>
  </pre>
     </span>
@@ -12256,7 +12123,7 @@ Must be one of:
 </p>
 
 <p>Exclusão reversível: dá para desfazer com <code>restore</code>.</p>
-<p><strong>Permissão:</strong> nenhuma além de ser membro. ⚠️ VULN-04 (<code>specs/002</code>): a permissão ainda será definida.</p>
+<p><strong>Permissão:</strong> <code>posts.delete</code></p>
 
 <span id="example-requests-DELETEapi-pipeline--contentPipeline-">
 <blockquote>Exemplo de requisição:</blockquote>
@@ -12297,6 +12164,16 @@ fetch(url, {
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;message&quot;: &quot;Card removido com sucesso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.delete&quot;
 }</code>
  </pre>
     </span>
@@ -12605,7 +12482,7 @@ Must be one of:
 </p>
 
 <p>Desfaz a remoção.</p>
-<p><strong>Permissão:</strong> nenhuma além de ser membro. ⚠️ VULN-04 (<code>specs/002</code>): a permissão ainda será definida.</p>
+<p><strong>Permissão:</strong> <code>posts.delete</code></p>
 
 <span id="example-requests-PATCHapi-pipeline--contentPipeline--restore">
 <blockquote>Exemplo de requisição:</blockquote>
@@ -12646,6 +12523,16 @@ fetch(url, {
 
 <code class="language-json" style="max-height: 300px;">{
     &quot;message&quot;: &quot;Card restaurado com sucesso.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;posts.delete&quot;
 }</code>
  </pre>
     </span>
@@ -13810,6 +13697,19 @@ fetch(url, {
             &quot;amount&quot;: 4990,
             &quot;currency&quot;: &quot;brl&quot;,
             &quot;frequency&quot;: &quot;monthly&quot;
+        },
+        &quot;pending_change&quot;: {
+            &quot;price&quot;: {
+                &quot;id&quot;: &quot;3c4d5e6f-1111-4222-8333-444455556666&quot;,
+                &quot;amount&quot;: 2990,
+                &quot;currency&quot;: &quot;brl&quot;,
+                &quot;frequency&quot;: &quot;monthly&quot;
+            },
+            &quot;plan&quot;: {
+                &quot;id&quot;: &quot;7a8b9c0d-1111-4222-8333-444455556666&quot;,
+                &quot;name&quot;: &quot;B&aacute;sico&quot;
+            },
+            &quot;effective_at&quot;: &quot;2026-12-26T14:00:00.000000Z&quot;
         }
     }
 }</code>
@@ -13922,6 +13822,14 @@ Os detalhes aparecem no console do navegador.</code></pre>
     <h3>Resposta</h3>
     <h4 class="fancy-heading-panel"><b>Campos da resposta</b></h4>
     <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>pending_change</code></b>&nbsp;&nbsp;
+<small>object|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Troca de plano agendada (downgrade ou anual→mensal), aplicada em <code>effective_at</code> (fim do ciclo atual). <code>null</code> quando não há agendamento. Enquanto existir, <code>plan</code>/<code>price</code> continuam sendo o plano atual. Veja <code>POST /billing/subscription/change</code>.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>billing_status</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -14335,6 +14243,556 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <p><code>session_id</code> devolvido pelo Stripe na URL de sucesso. Example: <code>cs_test_a1b2c3</code></p>
         </div>
         </form>
+
+                    <h2 id="assinatura-e-pagamentos-POSTapi-billing-subscription-change">Trocar de plano ou frequência</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Muda o preço (plano e/ou frequência) da assinatura atual. A resposta diz se a troca já valeu ou ficou agendada:</p>
+<ul>
+<li><strong>Imediata</strong> (<code>pending_change</code> = <code>null</code> na resposta; <code>message</code> "Plano alterado com sucesso."): upgrade (mesma
+frequência e valor maior), mensal→anual e <strong>qualquer troca durante o trial</strong>. O Stripe cobra a diferença
+pro-rata na hora, no cartão padrão. Se a assinatura estava em trial, o trial <strong>termina</strong> e a cobrança começa agora.</li>
+<li><strong>Agendada</strong> (<code>pending_change</code> preenchido; <code>message</code> "Mudança de plano agendada para o fim do ciclo atual."):
+downgrade (mesma frequência e valor menor) e anual→mensal. Nada é cobrado nem muda agora; o plano atual vale
+até <code>pending_change.effective_at</code>. Uma nova troca substitui o agendamento anterior; repetir o mesmo downgrade
+já agendado devolve 200 sem alterar nada. Para desfazer, use <code>DELETE /billing/subscription/change</code>.</li>
+</ul>
+<p>Uma troca imediata cancela qualquer agendamento existente. Só assinaturas <code>active</code> ou <code>trialing</code>, sem cancelamento
+pedido, podem trocar. Os avisos de pagamento (402) deixam a assinatura no plano antigo: não há troca parcial.
+Os usuários com permissão de billing recebem a notificação <code>subscription_changed</code>.</p>
+<p><strong>Permissão:</strong> <code>billing.manage</code></p>
+
+<span id="example-requests-POSTapi-billing-subscription-change">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/billing/subscription/change"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "price": "9f8e7d6c-5b4a-4321-8fed-cba987654321"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:9000/api/billing/subscription/change" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"price\": \"9f8e7d6c-5b4a-4321-8fed-cba987654321\"
+}"
+</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-billing-subscription-change">
+            <blockquote>
+            <p>Exemplo de resposta (200, troca imediata (upgrade)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Plano alterado com sucesso.&quot;,
+    &quot;data&quot;: {
+        &quot;billing_status&quot;: &quot;active&quot;,
+        &quot;stripe_status&quot;: &quot;active&quot;,
+        &quot;on_trial&quot;: false,
+        &quot;trial_ends_at&quot;: null,
+        &quot;ends_at&quot;: null,
+        &quot;plan&quot;: {
+            &quot;id&quot;: &quot;1a2b3c4d-...&quot;,
+            &quot;name&quot;: &quot;Pro&quot;
+        },
+        &quot;price&quot;: {
+            &quot;id&quot;: &quot;9f8e7d6c-5b4a-4321-8fed-cba987654321&quot;,
+            &quot;amount&quot;: 4990,
+            &quot;currency&quot;: &quot;brl&quot;,
+            &quot;frequency&quot;: &quot;monthly&quot;
+        },
+        &quot;pending_change&quot;: null
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (200, troca agendada (downgrade)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Mudan&ccedil;a de plano agendada para o fim do ciclo atual.&quot;,
+    &quot;data&quot;: {
+        &quot;billing_status&quot;: &quot;active&quot;,
+        &quot;stripe_status&quot;: &quot;active&quot;,
+        &quot;on_trial&quot;: false,
+        &quot;trial_ends_at&quot;: null,
+        &quot;ends_at&quot;: null,
+        &quot;plan&quot;: {
+            &quot;id&quot;: &quot;1a2b3c4d-...&quot;,
+            &quot;name&quot;: &quot;Pro&quot;
+        },
+        &quot;price&quot;: {
+            &quot;id&quot;: &quot;9f8e7d6c-...&quot;,
+            &quot;amount&quot;: 4990,
+            &quot;currency&quot;: &quot;brl&quot;,
+            &quot;frequency&quot;: &quot;monthly&quot;
+        },
+        &quot;pending_change&quot;: {
+            &quot;price&quot;: {
+                &quot;id&quot;: &quot;3c4d5e6f-1111-4222-8333-444455556666&quot;,
+                &quot;amount&quot;: 2990,
+                &quot;currency&quot;: &quot;brl&quot;,
+                &quot;frequency&quot;: &quot;monthly&quot;
+            },
+            &quot;plan&quot;: {
+                &quot;id&quot;: &quot;7a8b9c0d-1111-4222-8333-444455556666&quot;,
+                &quot;name&quot;: &quot;B&aacute;sico&quot;
+            },
+            &quot;effective_at&quot;: &quot;2026-12-26T14:00:00.000000Z&quot;
+        }
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (402, cartão recusado):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;payment_failed&quot;,
+    &quot;message&quot;: &quot;N&atilde;o foi poss&iacute;vel cobrar a diferen&ccedil;a no cart&atilde;o. A assinatura continua no plano atual.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (402, banco exige autorização (3DS)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;payment_action_required&quot;,
+    &quot;message&quot;: &quot;O banco exige uma autoriza&ccedil;&atilde;o para concluir a troca de plano. Autorize o pagamento e tente novamente.&quot;,
+    &quot;action_url&quot;: &quot;https://invoice.stripe.com/i/acct_1Abc/test_YWNjdF8x&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (402, banco exige autorização, sem link):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;payment_action_required&quot;,
+    &quot;message&quot;: &quot;O banco exige uma autoriza&ccedil;&atilde;o para concluir a troca de plano. Autorize o pagamento e tente novamente.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;billing.manage&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, sem assinatura):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;no_active_subscription&quot;,
+    &quot;message&quot;: &quot;Nenhuma assinatura ativa para este workspace.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, preço inexistente, inativo ou de plano inativo):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;No query results for model [App\\Models\\Price].&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (409, assinatura não pode trocar agora):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;subscription_change_not_allowed&quot;,
+    &quot;message&quot;: &quot;N&atilde;o &eacute; poss&iacute;vel trocar o plano agora: regularize o pagamento ou retome a assinatura antes.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, mesmo preço da assinatura):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;same_price&quot;,
+    &quot;message&quot;: &quot;Este j&aacute; &eacute; o pre&ccedil;o atual da assinatura.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, moeda diferente):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;price_currency_mismatch&quot;,
+    &quot;message&quot;: &quot;O pre&ccedil;o escolhido est&aacute; em outra moeda e n&atilde;o pode substituir o atual.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, preço não sincronizado):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;price_not_synced&quot;,
+    &quot;message&quot;: &quot;Este pre&ccedil;o ainda n&atilde;o foi sincronizado com o gateway de pagamento.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (422, price ausente ou não é uuid):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;O pre&ccedil;o &eacute; obrigat&oacute;rio.&quot;,
+    &quot;errors&quot;: {
+        &quot;price&quot;: [
+            &quot;O pre&ccedil;o &eacute; obrigat&oacute;rio.&quot;
+        ]
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (502, falha no Stripe):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;gateway_error&quot;,
+    &quot;message&quot;: &quot;Falha ao comunicar com o gateway de pagamento. Tente novamente.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-billing-subscription-change" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-POSTapi-billing-subscription-change"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-billing-subscription-change"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-billing-subscription-change" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-billing-subscription-change">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-POSTapi-billing-subscription-change" data-method="POST"
+      data-path="api/billing/subscription/change"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-billing-subscription-change', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-billing-subscription-change"
+                    onclick="tryItOut('POSTapi-billing-subscription-change');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-billing-subscription-change"
+                    onclick="cancelTryOut('POSTapi-billing-subscription-change');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-billing-subscription-change"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/billing/subscription/change</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-billing-subscription-change"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-billing-subscription-change"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-billing-subscription-change"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>price</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="price"                data-endpoint="POSTapi-billing-subscription-change"
+               value="9f8e7d6c-5b4a-4321-8fed-cba987654321"
+               data-component="body">
+    <br>
+<p><code>id</code> (uuid) de um preço ativo de um plano ativo (de <code>GET /plans</code>). Example: <code>9f8e7d6c-5b4a-4321-8fed-cba987654321</code></p>
+        </div>
+        </form>
+
+    <h3>Resposta</h3>
+    <h4 class="fancy-heading-panel"><b>Campos da resposta</b></h4>
+    <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>action_url</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>(só no 402 <code>payment_action_required</code>, na <strong>raiz</strong> do JSON, não dentro de <code>data</code>) Link da fatura hospedada do Stripe para o usuário autorizar o pagamento. <strong>Pode estar ausente</strong>: se faltar, mostre só a <code>message</code> e peça para tentar de novo ou revisar o cartão.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>pending_change</code></b>&nbsp;&nbsp;
+<small>object|null</small>&nbsp;
+ &nbsp;
+ &nbsp;
+<br>
+<p>Preenchido quando a troca ficou agendada. Veja <code>GET /billing/subscription</code>.</p>
+        </div>
+                        <h2 id="assinatura-e-pagamentos-DELETEapi-billing-subscription-change">Desfazer mudança agendada</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Cancela o downgrade / anual→mensal agendado e mantém o plano atual. Devolve a assinatura com <code>pending_change: null</code>.</p>
+<p><strong>Permissão:</strong> <code>billing.manage</code></p>
+
+<span id="example-requests-DELETEapi-billing-subscription-change">
+<blockquote>Exemplo de requisição:</blockquote>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:9000/api/billing/subscription/change"
+);
+
+const headers = {
+    "Authorization": "Bearer {TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:9000/api/billing/subscription/change" \
+    --header "Authorization: Bearer {TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-billing-subscription-change">
+            <blockquote>
+            <p>Exemplo de resposta (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Mudan&ccedil;a de plano agendada cancelada.&quot;,
+    &quot;data&quot;: {
+        &quot;billing_status&quot;: &quot;active&quot;,
+        &quot;stripe_status&quot;: &quot;active&quot;,
+        &quot;on_trial&quot;: false,
+        &quot;trial_ends_at&quot;: null,
+        &quot;ends_at&quot;: null,
+        &quot;plan&quot;: {
+            &quot;id&quot;: &quot;1a2b3c4d-...&quot;,
+            &quot;name&quot;: &quot;Pro&quot;
+        },
+        &quot;price&quot;: {
+            &quot;id&quot;: &quot;9f8e7d6c-...&quot;,
+            &quot;amount&quot;: 4990,
+            &quot;currency&quot;: &quot;brl&quot;,
+            &quot;frequency&quot;: &quot;monthly&quot;
+        },
+        &quot;pending_change&quot;: null
+    }
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (403, sem permissão):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Voc&ecirc; n&atilde;o tem permiss&atilde;o para acessar este recurso.&quot;,
+    &quot;required_permission&quot;: &quot;billing.manage&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (404, nada agendado (ou sem assinatura)):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;no_pending_change&quot;,
+    &quot;message&quot;: &quot;N&atilde;o h&aacute; mudan&ccedil;a de plano agendada para este workspace.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Exemplo de resposta (502, falha no Stripe):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;error&quot;: &quot;gateway_error&quot;,
+    &quot;message&quot;: &quot;Falha ao comunicar com o gateway de pagamento. Tente novamente.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-DELETEapi-billing-subscription-change" hidden>
+    <blockquote>Resposta recebida<span
+                id="execution-response-status-DELETEapi-billing-subscription-change"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-billing-subscription-change"
+      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-billing-subscription-change" hidden>
+    <blockquote>A requisição falhou com o erro:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-billing-subscription-change">
+
+Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
+Os detalhes aparecem no console do navegador.</code></pre>
+</span>
+<form id="form-DELETEapi-billing-subscription-change" data-method="DELETE"
+      data-path="api/billing/subscription/change"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-billing-subscription-change', this);">
+    <h3>
+        Requisição&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-billing-subscription-change"
+                    onclick="tryItOut('DELETEapi-billing-subscription-change');">Testar ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-billing-subscription-change"
+                    onclick="cancelTryOut('DELETEapi-billing-subscription-change');" hidden>Cancelar
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-billing-subscription-change"
+                    data-initial-text="Enviar"
+                    data-loading-text="⏱ Enviando..."
+                    hidden>Enviar
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/billing/subscription/change</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="DELETEapi-billing-subscription-change"
+               value="Bearer {TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-billing-subscription-change"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-billing-subscription-change"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
 
                     <h2 id="assinatura-e-pagamentos-GETapi-billing-setup-intent">Preparar cadastro de cartão</h2>
 
@@ -18356,177 +18814,6 @@ Os detalhes aparecem no console do navegador.</code></pre>
         </div>
         </form>
 
-                    <h2 id="meu-perfil-PUTapi-me-avatar">Confirmar a foto enviada</h2>
-
-<p>
-<small class="badge badge-darkred">requires authentication</small>
-</p>
-
-<p>Confere que o arquivo é do próprio usuário, existe, é imagem JPG/PNG/WebP de até 5 MB, troca a foto
-e apaga a anterior. Arquivo inválido é apagado do storage.</p>
-
-<span id="example-requests-PUTapi-me-avatar">
-<blockquote>Exemplo de requisição:</blockquote>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:9000/api/me/avatar"
-);
-
-const headers = {
-    "Authorization": "Bearer {TOKEN}",
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-let body = {
-    "path": "users\/5f0c...\/avatars\/a1b2....jpg"
-};
-
-fetch(url, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify(body),
-}).then(response =&gt; response.json());</code></pre></div>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:9000/api/me/avatar" \
-    --header "Authorization: Bearer {TOKEN}" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"path\": \"users\\/5f0c...\\/avatars\\/a1b2....jpg\"
-}"
-</code></pre></div>
-
-</span>
-
-<span id="example-responses-PUTapi-me-avatar">
-            <blockquote>
-            <p>Exemplo de resposta (200):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;data&quot;: {
-        &quot;id&quot;: 12,
-        &quot;name&quot;: &quot;Maria Souza&quot;,
-        &quot;avatar&quot;: &quot;https://storage.exemplo.com/...assinada...&quot;,
-        &quot;email&quot;: &quot;maria@exemplo.com&quot;
-    }
-}</code>
- </pre>
-            <blockquote>
-            <p>Exemplo de resposta (422):</p>
-        </blockquote>
-                <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;error&quot;: &quot;profile_avatar_too_large&quot;,
-    &quot;message&quot;: &quot;A foto &eacute; maior que o limite de 5 MB. Escolha uma imagem menor.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-PUTapi-me-avatar" hidden>
-    <blockquote>Resposta recebida<span
-                id="execution-response-status-PUTapi-me-avatar"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-PUTapi-me-avatar"
-      data-empty-response-text="<Resposta vazia>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-PUTapi-me-avatar" hidden>
-    <blockquote>A requisição falhou com o erro:</blockquote>
-    <pre><code id="execution-error-message-PUTapi-me-avatar">
-
-Dica: confira sua conexão. Se você mantém esta API, verifique se ela está no ar e com CORS liberado.
-Os detalhes aparecem no console do navegador.</code></pre>
-</span>
-<form id="form-PUTapi-me-avatar" data-method="PUT"
-      data-path="api/me/avatar"
-      data-authed="1"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('PUTapi-me-avatar', this);">
-    <h3>
-        Requisição&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-PUTapi-me-avatar"
-                    onclick="tryItOut('PUTapi-me-avatar');">Testar ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-PUTapi-me-avatar"
-                    onclick="cancelTryOut('PUTapi-me-avatar');" hidden>Cancelar
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-PUTapi-me-avatar"
-                    data-initial-text="Enviar"
-                    data-loading-text="⏱ Enviando..."
-                    hidden>Enviar
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-darkblue">PUT</small>
-            <b><code>api/me/avatar</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="PUTapi-me-avatar"
-               value="Bearer {TOKEN}"
-               data-component="header">
-    <br>
-<p>Example: <code>Bearer {TOKEN}</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="PUTapi-me-avatar"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="PUTapi-me-avatar"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <h4 class="fancy-heading-panel"><b>Corpo da requisição</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>path</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="path"                data-endpoint="PUTapi-me-avatar"
-               value="users/5f0c.../avatars/a1b2....jpg"
-               data-component="body">
-    <br>
-<p><code>path</code> recebido em <code>POST /me/avatar/upload-url</code>. Example: <code>users/5f0c.../avatars/a1b2....jpg</code></p>
-        </div>
-        </form>
-
                     <h2 id="meu-perfil-DELETEapi-me-avatar">Remover a foto</h2>
 
 <p>
@@ -18871,7 +19158,9 @@ Os detalhes aparecem no console do navegador.</code></pre>
 mais os convites recebidos (<code>workspace_invite</code>), que aparecem em qualquer workspace.
 Não exige permissão de grupo. Notificação de outro usuário responde 404.</p>
 <p>Tipos: <code>workspace_invite</code>, <code>post_failed</code>, <code>payment_failed</code>, <code>subscription_canceled</code>,
-<code>social_account_disconnected</code>. Em tempo real: canal privado <code>App.Models.User.{id}</code>,
+<code>social_account_disconnected</code>, <code>subscription_changed</code> (mudança de plano: upgrade aplicado, downgrade agendado
+ou agendamento aplicado; <code>context.event</code> = <code>upgrade</code>, <code>scheduled</code> ou <code>applied</code>; <code>action_url</code> <code>/billing</code>; vai para quem tem
+permissão de billing). Em tempo real: canal privado <code>App.Models.User.{id}</code>,
 evento <code>Illuminate\Notifications\Events\BroadcastNotificationCreated</code>.</p>
 
                                 <h2 id="notificacoes-GETapi-notifications">Listar notificações</h2>
@@ -19626,7 +19915,7 @@ fetch(url, {
             &quot;invite&quot;: true,
             &quot;posts&quot;: true,
             &quot;social_accounts&quot;: true,
-            &quot;post_published&quot;: false
+            &quot;post_published&quot;: true
         }
     }
 }</code>
@@ -19744,13 +20033,13 @@ let body = {
     "invite": true,
     "posts": false,
     "social_accounts": true,
+    "post_published": true,
     "in_app": {
         "posts": false,
         "invite": true,
         "social_accounts": true,
         "post_published": true
-    },
-    "post_published": true
+    }
 };
 
 fetch(url, {
@@ -19770,13 +20059,13 @@ fetch(url, {
     \"invite\": true,
     \"posts\": false,
     \"social_accounts\": true,
+    \"post_published\": true,
     \"in_app\": {
         \"posts\": false,
         \"invite\": true,
         \"social_accounts\": true,
         \"post_published\": true
-    },
-    \"post_published\": true
+    }
 }"
 </code></pre></div>
 
@@ -19958,6 +20247,40 @@ Os detalhes aparecem no console do navegador.</code></pre>
 <p>E-mail de contas sociais. Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>post_published</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="post_published"
+                   value="true"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
+            <input type="radio" name="post_published"
+                   value="false"
+                   data-endpoint="PATCHapi-notification-preferences"
+                   data-component="body"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>E-mail quando um post seu é publicado; padrão ligado. Example: <code>true</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>billing</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="billing"                data-endpoint="PATCHapi-notification-preferences"
+               value=""
+               data-component="body">
+    <br>
+
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
         <details>
             <summary style="padding-bottom: 10px;">
                 <b style="line-height: 2;"><code>in_app</code></b>&nbsp;&nbsp;
@@ -20053,31 +20376,21 @@ Os detalhes aparecem no console do navegador.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Aviso no app quando um post seu é publicado; padrão desligado (opt-in). Example: <code>true</code></p>
+<p>Aviso no app quando um post seu é publicado; padrão ligado. Example: <code>true</code></p>
                     </div>
-                                    </details>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>post_published</code></b>&nbsp;&nbsp;
-<small>boolean</small>&nbsp;
+                                                                <div style="margin-left: 14px; clear: unset;">
+                        <b style="line-height: 2;"><code>billing</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
 <i>optional</i> &nbsp;
  &nbsp;
-                <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
-            <input type="radio" name="post_published"
-                   value="true"
-                   data-endpoint="PATCHapi-notification-preferences"
-                   data-component="body"             >
-            <code>true</code>
-        </label>
-        <label data-endpoint="PATCHapi-notification-preferences" style="display: none">
-            <input type="radio" name="post_published"
-                   value="false"
-                   data-endpoint="PATCHapi-notification-preferences"
-                   data-component="body"             >
-            <code>false</code>
-        </label>
+                <input type="text" style="display: none"
+                              name="in_app.billing"                data-endpoint="PATCHapi-notification-preferences"
+               value=""
+               data-component="body">
     <br>
-<p>E-mail quando um post seu é publicado; padrão ligado. Example: <code>true</code></p>
+
+                    </div>
+                                    </details>
         </div>
         </form>
 

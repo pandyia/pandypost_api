@@ -105,6 +105,23 @@ class NotificationFactory
                 $workspaceId,
                 $dedupeKey,
             ),
+            NotificationType::SUBSCRIPTION_CHANGED => new CentralNotification(
+                $type,
+                match ($payload['event']) {
+                    'scheduled' => 'Mudança de plano agendada',
+                    'applied' => 'Plano alterado',
+                    default => 'Upgrade de plano aplicado',
+                },
+                match ($payload['event']) {
+                    'scheduled' => "A assinatura do workspace {$payload['workspace_name']} passará para o plano {$payload['plan_name']} em {$payload['effective_date']}.",
+                    'applied' => "A assinatura do workspace {$payload['workspace_name']} agora está no plano {$payload['plan_name']}.",
+                    default => "O upgrade da assinatura do workspace {$payload['workspace_name']} para o plano {$payload['plan_name']} foi aplicado.",
+                },
+                '/billing',
+                ['event' => $payload['event']] + $workspaceContext,
+                $workspaceId,
+                $dedupeKey,
+            ),
             NotificationType::SOCIAL_ACCOUNT_DISCONNECTED => new CentralNotification(
                 $type,
                 'Conta social desconectada',

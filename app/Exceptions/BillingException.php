@@ -3,9 +3,12 @@
 namespace App\Exceptions;
 
 use App\Enums\Exceptions\BillingError;
+use Illuminate\Http\JsonResponse;
 
 class BillingException extends BaseException
 {
+    protected ?string $actionUrl = null;
+
     public static function planHasActiveSubscriptions(): self
     {
         return static::make(BillingError::PLAN_HAS_ACTIVE_SUBSCRIPTIONS);
@@ -61,5 +64,50 @@ class BillingException extends BaseException
     public static function priceNotSynced(): self
     {
         return static::make(BillingError::PRICE_NOT_SYNCED);
+    }
+
+    public static function subscriptionChangeNotAllowed(): self
+    {
+        return static::make(BillingError::SUBSCRIPTION_CHANGE_NOT_ALLOWED);
+    }
+
+    public static function samePrice(): self
+    {
+        return static::make(BillingError::SAME_PRICE);
+    }
+
+    public static function priceCurrencyMismatch(): self
+    {
+        return static::make(BillingError::PRICE_CURRENCY_MISMATCH);
+    }
+
+    public static function paymentFailed(): self
+    {
+        return static::make(BillingError::PAYMENT_FAILED);
+    }
+
+    /** O `action_url` (fatura hospedada do Stripe) vai na raiz da resposta, para o cliente autorizar o 3DS. */
+    public static function paymentActionRequired(?string $actionUrl = null): self
+    {
+        $exception = static::make(BillingError::PAYMENT_ACTION_REQUIRED);
+        $exception->actionUrl = $actionUrl;
+
+        return $exception;
+    }
+
+    public static function noPendingChange(): self
+    {
+        return static::make(BillingError::NO_PENDING_CHANGE);
+    }
+
+    public function render(): JsonResponse
+    {
+        $response = parent::render();
+
+        if ($this->actionUrl) {
+            $response->setData(array_merge((array) $response->getData(true), ['action_url' => $this->actionUrl]));
+        }
+
+        return $response;
     }
 }

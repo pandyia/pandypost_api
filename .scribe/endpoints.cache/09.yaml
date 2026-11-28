@@ -203,10 +203,7 @@ endpoints:
       subgroup: ''
       subgroupDescription: ''
       title: 'Ver usuário'
-      description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
-
-        **Permissão:** `users.view`
+      description: '**Permissão:** `users.view`'
       authenticated: true
       deprecated: false
     headers:
@@ -275,7 +272,7 @@ endpoints:
       subgroupDescription: ''
       title: 'Editar usuário'
       description: |-
-        ⚠️ **BUG-01:** hoje este endpoint falha (500 no PostgreSQL), ver `specs/002-security-hardening`. Não use até a correção.
+        Só o nome é editável por aqui.
 
         **Permissão:** `users.update`
       authenticated: true
