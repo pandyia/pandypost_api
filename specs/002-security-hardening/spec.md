@@ -135,3 +135,10 @@ Abertos (testes com `skip` em `tests/Feature/Security/AwaitingUploadSecurityTest
 - **VULN-UP-04 (Média) — CORRIGIDO (spec 021, RF-4b):** `upload-complete` só faz HEAD (existência): arquivo vazio/truncado/de outro tipo libera o post. Mesma raiz do VULN-UP-01 (D3). Correção: conferir `Content-Length` > 0 (e idealmente content-type) no HEAD.
 - **VULN-UP-05 (Baixa) — CORRIGIDO (spec 021, RF-4b):** `completeUpload` confere a thumbnail só do primeiro post `awaiting_upload` do path; thumbnail inexistente dos demais passa. Correção: conferir `mediaStillExists` de cada post.
 Decisões de negócio pendentes: teto de reservas `awaiting_upload` simultâneas por workspace (só há throttle 45/min); reconferir assinatura ativa em `upload-complete` (hoje só no clique; `consumeQuota` é no-op, D5).
+
+## Adendo — auditoria da spec 024 (mudança de assinatura, 2026-11-26)
+- **VULN-SUB-01 (Média) — CORRIGIDO (spec 024):** `Price::active()` ignorava `plan.is_active`; a troca aceitava preço de plano inativo. Agora o service filtra o plano ativo (404).
+- **VULN-SUB-04 (Baixa) — CORRIGIDO (spec 024):** `currentPrice()` com `stripe_price` nulo casava com preço não sincronizado. Agora lança `subscription_change_not_allowed`.
+- **VULN-SUB-03 (Alta, config/deploy) — ABERTO:** o Cashier só registra a verificação de assinatura do webhook se `cashier.webhook.secret` existir, e `STRIPE_WEBHOOK_SECRET` não consta no `.env.example`. Sem ele, qualquer um forja eventos em `POST /api/stripe/webhook` (agora também `subscription_schedule.*`). Correção sugerida: falhar fechado quando o secret estiver vazio fora de local/testing e documentar a variável. Teste: `ChangeSubscriptionAuditTest` (skip). Pré-existente à spec 024; `.env.example` exige autorização do dono.
+- **SUSPEITA-SUB-05:** `releaseSchedule` só trata 404 como "já liberado"; um 400 do Stripe ao liberar schedule concluído (com o webhook `completed` perdido) pode prender o workspace em 502. Validar no Stripe de teste (tarefa 0).
+- **PERGUNTA-SUB-02:** plano `is_visible=false` pode ser contratado por uuid? Hoje pode, na troca e no checkout (`CheckoutService` nem filtra `is_active`).

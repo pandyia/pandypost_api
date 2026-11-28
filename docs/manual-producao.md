@@ -125,6 +125,7 @@ Sem aprovação: TikTok só publica `SELF_ONLY` (e no máximo 5 usuários/24h); 
 - [ ] (Dono) Chaves **live** em `STRIPE_KEY`/`STRIPE_SECRET` nos secrets de produção.
 - [ ] (Dono) Criar o endpoint de webhook **live** `https://<api>/api/stripe/webhook` e guardar o novo `STRIPE_WEBHOOK_SECRET` (diferente do de teste).
 - [ ] (Dono) Recadastrar planos e preços pelo painel admin do app já com chave live (`StripeCatalogService` cria os objetos no Stripe). Preços de teste não migram.
+- [ ] (Dono) No webhook live, assinar também `subscription_schedule.completed`, `subscription_schedule.released` e `subscription_schedule.canceled` (spec 024, mudança de assinatura) e conferir que `STRIPE_WEBHOOK_SECRET` está preenchido (VULN-SUB-03).
 - [ ] (Dono) Smart Retries no dashboard (o dunning do projeto depende disso; `specs/001-billing/plan.md`).
 - [ ] (Claude) Conferir idempotência do `HandleStripeWebhook`/`ProcessStripeWebhookJob` para evento duplicado, atrasado e fora de ordem (item do checklist) e reportar.
 - [ ] (Dono + Claude) Cobrança real de baixo valor: conferir `Payment`, assinatura, notificações e estorno.

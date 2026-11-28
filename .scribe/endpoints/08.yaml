@@ -1173,7 +1173,7 @@ endpoints:
       scheduled_at:
         custom: []
         name: scheduled_at
-        description: 'Nova data/hora (ISO 8601, pelo menos 5 minutos no futuro). Sem ela, reenvia agora.'
+        description: 'Nova data/hora (ISO 8601, pelo menos 5 minutos (configurável) no futuro). Sem ela, reenvia agora.'
         required: false
         example: '2026-10-25T18:00:00-03:00'
         type: string

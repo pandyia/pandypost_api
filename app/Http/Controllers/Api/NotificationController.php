@@ -17,7 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  * Não exige permissão de grupo. Notificação de outro usuário responde 404.
  *
  * Tipos: `workspace_invite`, `post_failed`, `payment_failed`, `subscription_canceled`,
- * `social_account_disconnected`. Em tempo real: canal privado `App.Models.User.{id}`,
+ * `social_account_disconnected`, `subscription_changed` (mudança de plano: upgrade aplicado, downgrade agendado
+ * ou agendamento aplicado; `context.event` = `upgrade`, `scheduled` ou `applied`; `action_url` `/billing`; vai para quem tem
+ * permissão de billing). Em tempo real: canal privado `App.Models.User.{id}`,
  * evento `Illuminate\Notifications\Events\BroadcastNotificationCreated`.
  */
 class NotificationController extends BaseController

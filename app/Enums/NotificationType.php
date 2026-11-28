@@ -15,6 +15,7 @@ enum NotificationType: string
     case WORKSPACE_INVITE_ACCEPTED = 'workspace_invite_accepted';
     case WORKSPACE_INVITE_DECLINED = 'workspace_invite_declined';
     case POST_UPLOAD_LATE = 'post_upload_late';
+    case SUBSCRIPTION_CHANGED = 'subscription_changed';
 
     /** Famílias cujo e-mail o usuário pode ligar/desligar. */
     public const PREFERENCE_FAMILIES = ['invite', 'posts', 'social_accounts', 'post_published'];
@@ -36,7 +37,7 @@ enum NotificationType: string
             self::POST_FAILED, self::POST_UPLOAD_LATE => 'posts',
             self::SOCIAL_ACCOUNT_DISCONNECTED => 'social_accounts',
             self::POST_PUBLISHED => 'post_published',
-            self::PAYMENT_FAILED, self::SUBSCRIPTION_CANCELED => 'billing',
+            self::PAYMENT_FAILED, self::SUBSCRIPTION_CANCELED, self::SUBSCRIPTION_CHANGED => 'billing',
             default => null,
         };
     }

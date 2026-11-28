@@ -5,8 +5,10 @@ namespace App\Jobs;
 use App\Enums\Currency;
 use App\Enums\NotificationType;
 use App\Enums\PaymentStatus;
+use App\Enums\SubscriptionChangeStatus;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Models\SubscriptionChange;
 use App\Models\Workspace;
 use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
@@ -53,6 +55,8 @@ class ProcessStripeWebhookJob implements ShouldQueue
             'checkout.session.expired' => $this->handleCheckoutExpired($object),
             'customer.subscription.updated' => $this->handleSubscriptionUpdated($object),
             'customer.subscription.deleted' => $this->handleSubscriptionCanceled($object),
+            'subscription_schedule.completed' => $this->handleScheduleCompleted($object),
+            'subscription_schedule.released', 'subscription_schedule.canceled' => $this->handleScheduleEnded($object),
             default => null,
         };
     }
@@ -82,6 +86,99 @@ class ProcessStripeWebhookJob implements ShouldQueue
 
         if ($justScheduledCancel) {
             $this->handleSubscriptionCanceled($subscription);
+        }
+
+        // Troca de preço (ex.: downgrade agendado que virou no fim do ciclo): fecha a mudança pendente.
+        if (array_key_exists('items', $previous)) {
+            $this->closePendingChangeByPrice($subscription);
+        }
+    }
+
+    /**
+     * O schedule terminou: a mudança agendada foi efetivada (idempotente e tolerante à ordem dos eventos).
+     */
+    private function handleScheduleCompleted(array $schedule): void
+    {
+        $change = $this->resolvePendingChange($schedule);
+
+        if ($change) {
+            $this->applyPendingChange($change);
+        }
+    }
+
+    /** O schedule foi liberado/cancelado: a mudança agendada não vai acontecer. */
+    private function handleScheduleEnded(array $schedule): void
+    {
+        $change = $this->resolvePendingChange($schedule);
+
+        if ($change) {
+            SubscriptionChange::whereKey($change->id)
+                ->where('status', SubscriptionChangeStatus::PENDING->value)
+                ->update(['status' => SubscriptionChangeStatus::CANCELED->value]);
+        }
+    }
+
+    /** A assinatura passou para o preço da mudança pendente: considera-a efetivada. */
+    private function closePendingChangeByPrice(array $subscription): void
+    {
+        $items = $subscription['items']['data'] ?? [];
+        $newPrice = count($items) === 1 ? ($items[0]['price']['id'] ?? null) : null;
+        $workspace = $this->resolveWorkspace($subscription);
+
+        if (! $newPrice || ! $workspace || empty($subscription['id'])) {
+            return;
+        }
+
+        $change = SubscriptionChange::with('price')
+            ->pending()
+            ->whereHas('subscription', fn ($q) => $q->where('stripe_id', $subscription['id'])->where('workspace_id', $workspace->id))
+            ->first();
+
+        if ($change && $change->price?->gateway_price_id === $newPrice) {
+            $this->applyPendingChange($change);
+        }
+    }
+
+    /**
+     * Mudança pendente do schedule, só se a assinatura dela pertence ao customer do evento (isolamento).
+     */
+    private function resolvePendingChange(array $schedule): ?SubscriptionChange
+    {
+        $workspace = $this->resolveWorkspace($schedule);
+
+        if (! $workspace || empty($schedule['id'])) {
+            return null;
+        }
+
+        return SubscriptionChange::with('price.plan')
+            ->pending()
+            ->where('stripe_schedule_id', $schedule['id'])
+            ->whereHas('subscription', fn ($q) => $q->where('workspace_id', $workspace->id))
+            ->first();
+    }
+
+    /**
+     * Marca como aplicada (atualização condicional: só quem vencer a corrida notifica) e avisa o workspace.
+     */
+    private function applyPendingChange(SubscriptionChange $change): void
+    {
+        $updated = SubscriptionChange::whereKey($change->id)
+            ->where('status', SubscriptionChangeStatus::PENDING->value)
+            ->update(['status' => SubscriptionChangeStatus::APPLIED->value]);
+
+        if (! $updated) {
+            return;
+        }
+
+        $workspace = Workspace::find($change->subscription->workspace_id);
+
+        if ($workspace) {
+            app(NotificationService::class)->notifySubscriptionChanged(
+                $workspace,
+                'applied',
+                $change->stripe_schedule_id,
+                (string) $change->price?->plan?->name,
+            );
         }
     }
 

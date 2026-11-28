@@ -20,6 +20,7 @@ help:
 	@echo "  reload-restart   Container travado: reinicia sem recriar (não relê o .env)"
 	@echo "  reload-all       Recria TODOS os serviços (não apaga dados)"
 	@echo "  optimize         Limpa os caches do Laravel"
+	@echo "  stripe-refresh   Atualiza o STRIPE_WEBHOOK_SECRET do .env a partir da STRIPE_SECRET (só teste/local)"
 	@echo ""
 	@echo "BANCO DE DADOS"
 	@echo "  migrate          Roda as migrations pendentes"
@@ -213,3 +214,10 @@ setup-bucket:
 # teste para ver se está funcionando.
 test-s3:
 	docker exec pandypost-php php artisan tinker --execute="Illuminate\Support\Facades\Storage::disk('s3')->put('teste-bucket.txt', 'Bucket funcionando perfeitamente!'); echo 'URL: ' . Illuminate\Support\Facades\Storage::disk('s3')->url('teste-bucket.txt') . PHP_EOL;"
+
+# Descobre o secret do webhook do Stripe CLI a partir da STRIPE_SECRET do .env, grava
+# STRIPE_WEBHOOK_SECRET e recarrega. Só roda com APP_ENV=local e chave de teste.
+stripe-refresh:
+	@./scripts/stripe-refresh.sh
+
+.PHONY: stripe-refresh
