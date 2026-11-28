@@ -20,6 +20,8 @@
 
 ## Divergências
 
+- **`phases[].iterations` não existe na API atual do Stripe (2026-06-24):** o primeiro downgrade real deu `Received unknown parameter: phases[iterations]` (502 `gateway_error`). A fase do novo preço passou a usar `duration` (um período do novo preço, `interval`/`interval_count`), com `end_behavior: release`. Era o risco 3 do plano, só detectável no Stripe real. Teste de regressão em `ChangeSubscriptionPhaseTest`. Ainda vale validar a virada do ciclo com um Test Clock.
+
 - **Tarefa 12:** auditoria do agente `security` feita; VULN-SUB-01 e VULN-SUB-04 corrigidos (service) e VULN-SUB-03 (webhook sem secret, pré-existente), SUSPEITA-SUB-05 e PERGUNTA-SUB-02 ficaram abertos em `specs/002-security-hardening/spec.md`.
 - **Tarefa 13:** docblocks Scribe feitos pelo agente `docs`; o `scribe:generate` avisa FAIL em `PUT /me/avatar` e `PUT /workspaces/{workspace}/avatar` (fora desta feature, não investigado). `docs/manual-producao.md` ainda precisa listar os 3 eventos `subscription_schedule.*` do webhook live.
 - **Tarefa 0 segue pendente** (validação no Stripe de teste, com autorização do dono).

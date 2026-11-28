@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\SubscriptionChangeStatus;
 use App\Models\Traits\HasUuid;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +39,18 @@ class SubscriptionChange extends Model implements Auditable
         'effective_at' => 'datetime',
         'status' => SubscriptionChangeStatus::class,
     ];
+
+    /**
+     * O Stripe manda timestamps e o Carbon 3 os cria em UTC; gravados assim, o banco guardaria a hora
+     * UTC e a leitura a interpretaria no fuso do app (a data adiantaria horas, às vezes um dia).
+     * Converte para o fuso do app antes de gravar (mesmo cuidado de `Subscription`).
+     */
+    protected function effectiveAt(): Attribute
+    {
+        return Attribute::set(fn ($value) => $value instanceof CarbonInterface
+            ? $value->copy()->setTimezone(date_default_timezone_get())
+            : $value);
+    }
 
     public function generateTags(): array
     {

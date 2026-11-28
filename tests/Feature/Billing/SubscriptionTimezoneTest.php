@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\SubscriptionChangeStatus;
 use App\Models\Subscription;
+use App\Models\SubscriptionChange;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -67,5 +69,21 @@ describe('datas da assinatura no fuso do app', function () {
         $subscription = subscriptionWithDates(['ends_at' => $endsAt]);
 
         expect($subscription->ends_at->timestamp)->toBe($endsAt);
+    });
+
+    it('data da mudança agendada mantém o mesmo instante', function () {
+        $effectiveAt = now()->addDays(20)->timestamp;
+        $subscription = subscriptionWithDates([]);
+        $target = chgPrice('Basic', 1000);
+
+        $change = SubscriptionChange::create([
+            'subscription_id' => $subscription->id,
+            'price_id' => $target->id,
+            'stripe_schedule_id' => 'sch_tz_1',
+            'effective_at' => Carbon::createFromTimestamp($effectiveAt),
+            'status' => SubscriptionChangeStatus::PENDING,
+        ]);
+
+        expect($change->fresh()->effective_at->timestamp)->toBe($effectiveAt);
     });
 });

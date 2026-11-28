@@ -209,7 +209,9 @@ class ChangeSubscriptionService
                     ], fn ($v) => $v !== null),
                     [
                         'items' => [['price' => $target->gateway_price_id, 'quantity' => $quantity]],
-                        'iterations' => 1,
+                        // A API atual do Stripe não aceita mais `iterations`: a fase dura um período do novo preço
+                        // e, com end_behavior=release, a assinatura segue nele depois.
+                        'duration' => ['interval' => $target->frequency->stripeInterval(), 'interval_count' => 1],
                     ],
                 ],
             ]);
